@@ -6,19 +6,15 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
-#from dc_rest_api.lib.CRUD_Operations.IdentificationInserter import IdentificationInserter
-
-
-"""
-"""
-
+from dc_rest_api.lib.CRUD_Operations.IdentificationInserter import IdentificationInserter
 
 
 class IdentificationUnitInserter():
 	def __init__(self, dc_db):
-		self.con = dc_db.getConnection()
-		self.cur = dc_db.getCursor()
-		self.collation = dc_db.collation
+		self.dc_db = dc_db
+		self.con = self.dc_db.getConnection()
+		self.cur = self.dc_db.getCursor()
+		self.collation = self.dc_db.collation
 		
 		self.temptable = '#iu_temptable'
 		
@@ -43,7 +39,7 @@ class IdentificationUnitInserter():
 		
 
 
-	def insertIdentificationUnitData(self, iu_data_dicts = []):
+	def insertIdentificationUnitData(self):
 		self.__createIdentificationUnitTempTable()
 		
 		self.json2temp.set_datadicts(self.iu_dicts)
@@ -53,18 +49,28 @@ class IdentificationUnitInserter():
 		self.__updateIUTempTable()
 		
 		self.__updateIUDicts()
+		
+		identifications = []
+		for iu_dict in self.iu_dicts:
+			if 'Identifications' in iu_dict:
+				for i_dict in iu_dict['Identifications']:
+					i_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
+					i_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
+					identifications.append(i_dict)
+		
+		i_inserter = IdentificationInserter(self.dc_db)
+		i_inserter.setIdentificationDicts(identifications)
+		i_inserter.insertIdentificationData()
 		return
 
 
 	def setIdentificationUnitDicts(self, json_dicts = []):
 		self.iu_dicts = []
 		iu_count = 1
-		for json_dict in json_dicts:
-			if 'IdentificationUnits' in json_dict:
-				for iu_dict in json_dict['IdentificationUnits']:
-					iu_dict['identificationunit_num'] = iu_count
-					iu_count += 1
-					self.iu_dicts.append(iu_dict)
+		for iu_dict in json_dicts:
+			iu_dict['identificationunit_num'] = iu_count
+			iu_count += 1
+			self.iu_dicts.append(iu_dict)
 		return
 
 
@@ -195,7 +201,6 @@ class IdentificationUnitInserter():
 
 
 	def __updateIUDicts(self):
-		pudb.set_trace()
 		iu_ids = self.getIDsForIUDicts()
 		for iu_dict in self.iu_dicts:
 			identificationunit_num = iu_dict['identificationunit_num']

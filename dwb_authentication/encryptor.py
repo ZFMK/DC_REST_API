@@ -19,10 +19,21 @@ class Encryptor():
 	as long as the session has not been expired
 	"""
 	def __init__(self):
-		self.salt_length = 29
+		self.salt_length = 22
 		self.key_length = 44
 		
 		self.paddingpattern = re.compile(r'(\=+)$')
+	
+	# remove bcrypt algorithm data from token because the algorithm contain characters that otherwise must be urlencoded when used 
+	# in url parameters
+	def __remove_algorithm(self, salt):
+		salt = salt.replace('$2b$12$', '')
+		return salt
+	
+	# add the bcrypt algorithm before a hash is created from concatenated salt and token 
+	def __add_algorithm(self, salt):
+		salt = '$2b$12$' + salt
+		return salt
 	
 	
 	def __add_padding(self, keystring):
@@ -53,6 +64,9 @@ class Encryptor():
 		salt = bcrypt.gensalt()
 		if isinstance(salt, bytes):
 			salt = salt.decode('utf-8')
+		
+		salt = self.__remove_algorithm(salt)
+		
 		key = self.__remove_padding(key)
 		token = salt + key
 		return token
@@ -77,6 +91,8 @@ class Encryptor():
 	
 	def hash_token(self, token):
 		salt = self.get_salt_from_token(token)
+		salt = self.__add_algorithm(salt)
+		
 		key = self.get_key_from_token(token)
 		if not isinstance(salt, bytes):
 			salt = salt.encode('utf8')

@@ -20,6 +20,7 @@ class LoginViews(object):
 	'''
 
 	def __init__(self, request):
+		
 		self.request = request
 		
 		self.uid = self.request.authenticated_userid
@@ -123,7 +124,6 @@ class LoginViews(object):
 		
 		self.messages = []
 		
-		pudb.set_trace()
 		logout_url = self.request.route_url('logout')
 		referrer = self.request.url
 		if referrer == logout_url:

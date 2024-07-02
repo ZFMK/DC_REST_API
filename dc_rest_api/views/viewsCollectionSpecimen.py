@@ -17,12 +17,10 @@ import pudb
 import json
 
 
-class CollectionSpecimenViews(object):
-	'''
-	copied from https://docs.pylonsproject.org/projects/pyramid/en/latest/quick_tutorial/authentication.html
-	'''
+class CollectionSpecimenViews():
 
 	def __init__(self, request):
+		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -44,7 +42,6 @@ class CollectionSpecimenViews(object):
 
 	@view_config(route_name='specimen', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
-		
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
@@ -71,9 +68,8 @@ class CollectionSpecimenViews(object):
 			self.messages.append('Can not connect to DiversityCollection server. Please contact server administrator')
 			return jsonresponse
 		
-		pudb.set_trace()
-		
 		if 'CollectionSpecimens' in self.request_params.json_body:
+			
 			self.payload = self.request_params.json_body['CollectionSpecimens']
 			cs_inserter = CollectionSpecimenInserter(self.dc_db)
 			cs_inserter.setSpecimenDicts(self.payload)

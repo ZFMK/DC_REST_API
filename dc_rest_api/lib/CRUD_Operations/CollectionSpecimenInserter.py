@@ -12,6 +12,7 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
 from dc_rest_api.lib.CRUD_Operations.IdentificationUnitInserter import IdentificationUnitInserter
+from dc_rest_api.lib.CRUD_Operations.CollectionAgentInserter import CollectionAgentInserter
 
 
 class CollectionSpecimenInserter():
@@ -49,22 +50,41 @@ class CollectionSpecimenInserter():
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
 		
+		
+		identificationunits = []
+		for cs_dict in self.specimen_dicts:
+			if 'IdentificationUnits' in cs_dict:
+				for iu_dict in cs_dict['IdentificationUnits']:
+					iu_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+					identificationunits.append(iu_dict)
+					
 		iu_inserter = IdentificationUnitInserter(self.dc_db)
-		iu_inserter.setIdentificationUnitDicts(self.specimen_dicts)
+		iu_inserter.setIdentificationUnitDicts(identificationunits)
 		iu_inserter.insertIdentificationUnitData()
+		
+		collectionagents = []
+		for cs_dict in self.specimen_dicts:
+			if 'CollectionAgents' in cs_dict:
+				for ca_dict in cs_dict['CollectionAgents']:
+					ca_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+					collectionagents.append(ca_dict)
+					
+		ca_inserter = CollectionAgentInserter(self.dc_db)
+		ca_inserter.setCollectionAgentDicts(collectionagents)
+		ca_inserter.insertCollectionAgents()
+		
+		
+		
 		return
 
 
 	def setSpecimenDicts(self, json_dicts = []):
 		self.specimen_dicts = json_dicts
-		
 		cs_count = 1
-		
 		for cs_dict in self.specimen_dicts:
 			cs_dict['collectionspecimen_num'] = cs_count
-			
 			cs_count += 1
-			return
+		return
 
 
 	def __createSpecimenTempTable(self):
@@ -170,7 +190,7 @@ class CollectionSpecimenInserter():
 
 	def __updateSpecimenDicts(self):
 		# write the inserted ids back to the json_dicts that where provided as payload
-		pudb.set_trace()
+		
 		cs_ids = self.getIDsForSpecimenDicts()
 		
 		for specimen_dict in self.specimen_dicts:
