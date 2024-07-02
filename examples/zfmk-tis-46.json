@@ -1,0 +1,377 @@
+{
+   "_shards" : {
+      "failed" : 0,
+      "skipped" : 0,
+      "successful" : 1,
+      "total" : 1
+   },
+   "hits" : {
+      "hits" : [
+         {
+            "_id" : "1A22CBCAF80C3C7799B1D8D3E5482637D9B29454DDD1FBA7F7D84099C930658B",
+            "_ignored" : [
+               "WGS84_Accuracy m",
+               "Barcodes.AnalysisResult.keyword",
+               "Barcodes.AnalysisResult.keyword_lc"
+            ],
+            "_index" : "iuparts",
+            "_score" : 15.150322,
+            "_source" : {
+               "AccessionDate" : "2013-06-17 15:32:39",
+               "Altitude mNN" : "107",
+               "Altitude_Accuracy mNN" : null,
+               "Barcodes" : [
+                  {
+                     "AnalysisDate" : "2014-01-20 14:32:28",
+                     "AnalysisDescription" : "Barcodes for ZFMK using Methods",
+                     "AnalysisDisplay" : "Barcode_Analyse161",
+                     "AnalysisID" : 161,
+                     "AnalysisInstanceNotes" : "L2F insert",
+                     "AnalysisNumber" : "11119",
+                     "AnalysisResult" : "AACTTTATATTTTATATTTGGAATATGGGCAGGAATAGTTGGATCAGCCATAAGAATAATTATCCGTATTGAATTAGGACAACCAGGAAGATTTATTGGAGATGATCAAATTTATAATGTTGTAGTAACAGCCCATGCTTTTATTATAATTTTTTTTATAGTAATACCCATTATAATTGGAGGATTTGGAAATTGATTAGTACCTTTAATAATTGGAGCACCAGATATAGCCTTTCCACGAATAAATAACATAAGATTCTGATTATTACCCCCCTCATTAACTTTATTAATAGTAAGAAGATTAACAGAATCTGGAGCAGGGACAGGATGAACTGTATATCCCCCATTATCAAGAAACCTATCACATAGAGGAGCATCTGTAGATTTAGCCATTTTTTCCCTTCATTTAGCAGGTGTATCATCAATTCTTGGTGCAGTAAATTTTATTTCAACTATTATTAATATACGACCAACAGGGATAACCCCTGAACGTATTCCTTTATTTGTTTGATCTGTTGGAATCACAGCATTACTTCTATTATTATCATTACCCGTTTTAGCAGGAGCTATTACCATATTATTAACAGATCGAAATTTTAATACATCATTTTTTGATCCTTCAGGAGGAGGTGATCCGATTTTATATCAACATTTATTT",
+                     "AnalysisTypeNotes" : "The sequence must be written into Analysis Results!",
+                     "ExternalAnalysisURI" : null,
+                     "MeasurementUnit" : null,
+                     "Methods" : [
+                        {
+                           "MethodDescription" : "Container for barcodes. The consensus sequence must be written into Analysis Results!",
+                           "MethodDisplay" : "Barcode",
+                           "region" : "COI",
+                           "sequence_length" : "658",
+                           "trace_count" : "2"
+                        },
+                        {
+                           "MethodDescription" : "Data from PCR amplification and from the sequencing procedure",
+                           "MethodDisplay" : "Sequencing",
+                           "direction" : "forward",
+                           "pcr_primer_forward_name" : "LCO1490",
+                           "pcr_primer_forward_sequence" : "GGTCAACAAATCATAAAGATATTGG",
+                           "pcr_primer_reverse_name" : "HCO2198",
+                           "pcr_primer_reverse_sequence" : "TAAACTTCAGGGTGACCAAAAAATCA",
+                           "sequence_id" : "14678",
+                           "sequencing_lab" : "BGI",
+                           "sequencing_primer_name" : "LCO1490",
+                           "sequencing_primer_sequence" : "GGTCAACAAATCATAAAGATATTGG",
+                           "sequencing_timestamp" : "2014-01-16 00:00:00",
+                           "trace_filename" : "ZFMK-TIS-46_[1303037]LCO1490_A55145_F06_1303109768G.ab1"
+                        },
+                        {
+                           "MethodDescription" : "Data from PCR amplification and from the sequencing procedure",
+                           "MethodDisplay" : "Sequencing",
+                           "direction" : "reverse",
+                           "pcr_primer_forward_name" : "LCO1490",
+                           "pcr_primer_forward_sequence" : "GGTCAACAAATCATAAAGATATTGG",
+                           "pcr_primer_reverse_name" : "HCO2198",
+                           "pcr_primer_reverse_sequence" : "TAAACTTCAGGGTGACCAAAAAATCA",
+                           "sequence_id" : "14198",
+                           "sequencing_lab" : "BGI",
+                           "sequencing_primer_name" : "HCO2198",
+                           "sequencing_primer_sequence" : "TAAACTTCAGGGTGACCAAAAAATCA",
+                           "sequencing_timestamp" : "2014-01-16 00:00:00",
+                           "trace_filename" : "ZFMK-TIS-46_[1303038]HCO2198_A55145_F06_1303109768G.ab1"
+                        }
+                     ],
+                     "ResponsibleName" : "GBOL-ZFMKLab"
+                  }
+               ],
+               "CollectingMethod" : "Handfang",
+               "CollectionAcronym" : "Heterop",
+               "CollectionAgents" : [
+                  {
+                     "CollectorsAgentURI" : null,
+                     "CollectorsDataWithholding" : "DSGVO",
+                     "CollectorsName" : "Morkel, Carsten",
+                     "CollectorsOrder" : 0,
+                     "CollectorsSpecimenFieldNumber" : null,
+                     "CollectorsWithhold" : "true",
+                     "DB_ProjectID" : [
+                        "ZFMK_300008",
+                        "ZFMK_30000"
+                     ],
+                     "ProjectID" : [
+                        300008,
+                        30000
+                     ]
+                  }
+               ],
+               "CollectionDate" : null,
+               "CollectionEventID" : 65951,
+               "CollectionID" : 26798,
+               "CollectionName" : "GBOL-Heteroptera",
+               "CollectionSpecimenID" : 46,
+               "CollectionsTree" : [
+                  {
+                     "CollectionID" : 10956,
+                     "CollectionName" : "ZFMK",
+                     "ParentCollectionID" : null,
+                     "TreeLevel" : 0
+                  },
+                  {
+                     "CollectionID" : 10957,
+                     "CollectionName" : "Biobank Collection",
+                     "ParentCollectionID" : 10956,
+                     "TreeLevel" : 1
+                  },
+                  {
+                     "CollectionID" : 10944,
+                     "CollectionName" : "GBOL Collection",
+                     "ParentCollectionID" : 10957,
+                     "TreeLevel" : 2
+                  },
+                  {
+                     "CollectionID" : 26798,
+                     "CollectionName" : "GBOL-Heteroptera",
+                     "ParentCollectionID" : 10944,
+                     "TreeLevel" : 3
+                  }
+               ],
+               "CollectorsEventNumber" : null,
+               "CountryCache" : "Germany",
+               "DatabaseAccronym" : "ZFMK Collections",
+               "DatabaseID" : "ZFMK",
+               "DatabaseURI" : "zfmk.diversityworkbench.de/DiversityCollection_ZFMK",
+               "DepositorsName" : "Morkel, Carsten",
+               "EventWithhold" : "false",
+               "EventWithholdDate" : "false",
+               "EventWithholdingReason" : null,
+               "EventWithholdingReasonDate" : null,
+               "FamilyCache" : "Pentatomidae",
+               "Gender" : null,
+               "HabitatDescription" : "Laubwald",
+               "HierarchyCache" : "Palomena prasina | Palomena | Pentatomidae | Heteroptera | Hemiptera | Paraneoptera | Neoptera | Insecta | Hexapoda | Arthropoda",
+               "IUDisplayOrder" : 1,
+               "IUWithhold" : "false",
+               "IUWithholdingReason" : null,
+               "IdentificationUnitCircumstances" : null,
+               "IdentificationUnitID" : 495870,
+               "IdentificationUnitNotes" : null,
+               "Identifications" : [
+                  {
+                     "IdentificationDate" : null,
+                     "IdentificationSequenceID" : -1,
+                     "TaxonNameURI" : "http://tnt.diversityworkbench.de/TaxonNames_Insecta/5300063",
+                     "TaxonomicName" : "Palomena prasina (Linnaeus, 1761)",
+                     "TypeNotes" : null,
+                     "TypeStatus" : null,
+                     "VernacularTerm" : null
+                  }
+               ],
+               "ImageAvailable" : true,
+               "Images" : [
+                  {
+                     "CopyRightStatement" : null,
+                     "Description" : null,
+                     "ImageCreator" : "GBOL-Team",
+                     "ImageDisplayOrder" : 0,
+                     "ImageType" : null,
+                     "ImageWithhold" : "false",
+                     "ImageWithholdingReason" : null,
+                     "LicenseHolder" : "Zoological Research Museum Alexander Koenig",
+                     "LicenseHolderAgentURI" : null,
+                     "LicenseType" : null,
+                     "LicenseURI" : null,
+                     "LicenseYear" : "2018",
+                     "ResourceURI" : "https://media.leibniz-lib.de/eaurls/image/111935/full/full/0/ZFMK_46.png",
+                     "Title" : null,
+                     "URI" : "https://media.leibniz-lib.de/eaurls/image/111935/full/small/0/ZFMK_46.png"
+                  }
+               ],
+               "LastIdentificationCache" : "Palomena prasina (Linnaeus, 1761)",
+               "LastUpdated" : "2022-10-23 21:48:03.187",
+               "LifeStage" : null,
+               "LocalityDescription" : "Mörfelden, Wald 1 km W, Birkenseewiese",
+               "LocalityVerbatim" : null,
+               "MatchedParentTaxa" : [
+                  "Palomena prasina",
+                  "Palomena",
+                  "Carpocorini",
+                  "Pentatominae",
+                  "Pentatomidae",
+                  "Coreoidea",
+                  "Pentatomorpha",
+                  "Heteroptera",
+                  "Insecta",
+                  "Hexapoda",
+                  "Arthropoda",
+                  "Animalia"
+               ],
+               "MatchedParentTaxaURIs" : [
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001939",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001938",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001822",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001818",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001814",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001809",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5000009",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5000003",
+                  "https://zfmk.diversityworkbench.de/TaxonNames_GBIF_4/59",
+                  "https://zfmk.diversityworkbench.de/TaxonNames_GBIF_4/2964945",
+                  "http://zfmk.diversityworkbench.de/TaxonNames_Arthropoda/4000001",
+                  "taxamerger_id_2"
+               ],
+               "MatchedTaxaTree" : [
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001938",
+                     "Rank" : "sp.",
+                     "Taxon" : "Palomena prasina",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001939",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 11
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001822",
+                     "Rank" : "gen.",
+                     "Taxon" : "Palomena",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001938",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 10
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001818",
+                     "Rank" : "trib.",
+                     "Taxon" : "Carpocorini",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001822",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 9
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001814",
+                     "Rank" : "subfam.",
+                     "Taxon" : "Pentatominae",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001818",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 8
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001809",
+                     "Rank" : "fam.",
+                     "Taxon" : "Pentatomidae",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001814",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 7
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5000009",
+                     "Rank" : "superfam.",
+                     "Taxon" : "Coreoidea",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001809",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 6
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5000003",
+                     "Rank" : "subord.",
+                     "Taxon" : "Pentatomorpha",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5000009",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 5
+                  },
+                  {
+                     "ParentTaxonURI" : "https://zfmk.diversityworkbench.de/TaxonNames_GBIF_4/59",
+                     "Rank" : "ord.",
+                     "Taxon" : "Heteroptera",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5000003",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 4
+                  },
+                  {
+                     "ParentTaxonURI" : "https://zfmk.diversityworkbench.de/TaxonNames_GBIF_4/2964945",
+                     "Rank" : "cl.",
+                     "Taxon" : "Insecta",
+                     "TaxonURI" : "https://zfmk.diversityworkbench.de/TaxonNames_GBIF_4/59",
+                     "TaxonURL" : "https://www.gbif.org/species/216",
+                     "TreeLevel" : 3
+                  },
+                  {
+                     "ParentTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Arthropoda/4000001",
+                     "Rank" : "subphyl./div.",
+                     "Taxon" : "Hexapoda",
+                     "TaxonURI" : "https://zfmk.diversityworkbench.de/TaxonNames_GBIF_4/2964945",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 2
+                  },
+                  {
+                     "ParentTaxonURI" : "taxamerger_id_2",
+                     "Rank" : "phyl./div.",
+                     "Taxon" : "Arthropoda",
+                     "TaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Arthropoda/4000001",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 1
+                  },
+                  {
+                     "ParentTaxonURI" : "taxamerger_id_1",
+                     "Rank" : "reg.",
+                     "Taxon" : "Animalia",
+                     "TaxonURI" : "taxamerger_id_2",
+                     "TaxonURL" : null,
+                     "TreeLevel" : 0
+                  }
+               ],
+               "MatchedTaxon" : "Palomena prasina",
+               "MatchedTaxonAuthor" : "Linnaeus",
+               "MatchedTaxonRank" : "sp.",
+               "MatchedTaxonURI" : "http://zfmk.diversityworkbench.de/TaxonNames_Insecta/5001939",
+               "MatchedTaxonURL" : null,
+               "MaterialCategory" : "tissue sample",
+               "NamedArea" : "Mörfelden",
+               "NamedAreaNotes" : null,
+               "NamedAreaURL" : null,
+               "NumberOfSpecimenImages" : 1,
+               "NumberOfUnits" : 1,
+               "NumberOfUnitsModifier" : null,
+               "OnlyObserved" : "false",
+               "OrderCache" : "Heteroptera",
+               "PartAccessionNumber" : "ZFMK-TIS-46",
+               "PartWithhold" : "false",
+               "PartWithholdingReason" : null,
+               "PreparationDate" : null,
+               "PreparationMethod" : null,
+               "Projects" : [
+                  {
+                     "DB_ProjectID" : "ZFMK_30000",
+                     "Project" : "Biobank GBOL Project",
+                     "ProjectID" : 30000,
+                     "ProjectURI" : "http://id.zfmk.de/dataset_ZFMK/30000"
+                  },
+                  {
+                     "DB_ProjectID" : "ZFMK_300008",
+                     "Project" : "Biobank TIS collection",
+                     "ProjectID" : 300008,
+                     "ProjectURI" : "http://id.zfmk.de/dataset_ZFMK/300008"
+                  }
+               ],
+               "SpecimenAccessionNumber" : "ZFMK-TIS-46",
+               "SpecimenCreatedBy" : "gbol_net",
+               "SpecimenCreatedWhen" : "2013-06-17 15:32:39.513",
+               "SpecimenPartID" : 66953,
+               "SpecimenUpdatedBy" : "133",
+               "SpecimenUpdatedWhen" : "2022-10-23 21:48:03.187",
+               "SpecimenVersion" : 28,
+               "SpecimenWithhold" : "false",
+               "SpecimenWithholdingReason" : null,
+               "StableIdentifierURL" : "https://id.zfmk.de/collection_ZFMK//46/495870/66953",
+               "StockNumber" : null,
+               "StockNumberUnit" : null,
+               "StorageContainer" : null,
+               "StorageLocation" : "ZFMK-Tissue-Bank_34/58",
+               "TaxonNameURI" : "http://tnt.diversityworkbench.de/TaxonNames_Insecta/5300063",
+               "TaxonNameURI_sha" : "2B462B78FA8D6467372FFBFFAD51A9F0F2945880BDB10F5FD232B4846E48E8B4",
+               "TaxonomicGroup" : "animal",
+               "TypeStatus" : [],
+               "UnitDescription" : "leg(s)",
+               "UnitIdentifier" : null,
+               "VernacularTerms" : [],
+               "WGS84_Accuracy m" : "2 m",
+               "WGS84_Coordinate" : "POINT(8.54132818895365 49.9832922012521)"
+            }
+         }
+      ],
+      "max_score" : 15.150322,
+      "total" : {
+         "relation" : "eq",
+         "value" : 1
+      }
+   },
+   "timed_out" : false,
+   "took" : 3
+}

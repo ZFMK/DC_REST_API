@@ -1,0 +1,104 @@
+curl -k -X POST "https://localhost/dc_rest_api/login" \
+-H "Content-Type: application/json" -H "Accept: application/json" \
+-d '{
+	"username": "",
+	"password": ""
+}' \
+| json_pp
+
+
+curl -k -X POST "https://localhost/dc_rest_api/specimen" \
+-H "Content-Type: application/json" -H "Accept: application/json" \
+-d '{
+	"CollectionSpecimens": [
+		{
+			"AccessionNumber": "unittest_04_b",
+			"DepositorsAccessionNumber": "unittest_04",
+			"DepositorsName": "Testuser4 Depositor 04",
+			"ExternalIdentifier": "unittest_04 ExternalIdentifier",
+			"OriginalNotes": "unittest_03 OriginalNotes",
+			"AdditionalNotes": "unittest_03 AdditionalNotes",
+			"cs_DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
+			"CollectionAgents": [
+				{
+					"CollectorsName": "Testuser Collector2",
+					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+				},
+				{
+					"CollectorsName": "Testuser Collector4",
+					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+				},
+				{
+					"CollectorsName": "Testuser Collector1",
+					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+				}
+			],
+			"IdentificationUnits": [
+				{
+					"LifeStage": "adult",
+					"Gender": "female",
+					"NumberOfUnits": 45,
+					"UnitIdentifier": "testunit 03",
+					"UnitDescription": "testunit 03",
+					"DisplayOrder": 1,
+					"DataWithholdingReason": "DataWithholdingReason IdentificationUnit: Dataset for UnitTest",
+					"IdentificationUnitAnalysis": {
+						"AnalysisResult": "CAAAAAGCAAGAATAAAAAAGGATAGGTGCAGAGACTCAAAGGAAGCTGTTCTAAAAAAATGGGATTGACTGTGCTGTATTGTTATAGCTGTATTGTTATAAAACTTTTTCAGTCTAAATTCCAACCCAAGAATAAGGGGTGAAGAATCTACGTCCTGAAATTATTAATGACAACCCGAATTTGTTCTGTATTTTTTTTTCACATAATTAAATTATATAATATAGATAATCTCTAGAAATCCATATTATAGGATAGATTTAAAATTAAGGAATGGAAAAATGCAAGAATTGTTATGAATCGATTCTAAGTTGAAAGCCGAATAAATTTTTGAGTTATTCATAAAAACATTCATACTCACCCCATAGTCTGAACGATCTTTTGAATAAGAGATTAATCGGATGAGAATAAAGATAGAGTCCCGTTCTACATGTCAATACTGACAACAATTAAATTTATAGTAAGAGGAAAATCCGTCGACTTTAAAAATCGTGAGGGTTCAAGTCCCTCTATCCCCATACACTCCCTAACTAGTTATCTTTTCTTTTTCCCAGTACCTAATAGAAGACTTTATAATACTTTTCATCCTTTTAATTGACACAGACTCAAGTTATCTCGTAAAATGGGGAGATGCTGCGGGTAATGGTCGGGATAGCTCAGTTGGTAGAGCAGAGGACTGAAAA"
+					},
+					"Identifications": [
+						{
+							"TaxonomicName": "Eisenia veneta (Rosa, 1886)",
+							"NameURI": "https://www.gbif.org/species/8861735",
+							"VernacularTerm": "Riesen-Rotwurm",
+							"IdentificationDay": "17",
+							"IdentificationMonth": "05",
+							"IdentificationYear": "2024",
+							"IdentificationDateSupplement": "",
+							"ResponsibleName": "Testuser 1",
+							"ResponsibleAgentURI": "https://zfmk.diversityagents.de/0815",
+							"IdentificationCategory": "determination",
+							"IdentificationQualifier": "",
+							"TypeStatus": "paratype",
+							"TypeNotes": "",
+							"ReferenceTitle": "",
+							"ReferenceURI": null,
+							"ReferenceDetails": null,
+							"Notes": null
+						},
+						{
+							"TaxonomicName": "Dendrobaena veneta (Rosa, 1886)",
+							"NameURI": "https://www.gbif.org/species/5739805",
+							"VernacularTerm": "Garten Regenwurm",
+							"IdentificationDay": "17",
+							"IdentificationMonth": "05",
+							"IdentificationYear": "2024",
+							"IdentificationDateSupplement": "",
+							"ResponsibleName": "Testuser 1",
+							"ResponsibleAgentURI": "https://zfmk.diversityagents.de/0815",
+							"IdentificationCategory": "determination",
+							"IdentificationQualifier": "",
+							"TypeStatus": "paratype",
+							"TypeNotes": "",
+							"ReferenceTitle": "",
+							"ReferenceURI": null,
+							"ReferenceDetails": null,
+							"Notes": null
+						}
+					]
+				},
+				{
+					"LifeStage": "adult",
+					"Gender": "female",
+					"NumberOfUnits": 3,
+					"UnitIdentifier": "testunit 04",
+					"UnitDescription": "testunit 04",
+					"Circumstances": "unit testing",
+					"DisplayOrder": 2,
+					"DataWithholdingReason": "DataWithholdingReason IdentificationUnit: Dataset for UnitTest"
+				}
+			]
+		}
+	],
+	"token": ""
+}' \
+| json_pp

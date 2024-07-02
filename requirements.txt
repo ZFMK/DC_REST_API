@@ -1,0 +1,13 @@
+configparser
+pudb
+PyMySQL
+pyodbc
+pyramid
+pyramid-beaker
+pyramid-chameleon
+pyramid-debugtoolbar
+pyramid-mako
+pyramid-tm
+waitress
+cryptography
+

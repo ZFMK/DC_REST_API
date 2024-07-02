@@ -1,0 +1,11 @@
+[app:main]
+use = egg:dc_rest_api
+pyramid.reload_templates = true
+
+[server:main]
+use = egg:waitress#main
+port = @@PYRAMID_PORT@@
+url_scheme = @@URL_SCHEME@@
+url_prefix = @@URL_PREFIX@@
+
+
