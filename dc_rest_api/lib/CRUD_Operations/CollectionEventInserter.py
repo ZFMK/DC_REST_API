@@ -7,7 +7,7 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
 
-class CollectionEventImporter():
+class CollectionEventInserter():
 	def __init__(self, dc_db):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
@@ -17,7 +17,7 @@ class CollectionEventImporter():
 		self.temptable = '#event_temptable'
 		
 		self.schema = [
-			{'colname': 'dataset_num', 'None allowed': False},
+			{'colname': 'event_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'CollectionEventID'},
 			{'colname': 'CollectorsEventNumber'},
@@ -52,11 +52,16 @@ class CollectionEventImporter():
 
 
 	def insertEventData(self, event_data_dicts = []):
-		self.set_datadicts(event_data_dicts)
+		
 		self.__createEventTempTable()
-		self.fill_temptable()
+		
+		self.json2temp.set_datadicts(self.e_dicts)
+		self.json2temp.fill_temptable(self.temptable)
+		
 		self.__setExistingEvents()
 		self.__createMissingEvents()
+		
+		
 		self.__updateCollectionEvents()
 		self.__insertEventLocalisationWGS84()
 		self.__insertEventLocalisationAltitude()
@@ -65,6 +70,17 @@ class CollectionEventImporter():
 		self.__insertEventIDsInCollectionSpecimen()
 		self.__deleteUnconnectedEvents()
 		return
+
+
+	def setSpecimenPartDicts(self, json_dicts = []):
+		self.e_dicts = []
+		e_count = 1
+		for e_dict in json_dicts:
+			e_dict['event_num'] = e_count
+			e_count += 1
+			self.e_dicts.append(e_dict)
+		return
+
 
 
 	def __createEventTempTable(self):
@@ -78,9 +94,9 @@ class CollectionEventImporter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[dataset_num] INT NOT NULL,
-		[CollectionSpecimenID] INT DEFAULT NULL,
+		[event_num] INT NOT NULL,
 		[CollectionEventID] INT DEFAULT NULL,
+		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 		[CollectorsEventNumber] VARCHAR(50) COLLATE {1},
 		[CollectionDay] TINYINT,
 		[CollectionMonth] TINYINT,
@@ -106,8 +122,8 @@ class CollectionEventImporter():
 		[WGS84_Lon] VARCHAR(255) COLLATE {1},
 		[WGS84_Accuracy] VARCHAR(255) COLLATE {1},
 		[WGS84_RecordingMethod] VARCHAR(500) COLLATE {1},
-		[ce_DataWithholdingReason] VARCHAR(255) COLLATE {1},
-		PRIMARY KEY ([dataset_num]),
+		[DataWithholdingReason] VARCHAR(255) COLLATE {1},
+		PRIMARY KEY ([event_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [CollectionEventID_idx] ([CollectionEventID]),
 		INDEX [CollectorsEventNumber_idx] ([CollectorsEventNumber])
@@ -205,10 +221,37 @@ class CollectionEventImporter():
 		self.con.commit()
 		
 		query = """
-		INSERT INTO [CollectionEvent] 
-		([LocalityDescription])
-		OUTPUT INSERTED.[LocalityDescription], INSERTED.[CollectionEventID] INTO [#new_event_ids]
-		SELECT ce_temp.[dataset_num]
+		INSERT INTO [CollectionEvent] (
+			[CollectorsEventNumber],
+			[CollectionDay],
+			[CollectionMonth],
+			[CollectionYear],
+			[CollectionEndDay],
+			[CollectionEndMonth], 
+			[CollectionEndYear],
+			[CollectionDateSupplement],
+			[LocalityDescription],
+			[LocalityVerbatim],
+			[HabitatDescription], 
+			[CollectingMethod],
+			[Notes],
+			[CountryCache]
+		)
+		SELECT 
+			ce_temp.[CollectorsEventNumber],
+			ce_temp.[CollectionDay],
+			ce_temp.[CollectionMonth],
+			ce_temp.[CollectionYear],
+			ce_temp.[CollectionEndDay],
+			ce_temp.[CollectionEndMonth], 
+			ce_temp.[CollectionEndYear],
+			ce_temp.[CollectionDateSupplement],
+			ce_temp.[LocalityDescription],
+			ce_temp.[LocalityVerbatim],
+			ce_temp.[HabitatDescription], 
+			ce_temp.[CollectingMethod],
+			ce_temp.[Notes],
+			ce_temp.[CountryCache]
 		FROM [{0}] ce_temp
 		WHERE ce_temp.[CollectionEventID] IS NULL
 		;""".format(self.temptable)
