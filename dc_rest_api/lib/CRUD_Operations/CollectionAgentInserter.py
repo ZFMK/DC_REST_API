@@ -26,7 +26,7 @@ class CollectionAgentInserter():
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
 
 
-	def insertCollectionAgents(self):
+	def insertCollectionAgentData(self):
 		
 		self.__createAgentTempTable()
 		

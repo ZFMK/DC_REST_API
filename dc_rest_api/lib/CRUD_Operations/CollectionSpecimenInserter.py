@@ -13,7 +13,7 @@ from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
 from dc_rest_api.lib.CRUD_Operations.IdentificationUnitInserter import IdentificationUnitInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionAgentInserter import CollectionAgentInserter
-
+from dc_rest_api.lib.CRUD_Operations.SpecimenPartInserter import SpecimenPartInserter
 
 class CollectionSpecimenInserter():
 	
@@ -71,9 +71,18 @@ class CollectionSpecimenInserter():
 					
 		ca_inserter = CollectionAgentInserter(self.dc_db)
 		ca_inserter.setCollectionAgentDicts(collectionagents)
-		ca_inserter.insertCollectionAgents()
+		ca_inserter.insertCollectionAgentData()
 		
+		specimenparts = []
+		for cs_dict in self.specimen_dicts:
+			if 'CollectionSpecimenParts' in cs_dict:
+				for csp_dict in cs_dict['CollectionSpecimenParts']:
+					csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+					specimenparts.append(csp_dict)
 		
+		csp_inserter = SpecimenPartInserter(self.dc_db)
+		csp_inserter.setSpecimenPartDicts(specimenparts)
+		csp_inserter.insertSpecimenPartData()
 		
 		return
 

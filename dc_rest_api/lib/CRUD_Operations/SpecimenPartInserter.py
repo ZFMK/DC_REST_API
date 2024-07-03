@@ -88,7 +88,7 @@ class SpecimenPartInserter():
 		query = """
 		CREATE TABLE [{0}] (
 		[specimenpart_num] INT NOT NULL,
-		[CollectionSpecimenID] INT DEFAULT NULL,
+		[CollectionSpecimenID] INT NOT NULL,
 		[SpecimenPartID] INT DEFAULT NULL,
 		[CollectionID] INT DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
@@ -174,9 +174,16 @@ class SpecimenPartInserter():
 	def __setMissingAccessionNumbers(self):
 		query = """
 		UPDATE csp_temp
-		SET csp_temp.[AccessionNumber] = CONCAT_WS('_', cs.[AccessionNumber], ROW_NUMBER() OVER(PARTITION BY cs_temp.[CollectionSpecimenID] ORDER BY csp.[specimenpart_num] ASC))
+		SET csp_temp.[AccessionNumber] = csp_temp2.[PartAccessionNumber]
 		FROM [{0}] csp_temp
-		INNER JOIN [CollectionSpecimen] cs ON cs.[CollectionSpecimenID] = csp_temp.[CollectionSpecimenID]
+		INNER JOIN (
+			SELECT 
+				[specimenpart_num], 
+				CONCAT_WS('_', cs.[AccessionNumber], ROW_NUMBER() OVER(PARTITION BY csp_temp.[CollectionSpecimenID] ORDER BY csp_temp.[specimenpart_num] ASC)) AS [PartAccessionNumber]
+				FROM [{0}] csp_temp
+				INNER JOIN [CollectionSpecimen] cs ON cs.[CollectionSpecimenID] = csp_temp.[CollectionSpecimenID]
+		) AS csp_temp2
+		ON csp_temp.[specimenpart_num] = csp_temp2.[specimenpart_num]
 		WHERE csp_temp.[AccessionNumber] IS NULL
 		;""".format(self.temptable)
 		querylog.info(query)
@@ -202,15 +209,15 @@ class SpecimenPartInserter():
 
 	def __insertSpecimenParts(self):
 		
+		# SpecimenPartID is an IDENTITY column
+		
 		query = """
 		INSERT INTO [CollectionSpecimenPart] 
 		(
 			[CollectionSpecimenID],
-			[SpecimenPartID],
 			[CollectionID],
 			[MaterialCategory],
 			[RowGUID],
-			[CollectionName],
 			[AccessionNumber],
 			[PartSublabel],
 			[PreparationMethod],
@@ -220,16 +227,14 @@ class SpecimenPartInserter():
 			[StockUnit],
 			[ResponsibleName],
 			[ResponsibleAgentURI], 
-			[Notes] NVARCHAR(MAX),
+			[Notes],
 			[DataWithholdingReason]
 		)
 		SELECT 
 			[CollectionSpecimenID],
-			[SpecimenPartID],
 			[CollectionID],
 			[MaterialCategory],
 			[RowGUID],
-			[CollectionName],
 			[AccessionNumber],
 			[PartSublabel],
 			[PreparationMethod],
@@ -239,7 +244,7 @@ class SpecimenPartInserter():
 			[StockUnit],
 			[ResponsibleName],
 			[ResponsibleAgentURI], 
-			[Notes] NVARCHAR(MAX),
+			[Notes],
 			[DataWithholdingReason]
 		FROM [{0}] csp_temp
 		ORDER BY csp_temp.[specimenpart_num]
@@ -253,7 +258,7 @@ class SpecimenPartInserter():
 	def __updateCSPTempTable(self):
 		query = """
 		UPDATE csp_temp
-		SET csp_temp.SpecimenPartID = csp.SpecimenPartID,
+		SET csp_temp.SpecimenPartID = csp.SpecimenPartID
 		FROM [{0}] csp_temp
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON csp_temp.[RowGUID] = csp.[RowGUID]
@@ -273,7 +278,6 @@ class SpecimenPartInserter():
 			csp_dict['AccessionNumber'] = csp_ids[specimenpart_num]['AccessionNumber']
 			csp_dict['SpecimenPartID'] = csp_ids[specimenpart_num]['SpecimenPartID']
 			csp_dict['CollectionID'] = csp_ids[specimenpart_num]['CollectionID']
-			csp_dict['CollectionName'] = csp_ids[specimenpart_num]['CollectionName']
 			csp_dict['MaterialCategory'] = csp_ids[specimenpart_num]['MaterialCategory']
 			csp_dict['RowGUID'] = csp_ids[specimenpart_num]['RowGUID']
 		return
@@ -286,12 +290,11 @@ class SpecimenPartInserter():
 			csp.[AccessionNumber],
 			csp.[SpecimenPartID],
 			csp.[CollectionID],
-			csp.[CollectionName],
 			csp.[MaterialCategory],
 			csp.[RowGUID]
-		FROM [#new_csp_ids] nsi
+		FROM [CollectionSpecimenPart] csp
 		INNER JOIN [{0}] csp_temp
-		ON csp_temp.[RowGUID] = nsi.[RowGUID] 
+		ON csp_temp.[RowGUID] = csp.[RowGUID] 
 		;""".format(self.temptable)
 		
 		self.cur.execute(query)
@@ -304,8 +307,7 @@ class SpecimenPartInserter():
 			csp_ids[row[0]]['AccessionNumber'] = row[1]
 			csp_ids[row[0]]['SpecimenPartID'] = row[2]
 			csp_ids[row[0]]['CollectionID'] = row[3]
-			csp_ids[row[0]]['CollectionName'] = row[4]
-			csp_ids[row[0]]['MaterialCategory'] = row[5]
-			csp_ids[row[0]]['RowGUID'] = row[6]
+			csp_ids[row[0]]['MaterialCategory'] = row[4]
+			csp_ids[row[0]]['RowGUID'] = row[5]
 		
 		return csp_ids
