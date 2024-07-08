@@ -11,6 +11,7 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
+from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
 from dc_rest_api.lib.CRUD_Operations.IdentificationUnitInserter import IdentificationUnitInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionAgentInserter import CollectionAgentInserter
 from dc_rest_api.lib.CRUD_Operations.SpecimenPartInserter import SpecimenPartInserter
@@ -50,6 +51,16 @@ class CollectionSpecimenInserter():
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
 		
+		#pudb.set_trace()
+		events = []
+		for cs_dict in self.specimen_dicts:
+			if 'CollectionEvent' in cs_dict:
+				e_dict = cs_dict['CollectionEvent']
+				events.append(e_dict)
+		
+		e_inserter = CollectionEventInserter(self.dc_db)
+		e_inserter.setCollectionEventDicts(events)
+		e_inserter.insertCollectionEventData()
 		
 		identificationunits = []
 		for cs_dict in self.specimen_dicts:
@@ -68,7 +79,7 @@ class CollectionSpecimenInserter():
 				for ca_dict in cs_dict['CollectionAgents']:
 					ca_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 					collectionagents.append(ca_dict)
-					
+		
 		ca_inserter = CollectionAgentInserter(self.dc_db)
 		ca_inserter.setCollectionAgentDicts(collectionagents)
 		ca_inserter.insertCollectionAgentData()

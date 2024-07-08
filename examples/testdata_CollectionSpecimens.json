@@ -50,7 +50,16 @@
 				"WGS84_Lon": "7.744298",
 				"WGS84_Accuracy": 10,
 				"WGS84_RecordingMethod": "GPS",
-				"ce_DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest"
+				"Depth_min_m": "10",
+				"Depth_max_m": "20",
+				"Depth_Accuracy_m": 5,
+				"Depth_RecordingMethod_m": "Bathometer",
+				"Height_min_m": "2",
+				"Height_max_m": "3",
+				"Height_Accuracy_m": 5,
+				"Height_RecordingMethod_m": "Bandmaß",
+				"DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest",
+				"DataWithholdingReasonDate": "2021-03-15"
 			},
 			"IdentificationUnits": [
 				{
@@ -228,7 +237,93 @@
 				"WGS84_Lon": "7.744298",
 				"WGS84_Accuracy": 10,
 				"WGS84_RecordingMethod": "GPS",
-				"ce_DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest"
+				"DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest"
+			},
+			"CollectionExternalDatasource": {
+				"ExternalDatasourceName": "Unittest external datasource 1",
+				"ExternalDatasourceVersion": 1,
+				"ExternalDatasourceURI": "https://example.com/testuri_1",
+				"ExternalDatasourceInstitution": "Unittest",
+				"InternalNotes": "Unittest",
+				"ExternalAttribute_NameID": "Unittest table 1"
+			},
+			"IdentificationUnits": [
+				{
+					"Identifications": [
+						{
+							"TaxonomicName": "Eisenia veneta (Rosa, 1886)",
+							"NameURI": "https://www.gbif.org/species/8861735",
+							"VernacularTerm": "Riesen-Rotwurm",
+							"IdentificationDay": "17",
+							"IdentificationMonth": "05",
+							"IdentificationYear": "2024",
+							"IdentificationDateSupplement": "",
+							"ResponsibleName": "Testuser 1",
+							"ResponsibleAgentURI": "https://zfmk.diversityagents.de/0815",
+							"IdentificationCategory": "determination",
+							"IdentificationQualifier": "",
+							"TypeStatus": "paratype",
+							"TypeNotes": "",
+							"ReferenceTitle": "",
+							"ReferenceURI": null,
+							"ReferenceDetails": null,
+							"Notes": null
+						}
+					]
+				}
+			]
+		},
+		{
+			"CollectionSpecimenID": null,
+			"AccessionNumber": "unittest_05_b",
+			"DepositorsAccessionNumber": "unittest_05",
+			"DepositorsName": "Testuser4 Depositor 05",
+			"ExternalIdentifier": "unittest_05 ExternalIdentifier",
+			"OriginalNotes": "unittest_05 OriginalNotes",
+			"AdditionalNotes": "unittest_05 AdditionalNotes",
+			"cs_DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
+			"CollectionAgents": [
+				{
+					"CollectorsName": "Testuser Collector2",
+					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+				},
+				{
+					"CollectorsName": "Testuser Collector4",
+					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+				},
+				{
+					"CollectorsName": "Testuser Collector1",
+					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+				}
+			],
+			"CollectionEvent": {
+				"CollectorsEventNumber": "UnitTest_Event_03",
+				"CollectionDay": 10,
+				"CollectionMonth": 9,
+				"CollectionYear": 2022,
+				"CollectionEndDay": 12,
+				"CollectionEndMonth": 9,
+				"CollectionEndYear": 2022,
+				"CollectionDateSupplement": "10.09.2022- 12.09.2022",
+				"LocalityDescription": "Münster-Wolbeck, Buchenwald im NWZ Teppes Viertel",
+				"LocalityVerbatim": "Westfälische Bucht",
+				"HabitatDescription": "aus verpilzten Rinden einer liegenden Buche gesiebt",
+				"CollectingMethod": "Gesiebe",
+				"Notes": null,
+				"Country": "Germany",
+				"State": "Nordrhein-Westfalen",
+				"State_District": null,
+				"County": "Münsterland",
+				"Municipality": null,
+				"Street_HouseNumber": null,
+				"LocalityName": "Münster-Wolbeck, NWZ Teppes Viertel",
+				"Altitude_mNN": 70,
+				"Altitude_Accuracy": 10,
+				"WGS84_Lat": 51.910245,
+				"WGS84_Lon": "7.744298",
+				"WGS84_Accuracy": 10,
+				"WGS84_RecordingMethod": "GPS",
+				"DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest"
 			},
 			"CollectionExternalDatasource": {
 				"ExternalDatasourceName": "Unittest external datasource 1",

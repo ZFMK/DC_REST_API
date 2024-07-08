@@ -66,7 +66,6 @@ class JSON2TempTable():
 
 
 	def fill_temptable(self, temptable):
-		
 		valuelists = []
 		placeholderstrings = []
 		colnames = [entry['colname'] for entry in self.schema]
@@ -82,7 +81,7 @@ class JSON2TempTable():
 						valuelist.append(str(datadict[entry['compute sha of']]))
 					else:
 						valuelist.append(datadict[entry['compute sha of']])
-					placeholders.append("HASHBYTES('sha2_256', ?)")
+					placeholders.append("CONVERT(VARCHAR(50), HASHBYTES('sha2_256', ?), 2)")
 				else:
 					if datadict[entry['colname']] is not None:
 						valuelist.append(str(datadict[entry['colname']]))
@@ -98,18 +97,17 @@ class JSON2TempTable():
 			
 			while len(valuelists) > 0:
 				values = []
-				placeholderstrings = []
 				
 				cachedvaluelists = valuelists[:pagesize]
 				del valuelists[:pagesize]
 				
+				cachedplaceholderstrings = placeholderstrings[:pagesize]
+				del placeholderstrings[:pagesize]
+				
 				for valuelist in cachedvaluelists:
 					values.extend(valuelist)
-					placeholders = ['?' for _ in valuelist]
-					placeholderstrings.append('(' + ', '.join(placeholders) + ')')
 					
-					
-				placeholderstring = ', '.join(placeholderstrings)
+				placeholderstring = ', '.join(cachedplaceholderstrings)
 				
 				query = """
 				INSERT INTO {0} (
