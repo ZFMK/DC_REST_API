@@ -56,18 +56,18 @@ class CollectionEventMatcher():
 		[CollectionDateCategory] NVARCHAR(50),
 		[CollectionTime] VARCHAR(50),
 		[CollectionTimeSpan] VARCHAR(50),
-		[LocalityDescription_sha] VARCHAR(50),
-		[LocalityVerbatim_sha] VARCHAR(50),
-		[HabitatDescription_sha] VARCHAR(50),
+		[LocalityDescription_sha] VARCHAR(64),
+		[LocalityVerbatim_sha] VARCHAR(64),
+		[HabitatDescription_sha] VARCHAR(64),
 		[ReferenceTitle] NVARCHAR(255),
 		[ReferenceURI] VARCHAR(255),
 		 -- [ReferenceDetails] NVARCHAR(50),
-		[CollectingMethod_sha] VARCHAR(50),
-		 -- [Notes_sha] VARCHAR(50),
+		[CollectingMethod_sha] VARCHAR(64),
+		 -- [Notes_sha] VARCHAR(64),
 		[CountryCache] NVARCHAR(50),
 		[RowGUID] UNIQUEIDENTIFIER NOT NULL,
 		 -- 
-		[event_sha] VARCHAR(50),
+		[event_sha] VARCHAR(64),
 		 -- 
 		[Altitude] VARCHAR(255) COLLATE {1},
 		[Altitude_Accuracy] VARCHAR(255) COLLATE {1},
@@ -156,13 +156,13 @@ class CollectionEventMatcher():
 			e.[CollectionDateCategory],
 			e.[CollectionTime],
 			e.[CollectionTimeSpan],
-			CONVERT(VARCHAR(50), HASHBYTES('sha2_256', e.[LocalityDescription]), 2) AS [LocalityDescription_sha],
-			CONVERT(VARCHAR(50), HASHBYTES('sha2_256', e.[LocalityVerbatim]), 2) AS [LocalityVerbatim_sha],
-			CONVERT(VARCHAR(50), HASHBYTES('sha2_256', e.[HabitatDescription]), 2) AS [HabitatDescription_sha],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', e.[LocalityDescription]), 2) AS [LocalityDescription_sha],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', e.[LocalityVerbatim]), 2) AS [LocalityVerbatim_sha],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', e.[HabitatDescription]), 2) AS [HabitatDescription_sha],
 			e.[ReferenceTitle],
 			e.[ReferenceURI],
 			 -- e.[ReferenceDetails],
-			CONVERT(VARCHAR(50), HASHBYTES('sha2_256', e.[CollectingMethod]), 2) AS [CollectingMethod_sha],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', e.[CollectingMethod]), 2) AS [CollectingMethod_sha],
 			e.[CountryCache],
 			e.[RowGUID],
 			 -- 
@@ -186,10 +186,15 @@ class CollectionEventMatcher():
 		FROM [CollectionEvent] e
 		INNER JOIN [{1}] ce_temp
 		ON 
-			(e.[CollectionDate] = ce_temp.[CollectionDate] OR (e.[CollectionDate] IS NULL AND ce_temp.[CollectionDate] IS NULL))
-			AND (e.[CollectionDay] = ce_temp.[CollectionDay] OR (e.[CollectionDay] IS NULL AND ce_temp.[CollectionDay] IS NULL))
-			AND (e.[CollectionMonth] = ce_temp.[CollectionMonth] OR (e.[CollectionMonth] IS NULL AND ce_temp.[CollectionMonth] IS NULL))
-			AND (e.[CollectionYear] = ce_temp.[CollectionYear] OR (e.[CollectionYear] IS NULL AND ce_temp.[CollectionYear] IS NULL))
+			(
+				(e.[CollectionDate] = ce_temp.[CollectionDate] OR (e.[CollectionDate] IS NULL AND ce_temp.[CollectionDate] IS NULL))
+				OR
+				(
+					(e.[CollectionDay] = ce_temp.[CollectionDay] OR (e.[CollectionDay] IS NULL AND ce_temp.[CollectionDay] IS NULL))
+					AND (e.[CollectionMonth] = ce_temp.[CollectionMonth] OR (e.[CollectionMonth] IS NULL AND ce_temp.[CollectionMonth] IS NULL))
+					AND (e.[CollectionYear] = ce_temp.[CollectionYear] OR (e.[CollectionYear] IS NULL AND ce_temp.[CollectionYear] IS NULL))
+				)
+			)
 			AND (e.[CollectionEndDay] = ce_temp.[CollectionEndDay] OR (e.[CollectionEndDay] IS NULL AND ce_temp.[CollectionEndDay] IS NULL))
 			AND (e.[CollectionEndMonth] = ce_temp.[CollectionEndMonth] OR (e.[CollectionEndMonth] IS NULL AND ce_temp.[CollectionEndMonth] IS NULL))
 			AND (e.[CollectionEndYear] = ce_temp.[CollectionEndYear] OR (e.[CollectionEndYear] IS NULL AND ce_temp.[CollectionEndYear] IS NULL))
@@ -218,7 +223,7 @@ class CollectionEventMatcher():
 	def __addEventSHAOnPrefiltered(self):
 		query = """
 		UPDATE pf
-		SET [event_sha] = CONVERT(VARCHAR(50), HASHBYTES('sha2_256', CONCAT(
+		SET [event_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[CollectorsEventNumber],
 			[CollectionDate],
 			[CollectionDay],
@@ -293,10 +298,15 @@ class CollectionEventMatcher():
 		FROM [{0}] ce_temp
 		INNER JOIN [{1}] pf
 		ON 
-			(pf.[CollectionDate] = ce_temp.[CollectionDate] OR (pf.[CollectionDate] IS NULL AND ce_temp.[CollectionDate] IS NULL))
-			AND (pf.[CollectionDay] = ce_temp.[CollectionDay] OR (pf.[CollectionDay] IS NULL AND ce_temp.[CollectionDay] IS NULL))
-			AND (pf.[CollectionMonth] = ce_temp.[CollectionMonth] OR (pf.[CollectionMonth] IS NULL AND ce_temp.[CollectionMonth] IS NULL))
-			AND (pf.[CollectionYear] = ce_temp.[CollectionYear] OR (pf.[CollectionYear] IS NULL AND ce_temp.[CollectionYear] IS NULL))
+			(
+				(pf.[CollectionDate] = ce_temp.[CollectionDate] OR (pf.[CollectionDate] IS NULL AND ce_temp.[CollectionDate] IS NULL))
+				OR
+				(
+					(pf.[CollectionDay] = ce_temp.[CollectionDay] OR (pf.[CollectionDay] IS NULL AND ce_temp.[CollectionDay] IS NULL))
+					AND (pf.[CollectionMonth] = ce_temp.[CollectionMonth] OR (pf.[CollectionMonth] IS NULL AND ce_temp.[CollectionMonth] IS NULL))
+					AND (pf.[CollectionYear] = ce_temp.[CollectionYear] OR (pf.[CollectionYear] IS NULL AND ce_temp.[CollectionYear] IS NULL))
+				)
+			)
 			AND (pf.[CollectionEndDay] = ce_temp.[CollectionEndDay] OR (pf.[CollectionEndDay] IS NULL AND ce_temp.[CollectionEndDay] IS NULL))
 			AND (pf.[CollectionEndMonth] = ce_temp.[CollectionEndMonth] OR (pf.[CollectionEndMonth] IS NULL AND ce_temp.[CollectionEndMonth] IS NULL))
 			AND (pf.[CollectionEndYear] = ce_temp.[CollectionEndYear] OR (pf.[CollectionEndYear] IS NULL AND ce_temp.[CollectionEndYear] IS NULL))

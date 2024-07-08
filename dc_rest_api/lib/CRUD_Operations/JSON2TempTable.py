@@ -81,7 +81,7 @@ class JSON2TempTable():
 						valuelist.append(str(datadict[entry['compute sha of']]))
 					else:
 						valuelist.append(datadict[entry['compute sha of']])
-					placeholders.append("CONVERT(VARCHAR(50), HASHBYTES('sha2_256', ?), 2)")
+					placeholders.append("CONVERT(VARCHAR(64), HASHBYTES('sha2_256', ?), 2)")
 				else:
 					if datadict[entry['colname']] is not None:
 						valuelist.append(str(datadict[entry['colname']]))
