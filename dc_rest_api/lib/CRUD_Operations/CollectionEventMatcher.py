@@ -16,8 +16,7 @@ class CollectionEventMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_table = 'prefiltered_events'
-		self.match_table = 'event_num_matches_event'
+		self.prefiltered_temptable = '#prefiltered_events'
 
 
 	def matchExistingEvents(self):
@@ -36,7 +35,7 @@ class CollectionEventMatcher():
 		
 		query = """
 		DROP TABLE IF EXISTS [{0}]
-		;""".format(self.prefiltered_table)
+		;""".format(self.prefiltered_temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -88,7 +87,7 @@ class CollectionEventMatcher():
 		[Height_RecordingMethod_m] VARCHAR(500) COLLATE {1},
 		INDEX [event_sha_idx] ([event_sha])
 		)
-		;""".format(self.prefiltered_table, self.collation)
+		;""".format(self.prefiltered_temptable, self.collation)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -211,7 +210,7 @@ class CollectionEventMatcher():
 		ON d.CollectionEventID = e.CollectionEventID AND d.LocalisationSystemID = 14
 		LEFT JOIN [CollectionEventLocalisation] h
 		ON h.CollectionEventID = e.CollectionEventID AND h.LocalisationSystemID = 15
-		;""".format(self.prefiltered_table, self.temptable)
+		;""".format(self.prefiltered_temptable, self.temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
@@ -264,7 +263,7 @@ class CollectionEventMatcher():
 			[Height_RecordingMethod_m]
 		)), 2)
 		FROM [{0}] pf
-		;""".format(self.prefiltered_table)
+		;""".format(self.prefiltered_temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -279,7 +278,7 @@ class CollectionEventMatcher():
 		FROM [{0}] ce_temp
 		INNER JOIN [{1}] pf
 		ON pf.[event_sha] = ce_temp.[event_sha]
-		;""".format(self.temptable, self.prefiltered_table)
+		;""".format(self.temptable, self.prefiltered_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
@@ -338,7 +337,7 @@ class CollectionEventMatcher():
 			AND (pf.[Height_max_m] = ce_temp.[Height_max_m] OR (pf.[Height_max_m] IS NULL AND ce_temp.[Height_max_m] IS NULL))
 			AND (pf.[Height_Accuracy_m] = ce_temp.[Height_Accuracy_m] OR (pf.[Height_Accuracy_m] IS NULL AND ce_temp.[Height_Accuracy_m] IS NULL))
 			AND (pf.[Height_RecordingMethod_m] = ce_temp.[Height_RecordingMethod_m] OR (pf.[Height_RecordingMethod_m] IS NULL AND ce_temp.[Height_RecordingMethod_m] IS NULL))
-		;""".format(self.temptable, self.prefiltered_table)
+		;""".format(self.temptable, self.prefiltered_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)

@@ -15,8 +15,8 @@ class CollectionEventInserter():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = 'event_temptable'
-		self.unique_events_temptable = 'unique_events_temptable'
+		self.temptable = '#event_temptable'
+		self.unique_events_temptable = '#unique_events_temptable'
 		
 		self.schema = [
 			{'colname': 'event_num', 'None allowed': False},
@@ -77,11 +77,10 @@ class CollectionEventInserter():
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
 
 
-	def insertCollectionEventData(self, event_data_dicts = []):
-		pudb.set_trace()
+	def insertCollectionEventData(self):
 		self.__createEventTempTable()
 		
-		self.json2temp.set_datadicts(self.e_dicts)
+		self.json2temp.set_datadicts(self.ce_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
 		self.__updateCollectionDate()
@@ -94,16 +93,18 @@ class CollectionEventInserter():
 		
 		self.__insertEventIDsInCollectionSpecimen()
 		#self.__deleteUnconnectedEvents()
+		
+		self.__updateCEDicts()
 		return
 
 
 	def setCollectionEventDicts(self, json_dicts = []):
-		self.e_dicts = []
-		e_count = 1
-		for e_dict in json_dicts:
-			e_dict['event_num'] = e_count
-			e_count += 1
-			self.e_dicts.append(e_dict)
+		self.ce_dicts = []
+		ce_count = 1
+		for ce_dict in json_dicts:
+			ce_dict['event_num'] = ce_count
+			ce_count += 1
+			self.ce_dicts.append(ce_dict)
 		return
 
 
@@ -283,44 +284,6 @@ class CollectionEventInserter():
 		)), 2)
 		FROM [{0}] ce_temp
 		;""".format(self.temptable)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __createEventNumbersTempTable(self):
-		"""
-		a table that holds the event_numbers and event IDs
-		"""
-		
-		self.event_num_match_table = 'event_num_matches_event'
-		query = """
-		DROP TABLE IF EXISTS [{0}]
-		;""".format(self.event_num_match_table)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		CREATE TABLE [{0}] (
-			[event_num] INT NOT NULL,
-			[CollectionEventID] INT,
-			[RowGUID] UNIQUEIDENTIFIER,
-			PRIMARY KEY ([event_num]),
-			INDEX [CollectionEventID_idx] ([CollectionEventID]),
-			INDEX [RowGUID_idx] (RowGUID)
-		)
-		""".format(self.event_num_match_table)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		INSERT INTO [{0}] ([event_num])
-		SELECT [event_num]
-		FROM [{1}]
-		;""".format(self.event_num_match_table, self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -739,6 +702,38 @@ class CollectionEventInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+
+
+	def __updateCEDicts(self):
+		ce_ids = self.getIDsForCEDicts()
+		for ce_dict in self.ce_dicts:
+			event_num = ce_dict['event_num']
+			ce_dict['CollectionEventID'] = ce_ids[event_num]['CollectionEventID']
+			ce_dict['RowGUID'] = ce_ids[event_num]['RowGUID']
+			ce_dict['CollectionSpecimenID'] = ce_ids[event_num]['CollectionSpecimenID']
+		return
+
+
+	def getIDsForCEDicts(self):
+		query = """
+		SELECT ce_temp.[event_num], ce.CollectionEventID, ce.[RowGUID], ce_temp.[CollectionSpecimenID]
+		FROM [CollectionEvent] ce
+		INNER JOIN [{0}] ce_temp
+		ON ce_temp.[RowGUID] = ce.[RowGUID] 
+		;""".format(self.temptable)
+		
+		self.cur.execute(query)
+		rows = self.cur.fetchall()
+		
+		ce_ids = {}
+		for row in rows:
+			if not row[0] in ce_ids:
+				ce_ids[row[0]] = {}
+			ce_ids[row[0]]['CollectionEventID'] = row[1]
+			ce_ids[row[0]]['RowGUID'] = row[2]
+			ce_ids[row[0]]['CollectionSpecimenID'] = row[3]
+		
+		return ce_ids
 
 
 	'''

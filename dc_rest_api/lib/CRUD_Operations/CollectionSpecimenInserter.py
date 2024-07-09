@@ -12,17 +12,20 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
 from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
+from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
 from dc_rest_api.lib.CRUD_Operations.IdentificationUnitInserter import IdentificationUnitInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionAgentInserter import CollectionAgentInserter
 from dc_rest_api.lib.CRUD_Operations.SpecimenPartInserter import SpecimenPartInserter
 
 class CollectionSpecimenInserter():
 	
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, users_roles = []):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
+		
+		self.users_roles = users_roles
 		
 		self.temptable = '#specimen_temptable'
 		self.accnr_prefix = config.get('option', 'AccNr_prefix', fallback = '')
@@ -61,6 +64,17 @@ class CollectionSpecimenInserter():
 		e_inserter = CollectionEventInserter(self.dc_db)
 		e_inserter.setCollectionEventDicts(events)
 		e_inserter.insertCollectionEventData()
+		
+		externaldatasources = []
+		for cs_dict in self.specimen_dicts:
+			if 'CollectionExternalDatasource' in cs_dict:
+				ed_dict = cs_dict['CollectionExternalDatasource']
+				externaldatasources.append(ed_dict)
+		
+		ed_inserter = ExternalDatasourceInserter(self.dc_db, users_roles = self.users_roles)
+		ed_inserter.setExternalDatasourceDicts(externaldatasources)
+		ed_inserter.insertExternalDatasourceData()
+		
 		
 		identificationunits = []
 		for cs_dict in self.specimen_dicts:

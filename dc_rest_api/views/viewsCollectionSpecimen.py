@@ -71,7 +71,7 @@ class CollectionSpecimenViews():
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			
 			self.payload = self.request_params.json_body['CollectionSpecimens']
-			cs_inserter = CollectionSpecimenInserter(self.dc_db)
+			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
 			cs_inserter.setSpecimenDicts(self.payload)
 			cs_inserter.insertSpecimenData()
 			
