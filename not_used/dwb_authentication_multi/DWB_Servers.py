@@ -16,14 +16,13 @@ class DWB_Servers():
 		query = """
 		SELECT `db_connector_id`, `accronym`, `server`, `port`, `database`, `driver`, `trust_certificate`, `trusted_connection`, `encrypt`, `collation`
 		FROM `mssql_connectors`
-		ORDER BY `db_connector_id`
 		;"""
 		
 		self.cur.execute(query)
 		rows = self.cur.fetchall()
 		for row in rows:
 			server = {}
-			server['db_connector_id'] = row[0]
+			server['db_id'] = row[0]
 			server['accronym'] = row[1]
 			server['server'] = row[2]
 			server['port'] = row[3]
@@ -50,8 +49,11 @@ class DWB_Servers():
 		return dwb_con
 
 
-	def get_default_connector(self):
-		# return the first connector in database
+	def get_dwb_con_by_db_id(self, db_id):
 		dwb_con = None
-		dwb_con = self.servers[0]
+		for server in self.servers:
+			if db_id == server['db_id']:
+				dwb_con = server
+		
 		return dwb_con
+

@@ -61,6 +61,14 @@
 				"DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest",
 				"DataWithholdingReasonDate": "2021-03-15"
 			},
+			"CollectionExternalDatasource": {
+				"ExternalDatasourceName": "Unittest external datasource 2",
+				"ExternalDatasourceVersion": 1,
+				"ExternalDatasourceURI": "https://example.com/testuri_2",
+				"ExternalDatasourceInstitution": "Unittest",
+				"InternalNotes": "Unittest",
+				"ExternalAttribute_NameID": "Unittest table 2"
+			},
 			"IdentificationUnits": [
 				{
 					"LifeStage": "adult",

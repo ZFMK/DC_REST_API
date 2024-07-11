@@ -54,6 +54,25 @@ class RequestParams():
 		return
 
 
+	def get_token_from_request(self):
+		token = None
+		if 'token' in self.request.session:
+			token = self.request.session['token']
+		elif 'token' in self.request.params:
+			try:
+				token = self.request.params.getone('token')
+			except:
+				token = None
+		else:
+			try:
+				json_params = self.request.json_body
+				if 'token' in json_params:
+					if (isinstance (json_params['token'], str)):
+						token = json_params['token']
+			except:
+				token = None
+				
+		return token
 
 
 ####################################

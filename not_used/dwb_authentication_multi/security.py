@@ -11,7 +11,7 @@ class SecurityPolicy:
 		pass
 
 
-	def validate_credentials(self, username = None, password = None, connector_accronym = None):
+	def validate_credentials(self, username = None, password = None):
 		'''
 		# this is for the first login, when no token is available
 		# try to connect with credentials, if successful create new session
@@ -19,7 +19,7 @@ class SecurityPolicy:
 		'''
 		
 		# dbsession.set_session() checks if connection params are valid and returns None if they are not valid
-		token = self.dbsession.set_session(username, password, connector_accronym)
+		token = self.dbsession.set_session(username, password)
 		return token
 
 
@@ -79,8 +79,8 @@ class SecurityPolicy:
 	def reset_authenticated_identity(self):
 		self.authenticated_identity = {
 			'username': None,
-			'dwb_roles': [],
-			'projects': [],
+			'dwb_roles': {},
+			'projects': []
 		}
 
 

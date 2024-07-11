@@ -20,7 +20,6 @@ import json
 class CollectionSpecimenViews():
 
 	def __init__(self, request):
-		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -42,6 +41,7 @@ class CollectionSpecimenViews():
 
 	@view_config(route_name='specimen', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
+		
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages

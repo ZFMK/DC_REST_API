@@ -59,6 +59,8 @@ class CollectionSpecimenInserter():
 		for cs_dict in self.specimen_dicts:
 			if 'CollectionEvent' in cs_dict:
 				e_dict = cs_dict['CollectionEvent']
+				# add the CollectionSpecimenID here as the events should be inserted for specific Specimens
+				e_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 				events.append(e_dict)
 		
 		e_inserter = CollectionEventInserter(self.dc_db)
@@ -69,6 +71,8 @@ class CollectionSpecimenInserter():
 		for cs_dict in self.specimen_dicts:
 			if 'CollectionExternalDatasource' in cs_dict:
 				ed_dict = cs_dict['CollectionExternalDatasource']
+				# add the CollectionSpecimenID here as the ExternalDatasorces should be inserted for specific Specimens
+				ed_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 				externaldatasources.append(ed_dict)
 		
 		ed_inserter = ExternalDatasourceInserter(self.dc_db, users_roles = self.users_roles)

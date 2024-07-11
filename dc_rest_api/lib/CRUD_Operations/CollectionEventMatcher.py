@@ -4,8 +4,6 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
-
 
 class CollectionEventMatcher():
 	def __init__(self, dc_db, event_temptable):

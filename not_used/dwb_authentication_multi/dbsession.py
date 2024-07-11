@@ -36,7 +36,7 @@ def get_onetime_secret():
 
 class DBSession():
 	def __init__(self):
-		self.dwb_servers = DWB_Servers()
+		self.dwb_servers = DWB_Servers().get_available_dwb_cons()
 		self.encryptor = Encryptor()
 		self.expiration_interval = config.get('session_db', 'expiration_time', fallback = 20)
 		
@@ -68,13 +68,11 @@ class DBSession():
 		SELECT mc.`db_connector_id`, mc.`accronym`, mc.`server`, mc.`port`, mc.`database`,mc. `driver`, 
 		mc.`trust_certificate`, mc.`trusted_connection`, mc.`encrypt`, mc.`collation`
 		FROM `mssql_connectors` mc
-		INNER JOIN `sessions` s ON s.`db_connector_id` = mc.`db_connector_id`
+		INNER JOIN `session_has_connector` shc ON shc.`db_connector_id` = mc.`db_connector_id`
+		INNER JOIN `sessions` s ON s.`session_id` = shc.`session_id` 
 		WHERE s.`hashed_token` = %s
 		;"""
-
-		#logger_query.info(query)
-		#logger_query.info(hashed_token)
-                
+		
 		self.cur.execute(query, [hashed_token])
 		row = self.cur.fetchone()
 		
@@ -94,21 +92,37 @@ class DBSession():
 		return None
 
 
-	def set_session(self, username, password, connector_accronym = None):
-		if connector_accronym is None:
-			dwb_con = self.dwb_servers.get_default_connector()
+	def get_mssql_connectionparams(self):
+		conparams = {}
+		for dwb_server in self.dwb_servers:
+			conparams[dwb_server['db_id']] = dwb_server
 		
-		else:
-			dwb_con = self.dwb_servers.get_dwb_con_by_accronym(connector_accronym)
+		return conparams
+
+
+	def set_session(self, username, password):
+		# pudb.set_trace()
 		
-		if dwb_con is None:
-			return None
+		connector_ids = []
+		roles = {}
+		projects = {}
 		
-		dwb_con['username'] = username
-		dwb_con['password'] = password
+		dwb_servers = self.get_mssql_connectionparams()
 		
-		dwb_account = DWB_Account(dwb_con)
-		if dwb_account.isValid() is False:
+		for connector_id in dwb_servers:
+			conparams = dwb_servers[connector_id]
+			conparams['username'] = username
+			conparams['password'] = password
+			
+			dwb_account = DWB_Account(conparams)
+			
+			if dwb_account.isValid() is True:
+				roles[connector_id] = dwb_account.server_roles
+				projects[connector_id] = dwb_account.users_projects
+				
+				connector_ids.append(connector_id)
+		
+		if len(connector_ids) <= 0 or len(roles) <= 0:
 			return None
 		
 		encrypted_pw, key = self.encryptor.encrypt_password(password)
@@ -126,19 +140,18 @@ class DBSession():
 		
 		query = """
 		INSERT INTO `sessions`
-		(hashed_token, encrypted_passwd, `username`, db_connector_id, expiration_time)
-		VALUES(%s, %s, %s, %s, NOW() + INTERVAL {0} MINUTE)
+		(hashed_token, encrypted_passwd, `username`, expiration_time)
+		VALUES(%s, %s, %s, NOW() + INTERVAL {0} MINUTE)
 		;""".format(self.expiration_interval)
 		
-		self.cur.execute(query, [hashed_token, encrypted_pw, username, dwb_con['db_connector_id']])
+		self.cur.execute(query, [hashed_token, encrypted_pw, username])
 		self.con.commit()
 		self.__set_session_id(hashed_token)
 		
-		roles = dwb_account.server_roles
-		self.insert_dwb_roles(roles)
-		
-		projects = dwb_account.users_projects
-		self.insert_projects(projects)
+		self.insert_session_has_connector(connector_ids)
+		for connector_id in connector_ids:
+			self.insert_dwb_roles(connector_id, roles[connector_id])
+			self.insert_projects(connector_id, projects[connector_id])
 		
 		return token
 
@@ -157,17 +170,17 @@ class DBSession():
 			self.session_id = None
 
 
-	def insert_dwb_roles(self, roles = []):
+	def insert_dwb_roles(self, connector_id, roles = []):
 		if len(roles)> 0:
 			values = []
 			placeholders = []
 			for role in roles:
-				values.extend([role, self.session_id])
-				placeholders.append('(%s, %s)')
+				values.extend([role, self.session_id, connector_id])
+				placeholders.append('(%s, %s, %s)')
 			placeholderstring = ', '.join(placeholders)
 			query = """
 			INSERT INTO `dwb_roles`
-			(`users_dwb_role`, `session_id`)
+			(`users_dwb_role`, `session_id`, `db_connector_id`)
 			VALUES {0}
 			;""".format(placeholderstring)
 			
@@ -176,17 +189,17 @@ class DBSession():
 		return
 
 
-	def insert_projects(self, projects = []):
+	def insert_projects(self, connector_id, projects = []):
 		if len(projects)> 0:
 			values = []
 			placeholders = []
 			for project in projects:
-				values.extend([project[0], project[1], self.session_id])
-				placeholders.append('(%s, %s, %s)')
+				values.extend([project[0], project[1], self.session_id, connector_id])
+				placeholders.append('(%s, %s, %s, %s)')
 			placeholderstring = ', '.join(placeholders)
 			query = """
 			INSERT INTO `dwb_projects`
-			(`users_dwb_project_id`, `project_name`, `session_id`)
+			(`users_dwb_project_id`, `project_name`, `session_id`, `db_connector_id`)
 			VALUES {0}
 			;""".format(placeholderstring)
 			
@@ -195,34 +208,74 @@ class DBSession():
 		return
 
 
+	def insert_session_has_connector(self, connector_ids):
+		values = []
+		placeholders = ['(%s, %s)' for connector_id in connector_ids]
+		valuelists = [[self.session_id, connector_id] for connector_id in connector_ids]
+		for valuelist in valuelists:
+			values.extend(valuelist)
+		
+		query = """
+		INSERT INTO `session_has_connector`
+		(session_id, db_connector_id)
+		VALUES {0}
+		;""".format(', '.join(placeholders))
+		
+		self.cur.execute(query, values)
+		self.con.commit()
+
+
 	def get_user_roles_projects(self, hashed_token):
+		
+		# ht_string = hashed_token.decode('utf8')
+		
 		user = None
-		roles = []
+		roles = {}
 		projects = []
 		
 		query = """
-		SELECT s.`username`, r.`users_dwb_role`, p.`users_dwb_project_id`, p.`project_name`
+		SELECT s.`username`
 		FROM `sessions` s
+		WHERE s.`hashed_token` = %s
+		;"""
+		
+		self.cur.execute(query, [hashed_token])
+		row = self.cur.fetchone()
+		
+		if row is not None:
+			user = row[0]
+		
+		query = """
+		SELECT shc.`db_connector_id`, r.`users_dwb_role`
+		FROM `sessions` s
+		INNER JOIN `session_has_connector` shc
+		ON s.`session_id` = shc.`session_id`
 		LEFT JOIN `dwb_roles` r
-		ON r.session_id = s.session_id
-		LEFT JOIN `dwb_projects` p
-		ON p.session_id = s.session_id
+		ON r.session_id = shc.session_id AND r.`db_connector_id` = shc.`db_connector_id`
 		WHERE s.`hashed_token` = %s
 		"""
-		self.cur.execute(query, hashed_token)
+		self.cur.execute(query, [hashed_token])
 		rows = self.cur.fetchall()
 		
-		projectsdict = {}
+		for row in rows:
+			if row[0] not in roles:
+				roles[row[0]] = []
+			roles[row[0]].append(row[1])
+		
+		query = """
+		SELECT shc.`db_connector_id`, p.`users_dwb_project_id`, p.`project_name`
+		FROM `sessions` s
+		INNER JOIN `session_has_connector` shc
+		ON s.`session_id` = shc.`session_id`
+		LEFT JOIN `dwb_projects` p
+		ON p.session_id = shc.session_id AND p.`db_connector_id` = shc.`db_connector_id`
+		WHERE s.`hashed_token` = %s
+		"""
+		self.cur.execute(query, [hashed_token])
+		rows = self.cur.fetchall()
 		
 		for row in rows:
-			if user is None:
-				user = row[0]
-			if row[1] not in roles:
-				roles.append(row[1])
-			projectsdict[row[2]] = row[3]
-		
-		for key in projectsdict:
-			projects.append([key, projectsdict[key]])
+			projects.append(['{0}_{1}'.format(row[0], row[1]), row[2]])
 		
 		return user, roles, projects
 
@@ -260,8 +313,10 @@ class DBSession():
 		query = """
 		DELETE r 
 		FROM `dwb_roles` r
+		INNER JOIN `session_has_connector` shc
+		ON r.`session_id` = shc.`session_id` AND r.`db_connector_id` = shc.`db_connector_id`
 		INNER JOIN sessions s
-		ON (r.session_id = s.session_id)
+		ON (shc.session_id = s.session_id)
 		INNER JOIN sessions_to_delete sd
 		ON sd.`hashed_token` = s.`hashed_token`
 		;"""
@@ -272,12 +327,25 @@ class DBSession():
 		query = """
 		DELETE p
 		FROM `dwb_projects` p
+		INNER JOIN `session_has_connector` shc
+		ON p.`session_id` = shc.`session_id` AND p.`db_connector_id` = shc.`db_connector_id`
 		INNER JOIN sessions s
-		ON (p.session_id = s.session_id)
+		ON (shc.session_id = s.session_id)
 		INNER JOIN sessions_to_delete sd
 		ON sd.`hashed_token` = s.`hashed_token`
 		;"""
 		
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		DELETE shc
+		FROM `session_has_connector` shc 
+		INNER JOIN `sessions` s
+		ON s.`session_id` = shc.`session_id`
+		INNER JOIN sessions_to_delete sd 
+		ON sd.`hashed_token` = s.`hashed_token`
+		;"""
 		self.cur.execute(query)
 		self.con.commit()
 		
@@ -289,10 +357,8 @@ class DBSession():
 		;"""
 		self.cur.execute(query)
 		self.con.commit()
-		
-		return
-
-
+	
+	
 	def delete_old_sessions(self):
 		query = """
 		DROP TEMPORARY 
@@ -312,7 +378,6 @@ class DBSession():
 		self.con.commit()
 		
 		self.__delete_sessions()
-		return
 
 
 	def delete_session_by_token(self, token):
@@ -339,9 +404,8 @@ class DBSession():
 		self.con.commit()
 		
 		self.__delete_sessions()
-		return
-	
-	
+
+
 	def get_credentials_from_session(self, token):
 		if token is None:
 			return None

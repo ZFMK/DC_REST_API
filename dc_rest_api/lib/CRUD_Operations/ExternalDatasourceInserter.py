@@ -53,15 +53,13 @@ class ExternalDatasourceInserter():
 				self.__setUniqueNewDatasourcesTempTable()
 				self.__insertNewDatasources()
 			else:
-				self.messages.append('You do not have enough rights to insert external datasources')
+				self.messages.append('You do not have the rights to insert external datasources')
 		
-		
-		
-		self.__updateImportTempTableDatasourceIDs()
 		self.__setExternalDatasourceIDsInCollectionSpecimen()
 		
-		if 'Administrator' in self.users_roles or 'DataManager' in self.users_roles:
-			self.__deleteUnconnectedExternalDatasources()
+		#if 'Administrator' in self.users_roles or 'DataManager' in self.users_roles:
+		#	self.__deleteUnconnectedExternalDatasources()
+		
 		return
 
 
@@ -96,13 +94,15 @@ class ExternalDatasourceInserter():
 		[ExternalDatasourceInstitution] VARCHAR(300) COLLATE {1},
 		[InternalNotes] VARCHAR(1500) COLLATE {1},
 		[ExternalAttribute_NameID] VARCHAR(255) COLLATE {1},
+		[RowGUID] UNIQUEIDENTIFIER,
 		PRIMARY KEY ([datasource_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [ExternalDatasourceID_idx] ([ExternalDatasourceID]),
 		INDEX [ExternalDatasourceName_idx] ([ExternalDatasourceName]),
 		INDEX [ExternalDatasourceVersion_idx] ([ExternalDatasourceVersion]),
 		INDEX [ExternalDatasourceURI_idx] ([ExternalDatasourceURI]),
-		INDEX [ExternalAttribute_NameID_idx] ([ExternalAttribute_NameID])
+		INDEX [ExternalAttribute_NameID_idx] ([ExternalAttribute_NameID]),
+		INDEX [RowGUID_idx] ([RowGUID])
 		)
 		;""".format(self.temptable, self.collation)
 		
@@ -115,7 +115,8 @@ class ExternalDatasourceInserter():
 	def __setExistingDatasources(self):
 		query = """
 		UPDATE ed_temp
-		SET ed_temp.[ExternalDatasourceID] = eds.[ExternalDatasourceID]
+		SET ed_temp.[ExternalDatasourceID] = eds.[ExternalDatasourceID],
+		ed_temp.[RowGUID] = eds.[RowGUID]
 		FROM [{0}] ed_temp
 		INNER JOIN CollectionExternalDatasource eds
 		ON (
@@ -150,7 +151,7 @@ class ExternalDatasourceInserter():
 			[ExternalDatasourceInstitution] VARCHAR(300) COLLATE {1},
 			[InternalNotes] VARCHAR(1500) COLLATE {1},
 			[ExternalAttribute_NameID] VARCHAR(255) COLLATE {1},
-			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+			[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 			INDEX [ExternalDatasourceID_idx] ([ExternalDatasourceID]),
 			INDEX [ExternalDatasourceName_idx] ([ExternalDatasourceName]),
 			INDEX [ExternalDatasourceVersion_idx] ([ExternalDatasourceVersion]),
@@ -208,21 +209,6 @@ class ExternalDatasourceInserter():
 			return 0
 
 
-	def __updateImportTempTableDatasourceIDs(self):
-		query = """
-		UPDATE ids_temp
-		SET ids_temp.[ExternalDatasourceID] = ed_temp.[ExternalDatasourceID]
-		FROM [{0}] ids_temp
-		INNER JOIN [{1}] ed_temp ON ids_temp.[dataset_num] = ed_temp.[dataset_num]
-		WHERE ed_temp.[ExternalDatasourceID] IS NOT NULL
-		;""".format(self.ids_temptable, self.temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
 	def __insertNewDatasources(self):
 		
 		query = """
@@ -233,7 +219,8 @@ class ExternalDatasourceInserter():
 		[ExternalDatasourceURI],
 		[ExternalDatasourceInstitution],
 		[InternalNotes],
-		[ExternalAttribute_NameID]
+		[ExternalAttribute_NameID],
+		[RowGUID]
 		)
 		SELECT 
 		ue_temp.[ExternalDatasourceName],
@@ -241,8 +228,20 @@ class ExternalDatasourceInserter():
 		ue_temp.[ExternalDatasourceURI],
 		ue_temp.[ExternalDatasourceInstitution],
 		ue_temp.[InternalNotes],
-		ue_temp.[ExternalAttribute_NameID]
+		ue_temp.[ExternalAttribute_NameID],
+		ue_temp.[RowGUID]
 		FROM [{0}] ue_temp
+		;""".format(self.unique_ed_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		UPDATE ue_temp
+		SET ue_temp.[ExternalDatasourceID] = ed.[ExternalDatasourceID]
+		FROM [{0}] ue_temp
+		INNER JOIN [CollectionExternalDatasource] ed
+		ON ed.[RowGUID] = ue_temp.[RowGUID]
 		;""".format(self.unique_ed_temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -257,11 +256,12 @@ class ExternalDatasourceInserter():
 	def __setExternalDatasourceIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
-		SET cs.[ExternalDatasourceID] = ids_temp.[ExternalDatasourceID]
+		SET cs.[ExternalDatasourceID] = ed_temp.[ExternalDatasourceID]
 		FROM CollectionSpecimen cs
-		INNER JOIN [{0}] ids_temp ON ids_temp.CollectionSpecimenID = cs.CollectionSpecimenID
-		WHERE ids_temp.[ExternalDatasourceID] IS NOT NULL AND ids_temp.CollectionSpecimenID IS NOT NULL
-		""".format(self.ids_temptable)
+		INNER JOIN [{0}] ed_temp
+		ON ed_temp.CollectionSpecimenID = cs.CollectionSpecimenID
+		WHERE ed_temp.[ExternalDatasourceID] IS NOT NULL AND ed_temp.CollectionSpecimenID IS NOT NULL
+		""".format(self.temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
@@ -283,3 +283,33 @@ class ExternalDatasourceInserter():
 		return
 
 
+	def __updateEDDicts(self):
+		ed_ids = self.getIDsForEDDicts()
+		for ed_dict in self.ed_dicts:
+			datasource_num = ed_dict['datasource_num']
+			ed_dict['CollectionEventID'] = ed_ids[datasource_num]['CollectionEventID']
+			ed_dict['RowGUID'] = ed_ids[datasource_num]['RowGUID']
+			ed_dict['CollectionSpecimenID'] = ed_ids[datasource_num]['CollectionSpecimenID']
+		return
+
+
+	def getIDsForCEDicts(self):
+		query = """
+		SELECT ed_temp.[datasource_num], ed.[ExternalDatasourceID], ed.[RowGUID], ed_temp.[CollectionSpecimenID]
+		FROM [CollectionExternalDatasource] ed
+		INNER JOIN [{0}] ed_temp
+		ON ed_temp.[RowGUID] = ed.[RowGUID] 
+		;""".format(self.temptable)
+		
+		self.cur.execute(query)
+		rows = self.cur.fetchall()
+		
+		ed_ids = {}
+		for row in rows:
+			if not row[0] in ed_ids:
+				ed_ids[row[0]] = {}
+			ed_ids[row[0]]['ExternalDatasourceID'] = row[1]
+			ed_ids[row[0]]['RowGUID'] = row[2]
+			ed_ids[row[0]]['CollectionSpecimenID'] = row[3]
+		
+		return ed_ids
