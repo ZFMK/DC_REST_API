@@ -39,7 +39,6 @@ class ExternalDatasourceInserter():
 
 
 	def insertExternalDatasourceData(self):
-		pudb.set_trace()
 		
 		self.__createTempTable()
 		
@@ -59,6 +58,8 @@ class ExternalDatasourceInserter():
 		
 		#if 'Administrator' in self.users_roles or 'DataManager' in self.users_roles:
 		#	self.__deleteUnconnectedExternalDatasources()
+		pudb.set_trace()
+		self.__updateEDDicts()
 		
 		return
 
@@ -287,13 +288,13 @@ class ExternalDatasourceInserter():
 		ed_ids = self.getIDsForEDDicts()
 		for ed_dict in self.ed_dicts:
 			datasource_num = ed_dict['datasource_num']
-			ed_dict['CollectionEventID'] = ed_ids[datasource_num]['CollectionEventID']
+			ed_dict['ExternalDatasourceID'] = ed_ids[datasource_num]['ExternalDatasourceID']
 			ed_dict['RowGUID'] = ed_ids[datasource_num]['RowGUID']
 			ed_dict['CollectionSpecimenID'] = ed_ids[datasource_num]['CollectionSpecimenID']
 		return
 
 
-	def getIDsForCEDicts(self):
+	def getIDsForEDDicts(self):
 		query = """
 		SELECT ed_temp.[datasource_num], ed.[ExternalDatasourceID], ed.[RowGUID], ed_temp.[CollectionSpecimenID]
 		FROM [CollectionExternalDatasource] ed

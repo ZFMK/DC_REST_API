@@ -19,16 +19,21 @@ class RequestParams():
 
 	def read_request_params(self):
 		self.params_dict = self.request.params.dict_of_lists()
-		
-		if self.request.json_body is not None:
-			self.json_body = self.request.json_body
-			# prepare the params as dict of lists
-			for key in self.json_body:
-				self.params_dict[key] = []
-				if isinstance(self.json_body[key], list) or isinstance(self.json_body[key], tuple):
-					self.params_dict[key].extend(self.json_body[key])
-				else:
-					self.params_dict[key].append(self.json_body[key])
+		# because request.json_body returns an error when not content is in a request with Content-Type: application/json
+		# the availability of json data is first testet with try except
+		try:
+			if self.request.json_body:
+				
+				self.json_body = self.request.json_body
+				# prepare the params as dict of lists
+				for key in self.json_body:
+					self.params_dict[key] = []
+					if isinstance(self.json_body[key], list) or isinstance(self.json_body[key], tuple):
+						self.params_dict[key].extend(self.json_body[key])
+					else:
+						self.params_dict[key].append(self.json_body[key])
+		except:
+			pass
 		return
 
 

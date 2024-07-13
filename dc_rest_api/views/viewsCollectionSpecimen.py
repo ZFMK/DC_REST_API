@@ -20,6 +20,7 @@ import json
 class CollectionSpecimenViews():
 
 	def __init__(self, request):
+		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -74,12 +75,14 @@ class CollectionSpecimenViews():
 			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
 			cs_inserter.setSpecimenDicts(self.payload)
 			cs_inserter.insertSpecimenData()
-			
+		
+		cs_data = json.loads(json.dumps(self.payload, default = str))
 		
 		jsonresponse = {
 			'title': 'DC REST API Create Resources',
 			#'aggregations': aggregations,
-			'messages': self.messages
+			'messages': self.messages,
+			'CollectionSpecimens': cs_data
 		}
 		
 		return jsonresponse

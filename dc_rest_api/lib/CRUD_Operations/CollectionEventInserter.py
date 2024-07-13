@@ -382,7 +382,7 @@ class CollectionEventInserter():
 			[Height_RecordingMethod_m] VARCHAR(500) COLLATE {1},
 			INDEX [event_sha_idx] ([event_sha]),
 			INDEX [RowGUID_idx] ([RowGUID])
-			)
+		)
 		;""".format(self.unique_events_temptable, self.collation)
 		
 		querylog.info(query)

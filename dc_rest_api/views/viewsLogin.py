@@ -32,8 +32,6 @@ class LoginViews(object):
 	@forbidden_view_config(accept='text/html')
 	def login_view(self):
 		
-		#pudb.set_trace()
-		
 		login_url = self.request.route_url('login')
 		referrer = self.request.url
 		if referrer == login_url:

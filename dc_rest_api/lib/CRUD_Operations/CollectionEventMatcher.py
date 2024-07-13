@@ -192,14 +192,14 @@ class CollectionEventMatcher():
 					AND (e.[CollectionYear] = ce_temp.[CollectionYear] OR (e.[CollectionYear] IS NULL AND ce_temp.[CollectionYear] IS NULL))
 				)
 			)
-			AND (e.[CollectionEndDay] = ce_temp.[CollectionEndDay] OR (e.[CollectionEndDay] IS NULL AND ce_temp.[CollectionEndDay] IS NULL))
-			AND (e.[CollectionEndMonth] = ce_temp.[CollectionEndMonth] OR (e.[CollectionEndMonth] IS NULL AND ce_temp.[CollectionEndMonth] IS NULL))
-			AND (e.[CollectionEndYear] = ce_temp.[CollectionEndYear] OR (e.[CollectionEndYear] IS NULL AND ce_temp.[CollectionEndYear] IS NULL))
-			AND (e.[CollectionDateSupplement] = ce_temp.[CollectionDateSupplement] OR (e.[CollectionDateSupplement] IS NULL AND ce_temp.[CollectionDateSupplement] IS NULL))
-			AND (e.[CollectionDateCategory] = ce_temp.[CollectionDateCategory] OR (e.[CollectionDateCategory] IS NULL AND ce_temp.[CollectionDateCategory] IS NULL))
-			AND (e.[CollectionTime] = ce_temp.[CollectionTime] OR (e.[CollectionTime] IS NULL AND ce_temp.[CollectionTime] IS NULL))
-			AND (e.[CollectionTimeSpan] = ce_temp.[CollectionTimeSpan] OR (e.[CollectionTimeSpan] IS NULL AND ce_temp.[CollectionTimeSpan] IS NULL))
-			AND (e.[CountryCache] = ce_temp.[Country] OR (e.[CountryCache] IS NULL AND ce_temp.[Country] IS NULL))
+			AND ((e.[CollectionEndDay] = ce_temp.[CollectionEndDay]) OR (e.[CollectionEndDay] IS NULL AND ce_temp.[CollectionEndDay] IS NULL))
+			AND ((e.[CollectionEndMonth] = ce_temp.[CollectionEndMonth]) OR (e.[CollectionEndMonth] IS NULL AND ce_temp.[CollectionEndMonth] IS NULL))
+			AND ((e.[CollectionEndYear] = ce_temp.[CollectionEndYear]) OR (e.[CollectionEndYear] IS NULL AND ce_temp.[CollectionEndYear] IS NULL))
+			AND ((e.[CollectionDateSupplement] = ce_temp.[CollectionDateSupplement]) OR (e.[CollectionDateSupplement] IS NULL AND ce_temp.[CollectionDateSupplement] IS NULL))
+			AND ((e.[CollectionDateCategory] = ce_temp.[CollectionDateCategory]) OR (e.[CollectionDateCategory] IS NULL AND ce_temp.[CollectionDateCategory] IS NULL))
+			AND ((e.[CollectionTime] = ce_temp.[CollectionTime]) OR (e.[CollectionTime] IS NULL AND ce_temp.[CollectionTime] IS NULL))
+			AND ((e.[CollectionTimeSpan] = ce_temp.[CollectionTimeSpan]) OR (e.[CollectionTimeSpan] IS NULL AND ce_temp.[CollectionTimeSpan] IS NULL))
+			AND ((e.[CountryCache] = ce_temp.[Country]) OR (e.[CountryCache] IS NULL AND ce_temp.[Country] IS NULL))
 		LEFT JOIN [CollectionEventLocalisation] alt
 		ON alt.CollectionEventID = e.CollectionEventID AND alt.LocalisationSystemID = 4
 		LEFT JOIN [CollectionEventLocalisation] wgs

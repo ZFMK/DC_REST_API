@@ -1,4 +1,33 @@
 {
+	"Collections": [
+		{
+			"CollectionName": "A Collection for Unittest",
+			'CollectionAccronym': 'coll Unittest 1',
+			'AdministrativeContactName': "Unittester 1",
+			'AdministrativeContactAgentURI': null,
+			'Description': "A collection inserted only for unittest",
+			'CollectionOwner': "Unittester 1",
+			'Type': "room",
+			'Location': "Käferhaus"
+		},
+		{
+			"CollectionName": "Unittest 2 Collection",
+			'CollectionAccronym': 'coll Unittest 2',
+			'AdministrativeContactName': "Unittester",
+			'AdministrativeContactAgentURI': "https://localhost/Agents/Unittester",
+			'Description': "Another collection inserted only for unittest",
+			'CollectionOwner': "Unittester 1",
+			'Type': null,
+			'Location': null
+			
+		},
+		{
+			"CollectionName": "Unittest 3 Collection",
+			'AdministrativeContactName': "Unittester",
+			'AdministrativeContactAgentURI': "https://localhost/Agents/Unittester",
+			'CollectionOwner': "Unittester 1",
+		}
+	],
 	"CollectionSpecimens": [
 		{
 			"CollectionSpecimenID": null,
@@ -8,19 +37,19 @@
 			"ExternalIdentifier": "unittest_03 ExternalIdentifier",
 			"OriginalNotes": "unittest_03 OriginalNotes",
 			"AdditionalNotes": "unittest_03 AdditionalNotes",
-			"cs_DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
+			"DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
 			"CollectionAgents": [
 				{
 					"CollectorsName": "Testuser Collector1",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				},
 				{
 					"CollectorsName": "Testuser Collector2",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				},
 				{
 					"CollectorsName": "Testuser Collector3",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				}
 			],
 			"CollectionEvent": {
@@ -130,7 +159,8 @@
 					"UnitDescription": "testunit 04",
 					"Circumstances": "unit testing",
 					"DisplayOrder": 2,
-					"DataWithholdingReason": "DataWithholdingReason IdentificationUnit: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason IdentificationUnit: Dataset for UnitTest",
+					"PartAccessionNumbers": ["testunit 03 slides", "testunit 04 slides"] 
 				}
 			],
 			"CollectionSpecimenParts": [
@@ -203,19 +233,19 @@
 			"ExternalIdentifier": "unittest_04 ExternalIdentifier",
 			"OriginalNotes": "unittest_03 OriginalNotes",
 			"AdditionalNotes": "unittest_03 AdditionalNotes",
-			"cs_DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
+			"DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
 			"CollectionAgents": [
 				{
 					"CollectorsName": "Testuser Collector2",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				},
 				{
 					"CollectorsName": "Testuser Collector4",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				},
 				{
 					"CollectorsName": "Testuser Collector1",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				}
 			],
 			"CollectionEvent": {
@@ -289,19 +319,19 @@
 			"ExternalIdentifier": "unittest_05 ExternalIdentifier",
 			"OriginalNotes": "unittest_05 OriginalNotes",
 			"AdditionalNotes": "unittest_05 AdditionalNotes",
-			"cs_DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
+			"DataWithholdingReason": "DataWithholdingReason: Dataset for UnitTest",
 			"CollectionAgents": [
 				{
 					"CollectorsName": "Testuser Collector2",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				},
 				{
 					"CollectorsName": "Testuser Collector4",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				},
 				{
 					"CollectorsName": "Testuser Collector1",
-					"ca_DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
 				}
 			],
 			"CollectionEvent": {

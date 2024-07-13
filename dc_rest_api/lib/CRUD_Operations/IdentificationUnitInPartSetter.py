@@ -4,10 +4,8 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
+from dc_rest_api.lib.CRUD_Operations.IUPReader import IUPReader 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
-
-from dc_rest_api.lib.CRUD_Operations.IdentificationInserter import IdentificationInserter
-
 
 class IdentificationUnitInPartSetter():
 	def __init__(self, dc_db):
@@ -16,33 +14,23 @@ class IdentificationUnitInPartSetter():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = '#iu_temptable'
+		self.temptable = '#iup_temptable'
 		
 		self.schema = [
+			{'colname': 'iup_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
-			{'colname': 'identificationunit_num', 'None allowed': False},
-			{'colname': 'IdentificationUnitID'},
-			{'colname': 'LastIdentificationCache', 'default': 'unknown', 'None allowed': False},
-			{'colname': 'LifeStage'},
-			{'colname': 'Gender'},
-			{'colname': 'NumberOfUnits'},
-			{'colname': 'NumberOfUnitsModifier'},
-			{'colname': 'UnitIdentifier'},
-			{'colname': 'UnitDescription'},
-			{'colname': 'DisplayOrder'},
-			{'colname': 'Notes'},
-			{'colname': 'TaxonomicGroup', 'default': 'unknown', 'None allowed': False},
-			{'colname': 'DataWithholdingReason'},
+			{'colname': 'IdentificationUnitID', 'None allowed': False},
+			{'colname': 'SpecimenPartID', 'None allowed': False}
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
 		
 
 
-	def insertIdentificationUnitData(self):
-		self.__createIdentificationUnitTempTable()
+	def setIdentificationUnitInPartData(self):
+		self.__createIdentificationUnitInPartTempTable()
 		
-		self.json2temp.set_datadicts(self.iu_dicts)
+		self.json2temp.set_datadicts(self.iup_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
 		self.__insertIdentificationUnits()
@@ -50,31 +38,20 @@ class IdentificationUnitInPartSetter():
 		
 		self.__updateIUDicts()
 		
-		identifications = []
-		for iu_dict in self.iu_dicts:
-			if 'Identifications' in iu_dict:
-				for i_dict in iu_dict['Identifications']:
-					i_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
-					i_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
-					identifications.append(i_dict)
-		
-		i_inserter = IdentificationInserter(self.dc_db)
-		i_inserter.setIdentificationDicts(identifications)
-		i_inserter.insertIdentificationData()
 		return
 
 
-	def setIdentificationUnitDicts(self, json_dicts = []):
-		self.iu_dicts = []
-		iu_count = 1
-		for iu_dict in json_dicts:
-			iu_dict['identificationunit_num'] = iu_count
-			iu_count += 1
-			self.iu_dicts.append(iu_dict)
+	def setIdentificationUnitInPartDicts(self, json_dicts = []):
+		self.iup_dicts = []
+		iup_count = 1
+		for iup_dict in json_dicts:
+			iup_dict['iup_num'] = iup_count
+			iup_count += 1
+			self.iup_dicts.append(iup_dict)
 		return
 
 
-	def __createIdentificationUnitTempTable(self):
+	def __createIdentificationUnitInPartTempTable(self):
 		query = """
 		DROP TABLE IF EXISTS [{0}];
 		""".format(self.temptable)
