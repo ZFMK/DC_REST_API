@@ -20,7 +20,7 @@ class IdentificationUnitInserter():
 		
 		self.schema = [
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
-			{'colname': 'identificationunit_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'IdentificationUnitID'},
 			{'colname': 'LastIdentificationCache', 'default': 'unknown', 'None allowed': False},
 			{'colname': 'LifeStage'},
@@ -68,7 +68,7 @@ class IdentificationUnitInserter():
 		self.iu_dicts = []
 		iu_count = 1
 		for iu_dict in json_dicts:
-			iu_dict['identificationunit_num'] = iu_count
+			iu_dict['entry_num'] = iu_count
 			iu_count += 1
 			self.iu_dicts.append(iu_dict)
 		return
@@ -85,7 +85,7 @@ class IdentificationUnitInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[identificationunit_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT NOT NULL,
 		[IdentificationUnitID] INT DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
@@ -100,7 +100,7 @@ class IdentificationUnitInserter():
 		[UnitDescription] VARCHAR(50) COLLATE {1},
 		[Notes] VARCHAR(MAX) COLLATE {1},
 		[DataWithholdingReason] VARCHAR(255) COLLATE {1},
-		PRIMARY KEY ([identificationunit_num]),
+		PRIMARY KEY ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
 		INDEX [RowGUID_idx] ([RowGUID]),
@@ -136,7 +136,7 @@ class IdentificationUnitInserter():
 			[RowGUID],
 			[LastIdentificationCache],
 			[TaxonomicGroup],
-			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [identificationunit_num] ASC)) AS [DisplayOrder],
+			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [entry_num] ASC)) AS [DisplayOrder],
 			[LifeStage],
 			[Gender],
 			[NumberOfUnits],
@@ -146,7 +146,7 @@ class IdentificationUnitInserter():
 			[Notes],
 			[DataWithholdingReason]
 		FROM [{0}] iu_temp
-		ORDER BY iu_temp.[identificationunit_num]
+		ORDER BY iu_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -203,16 +203,16 @@ class IdentificationUnitInserter():
 	def __updateIUDicts(self):
 		iu_ids = self.getIDsForIUDicts()
 		for iu_dict in self.iu_dicts:
-			identificationunit_num = iu_dict['identificationunit_num']
-			iu_dict['RowGUID'] = iu_ids[identificationunit_num]['RowGUID']
-			iu_dict['IdentificationUnitID'] = iu_ids[identificationunit_num]['IdentificationUnitID']
-			iu_dict['DisplayOrder'] = iu_ids[identificationunit_num]['DisplayOrder']
+			entry_num = iu_dict['entry_num']
+			iu_dict['RowGUID'] = iu_ids[entry_num]['RowGUID']
+			iu_dict['IdentificationUnitID'] = iu_ids[entry_num]['IdentificationUnitID']
+			iu_dict['DisplayOrder'] = iu_ids[entry_num]['DisplayOrder']
 		return
 
 
 	def getIDsForIUDicts(self):
 		query = """
-		SELECT iu_temp.[identificationunit_num], iu.IdentificationUnitID, iu.[RowGUID], iu.[DisplayOrder]
+		SELECT iu_temp.[entry_num], iu.IdentificationUnitID, iu.[RowGUID], iu.[DisplayOrder]
 		FROM [IdentificationUnit] iu
 		INNER JOIN [{0}] iu_temp
 		ON iu_temp.[RowGUID] = iu.[RowGUID] 

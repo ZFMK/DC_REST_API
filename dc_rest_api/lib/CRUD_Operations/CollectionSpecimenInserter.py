@@ -31,7 +31,7 @@ class CollectionSpecimenInserter():
 		self.accnr_prefix = config.get('option', 'AccNr_prefix', fallback = '')
 		
 		self.schema = [
-			{'colname': 'collectionspecimen_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'AccessionNumber'},
 			{'colname': 'DepositorsAccessionNumber'},
@@ -54,7 +54,6 @@ class CollectionSpecimenInserter():
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
 		
-		#pudb.set_trace()
 		events = []
 		for cs_dict in self.specimen_dicts:
 			if 'CollectionEvent' in cs_dict:
@@ -120,7 +119,7 @@ class CollectionSpecimenInserter():
 		self.specimen_dicts = json_dicts
 		cs_count = 1
 		for cs_dict in self.specimen_dicts:
-			cs_dict['collectionspecimen_num'] = cs_count
+			cs_dict['entry_num'] = cs_count
 			cs_count += 1
 		return
 
@@ -136,7 +135,7 @@ class CollectionSpecimenInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[collectionspecimen_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[AccessionNumber] VARCHAR(50) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
@@ -147,7 +146,7 @@ class CollectionSpecimenInserter():
 		[OriginalNotes] VARCHAR(MAX) COLLATE {1},
 		[AdditionalNotes] VARCHAR(MAX) COLLATE {1},
 		[DataWithholdingReason] VARCHAR(255) COLLATE {1},
-		PRIMARY KEY ([collectionspecimen_num]),
+		PRIMARY KEY ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [AccessionNumber_idx] ([AccessionNumber]),
 		INDEX [RowGUID_idx] ([RowGUID]),
@@ -232,9 +231,9 @@ class CollectionSpecimenInserter():
 		cs_ids = self.getIDsForSpecimenDicts()
 		
 		for specimen_dict in self.specimen_dicts:
-			collectionspecimen_num = specimen_dict['collectionspecimen_num']
-			specimen_dict['CollectionSpecimenID'] = cs_ids[collectionspecimen_num]['CollectionSpecimenID']
-			specimen_dict['RowGUID'] = cs_ids[collectionspecimen_num]['RowGUID']
+			entry_num = specimen_dict['entry_num']
+			specimen_dict['CollectionSpecimenID'] = cs_ids[entry_num]['CollectionSpecimenID']
+			specimen_dict['RowGUID'] = cs_ids[entry_num]['RowGUID']
 			
 			# fill the ids for the next level...
 			if 'IdentificationUnits' in specimen_dict:
@@ -247,7 +246,7 @@ class CollectionSpecimenInserter():
 	def getIDsForSpecimenDicts(self):
 		# select all CollectionSpecimenIDs and RowGUIDs
 		query = """
-		SELECT cs_temp.[collectionspecimen_num], cs.CollectionSpecimenID, cs.[RowGUID]
+		SELECT cs_temp.[entry_num], cs.CollectionSpecimenID, cs.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [{0}] cs_temp
 		 -- ON cs_temp.CollectionSpecimenID = cs.CollectionSpecimenID

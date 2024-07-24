@@ -5,7 +5,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
-from dc_rest_api.lib.CRUD_Operations.CollectionEventMatcher import CollectionEventMatcher
+from dc_rest_api.lib.CRUD_Operations.Matchers.CollectionEventMatcher import CollectionEventMatcher
 
 
 class CollectionEventInserter():
@@ -19,7 +19,7 @@ class CollectionEventInserter():
 		self.unique_events_temptable = '#unique_events_temptable'
 		
 		self.schema = [
-			{'colname': 'event_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'CollectionEventID'},
 			{'colname': 'CollectorsEventNumber'},
@@ -102,7 +102,7 @@ class CollectionEventInserter():
 		self.ce_dicts = []
 		ce_count = 1
 		for ce_dict in json_dicts:
-			ce_dict['event_num'] = ce_count
+			ce_dict['entry_num'] = ce_count
 			ce_count += 1
 			self.ce_dicts.append(ce_dict)
 		return
@@ -120,7 +120,7 @@ class CollectionEventInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[event_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT,
 		[CollectionEventID] INT DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER,
@@ -179,7 +179,7 @@ class CollectionEventInserter():
 		 -- 
 		[event_sha] VARCHAR(64),
 		 -- 
-		PRIMARY KEY ([event_num]),
+		PRIMARY KEY ([entry_num]),
 		INDEX [event_sha_idx] ([event_sha]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [CollectionEventID_idx] ([CollectionEventID]),
@@ -707,16 +707,16 @@ class CollectionEventInserter():
 	def __updateCEDicts(self):
 		ce_ids = self.getIDsForCEDicts()
 		for ce_dict in self.ce_dicts:
-			event_num = ce_dict['event_num']
-			ce_dict['CollectionEventID'] = ce_ids[event_num]['CollectionEventID']
-			ce_dict['RowGUID'] = ce_ids[event_num]['RowGUID']
-			ce_dict['CollectionSpecimenID'] = ce_ids[event_num]['CollectionSpecimenID']
+			entry_num = ce_dict['entry_num']
+			ce_dict['CollectionEventID'] = ce_ids[entry_num]['CollectionEventID']
+			ce_dict['RowGUID'] = ce_ids[entry_num]['RowGUID']
+			ce_dict['CollectionSpecimenID'] = ce_ids[entry_num]['CollectionSpecimenID']
 		return
 
 
 	def getIDsForCEDicts(self):
 		query = """
-		SELECT ce_temp.[event_num], ce.CollectionEventID, ce.[RowGUID], ce_temp.[CollectionSpecimenID]
+		SELECT ce_temp.[entry_num], ce.CollectionEventID, ce.[RowGUID], ce_temp.[CollectionSpecimenID]
 		FROM [CollectionEvent] ce
 		INNER JOIN [{0}] ce_temp
 		ON ce_temp.[RowGUID] = ce.[RowGUID] 

@@ -25,10 +25,11 @@ class SpecimenPartInserter():
 		
 		
 		self.schema = [
-			{'colname': 'specimenpart_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'SpecimenPartID'},
 			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
+			{'colname': 'CollectionID'},
 			{'colname': 'AccessionNumber'},
 			{'colname': 'PartSublabel'},
 			{'colname': 'PreparationMethod'},
@@ -70,7 +71,7 @@ class SpecimenPartInserter():
 		self.csp_dicts = []
 		csp_count = 1
 		for csp_dict in json_dicts:
-			csp_dict['specimenpart_num'] = csp_count
+			csp_dict['entry_num'] = csp_count
 			csp_count += 1
 			self.csp_dicts.append(csp_dict)
 		return
@@ -87,7 +88,7 @@ class SpecimenPartInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[specimenpart_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT NOT NULL,
 		[SpecimenPartID] INT DEFAULT NULL,
 		[CollectionID] INT DEFAULT NULL,
@@ -105,8 +106,8 @@ class SpecimenPartInserter():
 		[ResponsibleAgentURI] VARCHAR(255) COLLATE {1},
 		[Notes] NVARCHAR(MAX) COLLATE {1},
 		[DataWithholdingReason] NVARCHAR(255) COLLATE {1},
-		PRIMARY KEY ([specimenpart_num]),
-		INDEX [specimenpart_num_idx] ([specimenpart_num]),
+		PRIMARY KEY ([entry_num]),
+		INDEX [entry_num_idx] ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [SpecimenPartID_idx] (SpecimenPartID),
 		INDEX [RowGUID_idx] (RowGUID)
@@ -142,10 +143,10 @@ class SpecimenPartInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		
-		# TODO: how to deall with Collections that do not exist in database?
+		# TODO: how to deal with Collections that do not exist in database?
 		'''
 		query = """
-		SELECT [dataset_num], [specimenpart_num], [AccessionNumber], [CollectionName]
+		SELECT [dataset_num], [entry_num], [AccessionNumber], [CollectionName]
 		FROM [{0}] csp_temp
 		WHERE CollectionID IS NULL
 		;""".format(self.temptable)
@@ -178,12 +179,12 @@ class SpecimenPartInserter():
 		FROM [{0}] csp_temp
 		INNER JOIN (
 			SELECT 
-				[specimenpart_num], 
-				CONCAT_WS('_', cs.[AccessionNumber], ROW_NUMBER() OVER(PARTITION BY csp_temp.[CollectionSpecimenID] ORDER BY csp_temp.[specimenpart_num] ASC)) AS [PartAccessionNumber]
+				[entry_num], 
+				CONCAT_WS('_', cs.[AccessionNumber], ROW_NUMBER() OVER(PARTITION BY csp_temp.[CollectionSpecimenID] ORDER BY csp_temp.[entry_num] ASC)) AS [PartAccessionNumber]
 				FROM [{0}] csp_temp
 				INNER JOIN [CollectionSpecimen] cs ON cs.[CollectionSpecimenID] = csp_temp.[CollectionSpecimenID]
 		) AS csp_temp2
-		ON csp_temp.[specimenpart_num] = csp_temp2.[specimenpart_num]
+		ON csp_temp.[entry_num] = csp_temp2.[entry_num]
 		WHERE csp_temp.[AccessionNumber] IS NULL
 		;""".format(self.temptable)
 		querylog.info(query)
@@ -247,7 +248,7 @@ class SpecimenPartInserter():
 			[Notes],
 			[DataWithholdingReason]
 		FROM [{0}] csp_temp
-		ORDER BY csp_temp.[specimenpart_num]
+		ORDER BY csp_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -274,19 +275,19 @@ class SpecimenPartInserter():
 		
 		csp_ids = self.getIDsForCSPDicts()
 		for csp_dict in self.csp_dicts:
-			specimenpart_num = csp_dict['specimenpart_num']
-			csp_dict['AccessionNumber'] = csp_ids[specimenpart_num]['AccessionNumber']
-			csp_dict['SpecimenPartID'] = csp_ids[specimenpart_num]['SpecimenPartID']
-			csp_dict['CollectionID'] = csp_ids[specimenpart_num]['CollectionID']
-			csp_dict['MaterialCategory'] = csp_ids[specimenpart_num]['MaterialCategory']
-			csp_dict['RowGUID'] = csp_ids[specimenpart_num]['RowGUID']
+			entry_num = csp_dict['entry_num']
+			csp_dict['AccessionNumber'] = csp_ids[entry_num]['AccessionNumber']
+			csp_dict['SpecimenPartID'] = csp_ids[entry_num]['SpecimenPartID']
+			csp_dict['CollectionID'] = csp_ids[entry_num]['CollectionID']
+			csp_dict['MaterialCategory'] = csp_ids[entry_num]['MaterialCategory']
+			csp_dict['RowGUID'] = csp_ids[entry_num]['RowGUID']
 		return
 
 
 	def getIDsForCSPDicts(self):
 		query = """
 		SELECT 
-			csp_temp.[specimenpart_num],
+			csp_temp.[entry_num],
 			csp.[AccessionNumber],
 			csp.[SpecimenPartID],
 			csp.[CollectionID],

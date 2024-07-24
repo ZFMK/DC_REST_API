@@ -9,9 +9,11 @@ from dwb_authentication.security import SecurityPolicy
 from dwb_authentication.dbsession import DBSession
 
 from dc_rest_api.lib.Authentication.UserLogin import UserLogin
+from dc_rest_api.views.RequestParams import RequestParams
+
+from dc_rest_api.lib.CRUD_Operations.JSON2Datadicts import JSON2Datadicts
 from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
-from dc_rest_api.views.RequestParams import RequestParams
 
 import pudb
 import json
@@ -42,7 +44,6 @@ class CollectionSpecimenViews():
 
 	@view_config(route_name='specimen', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
-		
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
@@ -70,11 +71,17 @@ class CollectionSpecimenViews():
 			return jsonresponse
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
+			#pudb.set_trace()
+			#dataparser = JSON2Datadicts(self.request_params.json_body)
+			#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
 			
 			self.payload = self.request_params.json_body['CollectionSpecimens']
 			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
 			cs_inserter.setSpecimenDicts(self.payload)
 			cs_inserter.insertSpecimenData()
+		
+		else:
+			self.messages.append('Error: no "CollectionSpecimens" array in json data')
 		
 		cs_data = json.loads(json.dumps(self.payload, default = str))
 		

@@ -5,7 +5,8 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
-from dc_rest_api.lib.CRUD_Operations.CollectionMatcher import CollectionMatcher
+from dc_rest_api.lib.CRUD_Operations.Matchers.CollectionMatcher import CollectionMatcher
+
 
 
 class CollectionInserter():
@@ -20,7 +21,7 @@ class CollectionInserter():
 		
 		
 		self.schema = [
-			{'colname': 'collection_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionID'},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
@@ -66,7 +67,7 @@ class CollectionInserter():
 		self.c_dicts = []
 		c_count = 1
 		for c_dict in json_dicts:
-			c_dict['collection_num'] = c_count
+			c_dict['entry_num'] = c_count
 			c_count += 1
 			self.c_dicts.append(c_dict)
 		return
@@ -83,8 +84,8 @@ class CollectionInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[collection_num] INT NOT NULL,
-		[CollectionSpecimenID] INT NOT NULL,
+		[entry_num] INT NOT NULL,
+		[CollectionSpecimenID] INT,
 		[CollectionName] NVARCHAR(255) COLLATE {1},
 		[CollectionAcronym] NVARCHAR(10) COLLATE {1},
 		[AdministrativeContactName] NVARCHAR(500) COLLATE {1},
@@ -103,8 +104,8 @@ class CollectionInserter():
 		[Type] NVARCHAR(50) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER,
 		[collection_sha] VARCHAR(64),
-		PRIMARY KEY ([collection_num]),
-		INDEX [collection_num_idx] ([collection_num]),
+		PRIMARY KEY ([entry_num]),
+		INDEX [entry_num_idx] ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [CollectionID_idx] (CollectionID),
 		INDEX [RowGUID_idx] (RowGUID)
@@ -319,16 +320,16 @@ class CollectionInserter():
 	def __updateCollectionDicts(self):
 		c_ids = self.getIDsForCollectionDicts()
 		for c_dict in self.c_dicts:
-			collection_num = c_dict['collection_num']
-			c_dict['CollectionID'] = c_ids[collection_num]['CollectionID']
-			c_dict['RowGUID'] = c_ids[collection_num]['RowGUID']
+			entry_num = c_dict['entry_num']
+			c_dict['CollectionID'] = c_ids[entry_num]['CollectionID']
+			c_dict['RowGUID'] = c_ids[entry_num]['RowGUID']
 		return
 
 
 	def getIDsForCollectionDicts(self):
 		query = """
 		SELECT 
-			c_temp.[collection_num],
+			c_temp.[entry_num],
 			c.[CollectionID],
 			c.[RowGUID]
 		FROM [Collection] c

@@ -24,7 +24,7 @@ class ExternalDatasourceInserter():
 		self.unique_ed_temptable = '#unique_ed_temptable'
 		
 		self.schema = [
-			{'colname': 'datasource_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'ExternalDatasourceID'},
 			{'colname': 'ExternalDatasourceName', 'None allowed': False},
@@ -58,7 +58,7 @@ class ExternalDatasourceInserter():
 		
 		#if 'Administrator' in self.users_roles or 'DataManager' in self.users_roles:
 		#	self.__deleteUnconnectedExternalDatasources()
-		pudb.set_trace()
+		
 		self.__updateEDDicts()
 		
 		return
@@ -69,7 +69,7 @@ class ExternalDatasourceInserter():
 		ed_count = 1
 		
 		for ed_dict in json_dicts:
-			ed_dict['datasource_num'] = ed_count
+			ed_dict['entry_num'] = ed_count
 			ed_count += 1
 			self.ed_dicts.append(ed_dict)
 		return
@@ -86,7 +86,7 @@ class ExternalDatasourceInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[datasource_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[ExternalDatasourceID] INT DEFAULT NULL,
 		[ExternalDatasourceName] VARCHAR(255) COLLATE {1} NOT NULL,
@@ -96,7 +96,7 @@ class ExternalDatasourceInserter():
 		[InternalNotes] VARCHAR(1500) COLLATE {1},
 		[ExternalAttribute_NameID] VARCHAR(255) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER,
-		PRIMARY KEY ([datasource_num]),
+		PRIMARY KEY ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [ExternalDatasourceID_idx] ([ExternalDatasourceID]),
 		INDEX [ExternalDatasourceName_idx] ([ExternalDatasourceName]),
@@ -195,7 +195,7 @@ class ExternalDatasourceInserter():
 
 	def __getNumberOfUnmatchedDatasources(self):
 		query = """
-		SELECT COUNT([datasource_num])
+		SELECT COUNT([entry_num])
 		FROM [{0}] ed_temp
 		WHERE ed_temp.[ExternalDatasourceID] IS NULL
 		;""".format(self.temptable)
@@ -287,16 +287,16 @@ class ExternalDatasourceInserter():
 	def __updateEDDicts(self):
 		ed_ids = self.getIDsForEDDicts()
 		for ed_dict in self.ed_dicts:
-			datasource_num = ed_dict['datasource_num']
-			ed_dict['ExternalDatasourceID'] = ed_ids[datasource_num]['ExternalDatasourceID']
-			ed_dict['RowGUID'] = ed_ids[datasource_num]['RowGUID']
-			ed_dict['CollectionSpecimenID'] = ed_ids[datasource_num]['CollectionSpecimenID']
+			entry_num = ed_dict['entry_num']
+			ed_dict['ExternalDatasourceID'] = ed_ids[entry_num]['ExternalDatasourceID']
+			ed_dict['RowGUID'] = ed_ids[entry_num]['RowGUID']
+			ed_dict['CollectionSpecimenID'] = ed_ids[entry_num]['CollectionSpecimenID']
 		return
 
 
 	def getIDsForEDDicts(self):
 		query = """
-		SELECT ed_temp.[datasource_num], ed.[ExternalDatasourceID], ed.[RowGUID], ed_temp.[CollectionSpecimenID]
+		SELECT ed_temp.[entry_num], ed.[ExternalDatasourceID], ed.[RowGUID], ed_temp.[CollectionSpecimenID]
 		FROM [CollectionExternalDatasource] ed
 		INNER JOIN [{0}] ed_temp
 		ON ed_temp.[RowGUID] = ed.[RowGUID] 

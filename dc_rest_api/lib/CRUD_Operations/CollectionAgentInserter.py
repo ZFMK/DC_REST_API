@@ -16,7 +16,7 @@ class CollectionAgentInserter():
 		self.temptable = '#agent_temptable'
 		
 		self.schema = [
-			{'colname': 'agent_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'CollectorsName', 'None allowed': False},
 			{'colname': 'CollectorsSequence'},
@@ -44,7 +44,7 @@ class CollectionAgentInserter():
 		self.ca_dicts = []
 		ca_count = 1
 		for ca_dict in json_dicts:
-			ca_dict['agent_num'] = ca_count
+			ca_dict['entry_num'] = ca_count
 			ca_count += 1
 			self.ca_dicts.append(ca_dict)
 		return
@@ -64,13 +64,13 @@ class CollectionAgentInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[agent_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[CollectorsName] VARCHAR(255) COLLATE {1} NOT NULL,
 		[CollectorsSequence] DATETIME2 DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 		[DataWithholdingReason] VARCHAR(255) COLLATE {1},
-		PRIMARY KEY ([agent_num]),
+		PRIMARY KEY ([entry_num]),
 		INDEX [CollectorsName_idx] ([CollectorsName]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [RowGUID_idx] ([RowGUID])
@@ -109,7 +109,7 @@ class CollectionAgentInserter():
 		SELECT 
 			[CollectionSpecimenID],
 			[CollectorsName],
-			ISNULL([CollectorsSequence], DATEADD(ms, (ca_temp.[agent_num] * 200), SYSDATETIME())) AS [CollectorsSequence],
+			ISNULL([CollectorsSequence], DATEADD(ms, (ca_temp.[entry_num] * 200), SYSDATETIME())) AS [CollectorsSequence],
 			[RowGUID],
 			[DataWithholdingReason]
 		FROM [{0}] ca_temp
@@ -123,15 +123,15 @@ class CollectionAgentInserter():
 	def __updateCADicts(self):
 		ca_ids = self.getIDsForCADicts()
 		for ca_dict in self.ca_dicts:
-			agent_num = ca_dict['agent_num']
-			ca_dict['CollectorsSequence'] = ca_ids[agent_num]['CollectorsSequence']
-			ca_dict['RowGUID'] = ca_ids[agent_num]['RowGUID']
+			entry_num = ca_dict['entry_num']
+			ca_dict['CollectorsSequence'] = ca_ids[entry_num]['CollectorsSequence']
+			ca_dict['RowGUID'] = ca_ids[entry_num]['RowGUID']
 		return
 
 
 	def getIDsForCADicts(self):
 		query = """
-		SELECT ca_temp.[agent_num], ca.[CollectorsSequence], ca.[RowGUID]
+		SELECT ca_temp.[entry_num], ca.[CollectorsSequence], ca.[RowGUID]
 		FROM [CollectionAgent] ca
 		INNER JOIN [{0}] ca_temp
 		ON ca_temp.[RowGUID] = ca.[RowGUID] 

@@ -18,7 +18,7 @@ class IdentificationInserter():
 		self.temptable = '#identification_temptable'
 		
 		self.schema = [
-			{'colname': 'identification_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'IdentificationUnitID', 'None allowed': False},
 			{'colname': 'IdentificationSequence'},
@@ -62,7 +62,7 @@ class IdentificationInserter():
 		self.i_dicts = []
 		i_count = 1
 		for i_dict in json_dicts:
-			i_dict['identification_num'] = i_count
+			i_dict['entry_num'] = i_count
 			i_count += 1
 			self.i_dicts.append(i_dict)
 		return
@@ -81,7 +81,7 @@ class IdentificationInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[identification_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT NOT NULL,
 		[IdentificationUnitID] INT NOT NULL,
 		[IdentificationSequence] SMALLINT,
@@ -103,7 +103,7 @@ class IdentificationInserter():
 		[ReferenceURI] VARCHAR(255) COLLATE {1},
 		[ReferenceDetails] NVARCHAR(50) COLLATE {1},
 		[Notes] NVARCHAR(MAX) COLLATE {1},
-		PRIMARY KEY ([identification_num]),
+		PRIMARY KEY ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
 		INDEX [TaxonomicName_idx] ([TaxonomicName]),
@@ -152,7 +152,7 @@ class IdentificationInserter():
 			i_temp.[VernacularTerm],
 			i_temp.[CollectionSpecimenID],
 			i_temp.[IdentificationUnitID],
-			ISNULL(i.[IdentificationSequence] + ROW_NUMBER() OVER(PARTITION BY i_temp.[IdentificationUnitID] ORDER BY i_temp.[identification_num] ASC), ROW_NUMBER() OVER(PARTITION BY i_temp.[IdentificationUnitID] ORDER BY i_temp.[identification_num] ASC)),
+			ISNULL(i.[IdentificationSequence] + ROW_NUMBER() OVER(PARTITION BY i_temp.[IdentificationUnitID] ORDER BY i_temp.[entry_num] ASC), ROW_NUMBER() OVER(PARTITION BY i_temp.[IdentificationUnitID] ORDER BY i_temp.[entry_num] ASC)),
 			i_temp.[RowGUID],
 			i_temp.[NameURI],
 			i_temp.[IdentificationDay],
@@ -177,7 +177,7 @@ class IdentificationInserter():
 			GROUP BY [CollectionSpecimenID], [IdentificationUnitID]
 		) AS i 
 			ON i.[CollectionSpecimenID] = i_temp.[CollectionSpecimenID] AND i.[IdentificationUnitID] = i_temp.[IdentificationUnitID]
-		ORDER BY i_temp.[identification_num]
+		ORDER BY i_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -205,15 +205,15 @@ class IdentificationInserter():
 		
 		i_ids = self.getIDsForIDicts()
 		for i_dict in self.i_dicts:
-			identification_num = i_dict['identification_num']
-			i_dict['RowGUID'] = i_ids[identification_num]['RowGUID']
-			i_dict['IdentificationSequence'] = i_ids[identification_num]['IdentificationSequence']
+			entry_num = i_dict['entry_num']
+			i_dict['RowGUID'] = i_ids[entry_num]['RowGUID']
+			i_dict['IdentificationSequence'] = i_ids[entry_num]['IdentificationSequence']
 		return
 
 
 	def getIDsForIDicts(self):
 		query = """
-		SELECT i_temp.[identification_num],
+		SELECT i_temp.[entry_num],
 		i.[IdentificationSequence], i.[RowGUID]
 		FROM [Identification] i
 		INNER JOIN [{0}] i_temp
