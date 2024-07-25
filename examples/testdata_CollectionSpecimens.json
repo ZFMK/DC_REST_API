@@ -174,7 +174,9 @@
 			],
 			"CollectionSpecimenParts": [
 				{
-					"CollectionName": "Björns TestCollection",
+					"Collection": {
+						"CollectionName": "Björns TestCollection"
+					},
 					"AccessionNumber": "testunit 03 slides",
 					"PreparationMethod": "Maceration",
 					"PartSublabel": "testunit 03 slides label",
@@ -189,7 +191,10 @@
 					"DataWithholdingReason": "withhold by default"
 				},
 				{
-					"CollectionName": "Björns TestCollection",
+					"Collection": {
+						"CollectionName": "Björns TestCollection",
+						"Description": "A second collection named 'Björns TestCollection', but different from that because of this description"
+					},
 					"AccessionNumber": "testunit 03 slides",
 					"PreparationMethod": "Maceration",
 					"PartSublabel": "testunit 03 slides label",
@@ -204,7 +209,9 @@
 					"DataWithholdingReason": "withhold by default"
 				},
 				{
-					"CollectionName": "Björns TestCollection",
+					"Collection": {
+						"@id": "_:c1"
+					},
 					"PreparationMethod": "Maceration",
 					"PartSublabel": "testunit 03 skull label",
 					"MaterialCategory": "microscopic slides",
@@ -218,7 +225,9 @@
 					"DataWithholdingReason": "withhold by default"
 				},
 				{
-					"CollectionName": "Björns TestCollection",
+					"Collection": {
+						"@id": "_:c3"
+					},
 					"AccessionNumber": "testunit 04 slides",
 					"PreparationMethod": "Maceration",
 					"PartSublabel": "testunit 04 slides label",

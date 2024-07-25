@@ -35,63 +35,35 @@ class JSON2Datadicts():
 			"ExternalDatasources": ExternalDatasourceSchema().getSchema(),
 		}
 		
-		self.datadicts = []
+		self.dicts_with_subdicts = [
+			"CollectionSpecimens", 
+			"IdentificationUnits", 
+			"CollectionSpecimenParts"
+		]
 		
-		self.setExtractedDicts()
+		self.datadicts = {}
+		
 		pudb.set_trace()
-		self.parseJSON(self.json_dicts)
-		self.overwriteJSONWithExtractedDicts()
+		self.parseJSONRecursively(self.json_dicts)
 
 
-	def setExtractedDicts(self):
-		self.references = {
-			"Collection": "Collections",
-			"CollectionEvent": "CollectionEvents",
-			"CollectionExternalDatasource": "CollectionExternalDatasources",
-		}
-		
-		self.extracted_dicts = {}
-		for key in self.references:
-			self.extracted_dicts[self.references[key]] = []
-		
-		for key in self.extracted_dicts:
-			if key in self.json_dicts:
-				self.extracted_dicts[key] = self.json_dicts[key]
-				del self.json_dicts[key]
-		
-		for key in self.json_dicts:
-			if key not in self.extracted_dicts:
-				self.extractInternalSubdicts(self.json_dicts[key])
-		
-		return
 
-
-	def overwriteJSONWithExtractedDicts(self):
-		for key in self.extracted_dicts:
-			self.json_dicts[key] = self.extracted_dicts[key]
-		return
-
-
-	def parseJSON(self, json_dicts):
+	def parseJSONRecursively(self, json_dicts):
 		keys_to_parse = [key for key in self.schemata]
 		
 		for key in json_dicts:
 			
-			if isinstance(json_dicts[key], list) or isinstance(json_dicts[key], tuple) and key in keys_to_parse:
+			if key in keys_to_parse and (isinstance(json_dicts[key], list) or isinstance(json_dicts[key], tuple)):
 				
 				self.setDatadicts(self.schemata[key], json_dicts[key])
 			
 			# only parse elements further that can have sub-elements
-				if key in [
-							"CollectionSpecimens", 
-							"IdentificationUnits", 
-							"CollectionSpecimenParts"
-						]:
+				if key in self.dicts_with_subdicts:
 					for inner_key in json_dicts[key]:
 						if inner_key in keys_to_parse:
 							self.parseJSONRecursively(json_dicts[key][inner_key])
-			else:
-				self.parseJSON(json_dicts[key])
+			#else:
+			#	self.parseJSON(json_dicts[key])
 		return
 
 
@@ -136,114 +108,12 @@ class JSON2Datadicts():
 			if values_not_none < 1:
 				raise ValueError('Can not insert data, all fields are empty')
 			
-			self.datadicts.append(json_dict)
+			if key not in self.datadicts:
+				self.datadicts[key] = []
+			self.datadicts[key].append(json_dict)
 			#except:
 			#	pass
 		
 		return 
 
 
-	def extractInternalSubdicts(self, subdicts):
-		#pudb.set_trace()
-		for subdict in subdicts:
-			#if isinstance(subdict, dict) or isinstance(subdict[key], list) or isinstance(subdict[key], tuple)
-			
-			if isinstance(subdict, dict):
-				for key in subdict:
-					if key in self.references:
-						
-						# there might be a list of elements or just one (e. g. ProjectProxy Collection)
-						
-						extracted_ids = [element['@id'] for element in self.extracted_dicts[self.references[key]]]
-						
-						if isinstance(subdict[key], dict):
-							if not '@id' in subdict[key]:
-								dict_id = hashlib.sha256(json.dumps(subdict[key]).encode()).hexdigest()
-								
-								if not dict_id in extracted_ids:
-									subdict[key]['@id'] = dict_id
-									self.extracted_dicts[self.references[key]].append(dict(subdict[key]))
-									extracted_ids.append(dict_id)
-								
-								subdict[key] = {'@id': dict_id}
-						
-						elif isinstance(subdict[key], list) or isinstance(subdict[key], tuple):
-							replaced_elements = []
-							for element in subdict[key]:
-								
-								if not '@id' in element and len(element) > 0:
-									# check if dict is in extracted dicts
-									dict_id = hashlib.sha256(json.dumps(element).encode()).hexdigest()
-									
-									if not dict_id in extracted_ids:
-										element['@id'] = dict_id
-										self.extracted_dicts[self.references[key]].append(dict(element))
-										extracted_ids.append(dict_id)
-									
-									replaced_elements.append({'@id': dict_id})
-								
-								elif '@id' in element and len(element) == 1:
-									replaced_elements.append(element)
-							
-							subdict[key] = replaced_elements
-					
-					elif subdict[key] is not None and (isinstance(subdict[key], list) or isinstance(subdict[key], tuple) or isinstance(subdict[key], dict)):
-						self.extractInternalSubdicts(subdict[key])
-		return
-
-
-	'''
-	def expandInternalReferences(self):
-		"""
-		look up the data for internally referenced Collections, Events, etc. 
-		These must be referenced by an '@id' value in the target dictionery and a structure:
-		"Collection": {
-			"@id": "value"
-		}
-		in the referencing structure
-		"""
-		
-		for key in ["Collections", 
-					"CollectionEvents", 
-					"CollectionSpecimens", 
-					"IdentificationUnits", 
-					"CollectionSpecimenParts"
-					]: 
-			if key in self.datadicts:
-				if key == "CollectionEvents":
-					for element in self.datadicts["CollectionEvents"]:
-						self.replaceIDWithTarget(element["CollectionEvents"], ["Collection", "CollectionEvent"])
-				if key == "CollectionSpecimens":
-					for element in self.datadicts["CollectionSpecimens"]:
-						self.replaceIDWithTarget(element["CollectionSpecimens"], ["Collection", "CollectionEvent"])
-				if key == "IdentificationUnits":
-					for element in self.datadicts["IdentificationUnits"]:
-						self.replaceIDWithTarget(element["IdentificationUnits"], ["CollectionSpecimen"])
-				if key == "CollectionSpecimenParts":
-					for element in self.datadicts["CollectionSpecimenParts"]:
-						self.replaceIDWithTarget(element["CollectionSpecimenParts"], ["Collection"])
-
-
-	def replaceIDWithTarget(self, element_list, target_keys = []):
-		for element in element_list:
-			for target_key in target_keys:
-				if target_key in element and len(element[target_key]) == 1 and "@id" in element[target_key]:
-					target = self.getTargetDictByInternalID(target_key, element[target_key]['@id'])
-					if target is not None:
-						element[target_key] = target
-					else:
-						raise ValueError('referenced internal @id:{0} for {1} can not be found'.format(element[target_key]['@id'], target_key))
-		return
-
-
-	def getTargetDictByInternalID(self, target_key, internal_id):
-		target = None
-		
-		target_list_key = target_key + 's'
-		# the targets must be in level 0 of the datadicts
-		if target_list_key in self.datadicts:
-			for target in self.datadicts[target_list_key]:
-				if internal_id in target:
-					return target
-		return target
-	'''
