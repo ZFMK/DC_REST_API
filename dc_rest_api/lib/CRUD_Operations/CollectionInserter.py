@@ -16,7 +16,7 @@ class CollectionInserter():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = '#collection_temptable'
+		self.temptable = 'collection_temptable'
 		self.unique_collections_temptable = 'unique_c_temptable'
 		
 		
@@ -24,12 +24,13 @@ class CollectionInserter():
 			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionID'},
 			{'colname': 'CollectionSpecimenID'},
+			{'colname': 'SpecimenPartID'},
 			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
-			{'colname': 'CollectionAccronym'},
+			{'colname': 'CollectionAcronym'},
 			{'colname': 'AdministrativeContactName'},
 			{'colname': 'AdministrativeContactAgentURI'},
 			{'colname': 'Description'},
-			{'colname': 'Description_sha'},
+			{'colname': 'Description_sha', 'compute sha of': 'Description'},
 			{'colname': 'CollectionOwner'},
 			{'colname': 'Type'},
 			{'colname': 'Location'},
@@ -58,6 +59,7 @@ class CollectionInserter():
 		self.createNewCollections()
 		
 		self.__insertCollectionIDsInCollectionSpecimen()
+		self.__insertCollectionIDsInSpecimenPart()
 		
 		self.__updateCollectionDicts()
 		return
@@ -85,7 +87,9 @@ class CollectionInserter():
 		query = """
 		CREATE TABLE [{0}] (
 		[entry_num] INT NOT NULL,
+		[CollectionID] INT,
 		[CollectionSpecimenID] INT,
+		[SpecimenPartID] INT,
 		[CollectionName] NVARCHAR(255) COLLATE {1},
 		[CollectionAcronym] NVARCHAR(10) COLLATE {1},
 		[AdministrativeContactName] NVARCHAR(500) COLLATE {1},
@@ -95,7 +99,7 @@ class CollectionInserter():
 		[Location] NVARCHAR(255) COLLATE {1},
 		[LocationParentID] INT,
 		[LocationPlan] VARCHAR(500) COLLATE {1},
-		[LocationPlanWidth] VARCHAR(500) FLOAT,
+		[LocationPlanWidth] FLOAT,
 		[LocationPlanDate] DATETIME,
 		[LocationGeometry] GEOMETRY,
 		[LocationHeight] FLOAT,
@@ -103,11 +107,12 @@ class CollectionInserter():
 		[DisplayOrder] SMALLINT,
 		[Type] NVARCHAR(50) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER,
-		[collection_sha] VARCHAR(64),
+		[collection_sha] VARCHAR(64) COLLATE {1},
 		PRIMARY KEY ([entry_num]),
 		INDEX [entry_num_idx] ([entry_num]),
-		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [CollectionID_idx] (CollectionID),
+		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+		INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
 		INDEX [RowGUID_idx] (RowGUID)
 		)
 		;""".format(self.temptable, self.collation)
@@ -118,7 +123,7 @@ class CollectionInserter():
 
 
 	def __addCollectionSHA(self):
-				query = """
+		query = """
 		UPDATE c_temp
 		SET [collection_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[CollectionName],
@@ -129,13 +134,13 @@ class CollectionInserter():
 			[Location],
 			[LocationParentID],
 			[LocationPlan],
-			 -- [LocationPlanWidth],
-			 -- [LocationPlanDate],
-			 -- [LocationGeometry],
-			 -- [LocationHeight],
+			[LocationPlanWidth],
+			[LocationPlanDate],
+			[LocationGeometry].STAsText(),
+			[LocationHeight],
 			[CollectionOwner]
 		)), 2)
-		FROM [{0}] ce_temp
+		FROM [{0}] c_temp
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -150,6 +155,7 @@ class CollectionInserter():
 		
 		self.__updateCollectionIDsInTempTable()
 		return
+
 
 
 	def __setUniqueCollectionsTempTable(self):
@@ -171,11 +177,11 @@ class CollectionInserter():
 			[CollectionAcronym] NVARCHAR(10) COLLATE {1},
 			[AdministrativeContactName] NVARCHAR(500) COLLATE {1},
 			[AdministrativeContactAgentURI] VARCHAR(255) COLLATE {1},
-			[Description_sha] VARCHAR(64),
+			[Description] NVARCHAR(MAX) COLLATE {1},
 			[Location] NVARCHAR(255) COLLATE {1},
 			[LocationParentID] INT,
 			[LocationPlan] VARCHAR(500) COLLATE {1},
-			[LocationPlanWidth] VARCHAR(500) FLOAT,
+			[LocationPlanWidth] FLOAT,
 			[LocationPlanDate] DATETIME,
 			[LocationGeometry] GEOMETRY,
 			[LocationHeight] FLOAT,
@@ -183,7 +189,7 @@ class CollectionInserter():
 			[Type] NVARCHAR(50) COLLATE {1},
 			[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 			 -- 
-			[collection_sha] VARCHAR(64),
+			[collection_sha] VARCHAR(64) COLLATE {1},
 			INDEX [collection_sha_idx] ([collection_sha]),
 			INDEX [RowGUID_idx] ([RowGUID])
 		)
@@ -195,36 +201,36 @@ class CollectionInserter():
 		
 		query = """
 		INSERT INTO [{0}] (
-			[CollectionName],
-			[CollectionAcronym],
-			[AdministrativeContactName],
-			[AdministrativeContactAgentURI],
-			[Description_sha],
-			[Location],
-			[LocationParentID],
-			[LocationPlan],
-			[LocationPlanWidth],
-			[LocationPlanDate],
-			[LocationGeometry],
-			[LocationHeight],
-			[CollectionOwner]
+			[collection_sha]
 		)
 		SELECT DISTINCT
-			[CollectionName],
-			[CollectionAcronym],
-			[AdministrativeContactName],
-			[AdministrativeContactAgentURI],
-			[Description_sha],
-			[Location],
-			[LocationParentID],
-			[LocationPlan],
-			[LocationPlanWidth],
-			[LocationPlanDate],
-			[LocationGeometry],
-			[LocationHeight],
-			[CollectionOwner]
+			[collection_sha]
 		FROM [{1}] c_temp
 		WHERE c_temp.[CollectionID] IS NULL
+		;""".format(self.unique_collections_temptable, self.temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		UPDATE ue_temp
+		SET 
+			[CollectionName] = c_temp.[CollectionName],
+			[CollectionAcronym] = c_temp.[CollectionAcronym],
+			[AdministrativeContactName] = c_temp.[AdministrativeContactName],
+			[AdministrativeContactAgentURI] = c_temp.[AdministrativeContactAgentURI],
+			[Description] = c_temp.[Description],
+			[Location] = c_temp.[Location],
+			[LocationParentID] = c_temp.[LocationParentID],
+			[LocationPlan] = c_temp.[LocationPlan],
+			[LocationPlanWidth] = c_temp.[LocationPlanWidth],
+			[LocationPlanDate] = c_temp.[LocationPlanDate],
+			[LocationHeight] = c_temp.[LocationHeight],
+			[CollectionOwner] = c_temp.[CollectionOwner]
+		FROM [{0}] ue_temp
+		INNER JOIN [{1}] c_temp
+		ON ue_temp.[collection_sha] = c_temp.[collection_sha]
 		;""".format(self.unique_collections_temptable, self.temptable)
 		
 		querylog.info(query)
@@ -240,7 +246,7 @@ class CollectionInserter():
 			[CollectionAcronym],
 			[AdministrativeContactName],
 			[AdministrativeContactAgentURI],
-			[Description_sha],
+			[Description],
 			[Location],
 			[LocationParentID],
 			[LocationPlan],
@@ -251,12 +257,12 @@ class CollectionInserter():
 			[CollectionOwner],
 			[RowGUID]
 		)
-		SELECT DISTINCT -- insert only one version of each collection when the same collection occurs multiple times in json data
+		SELECT
 			ue_temp.[CollectionName],
 			ue_temp.[CollectionAcronym],
 			ue_temp.[AdministrativeContactName],
 			ue_temp.[AdministrativeContactAgentURI],
-			ue_temp.[Description_sha],
+			ue_temp.[Description],
 			ue_temp.[Location],
 			ue_temp.[LocationParentID],
 			ue_temp.[LocationPlan],
@@ -278,7 +284,7 @@ class CollectionInserter():
 		FROM [{0}] ue_temp
 		INNER JOIN [Collection] c
 		ON c.[RowGUID] = ue_temp.[RowGUID]
-		;""".format(self.unique_events_temptable)
+		;""".format(self.unique_collections_temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -291,9 +297,11 @@ class CollectionInserter():
 		UPDATE c_temp
 		SET c_temp.CollectionID = c.CollectionID
 		FROM [{0}] c_temp
+		INNER JOIN [{1}] ue_temp
+		ON c_temp.[collection_sha] = ue_temp.[collection_sha]
 		INNER JOIN [Collection] c
-		ON c_temp.[RowGUID] = c.[RowGUID]
-		;""".format(self.temptable)
+		ON ue_temp.[RowGUID] = c.[RowGUID]
+		;""".format(self.temptable, self.unique_collections_temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -304,10 +312,26 @@ class CollectionInserter():
 	def __insertCollectionIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
-		SET cs.[CollectionID] = ce_temp.[CollectionID]
+		SET cs.[CollectionID] = c_temp.[CollectionID]
 		FROM CollectionSpecimen cs
 		INNER JOIN [{0}] c_temp 
 		ON c_temp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		WHERE c_temp.[CollectionID] IS NOT NULL
+		""".format(self.temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		return
+
+
+	def __insertCollectionIDsInSpecimenPart(self):
+		query = """
+		UPDATE csp
+		SET csp.[CollectionID] = c_temp.[CollectionID]
+		FROM CollectionSpecimenPart csp
+		INNER JOIN [{0}] c_temp
+		ON c_temp.[SpecimenPartID] = csp.[SpecimenPartID]
 		WHERE c_temp.[CollectionID] IS NOT NULL
 		""".format(self.temptable)
 		

@@ -381,6 +381,9 @@
 				"WGS84_RecordingMethod": "GPS",
 				"DataWithholdingReason": "DataWithholdingReason Event: Dataset for UnitTest"
 			},
+			"Collection": {
+				"@id": "_:c1"
+			},
 			"CollectionExternalDatasource": {
 				"ExternalDatasourceName": "Unittest external datasource 1",
 				"ExternalDatasourceVersion": 1,

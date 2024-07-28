@@ -11,6 +11,7 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
+from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
 from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
 from dc_rest_api.lib.CRUD_Operations.IdentificationUnitInserter import IdentificationUnitInserter
@@ -53,6 +54,18 @@ class CollectionSpecimenInserter():
 		self.__setMissingAccessionNumbers()
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
+		
+		collections = []
+		for cs_dict in self.specimen_dicts:
+			if 'Collection' in cs_dict:
+				c_dict = cs_dict['Collection']
+				# add the CollectionSpecimenID here as the events should be inserted for specific Specimens
+				c_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+				collections.append(c_dict)
+		
+		c_inserter = CollectionInserter(self.dc_db)
+		c_inserter.setCollectionDicts(collections)
+		c_inserter.insertCollectionData()
 		
 		events = []
 		for cs_dict in self.specimen_dicts:

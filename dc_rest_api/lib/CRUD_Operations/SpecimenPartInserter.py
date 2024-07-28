@@ -5,6 +5,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
 
 
 """
@@ -28,8 +29,6 @@ class SpecimenPartInserter():
 			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'SpecimenPartID'},
-			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
-			{'colname': 'CollectionID'},
 			{'colname': 'AccessionNumber'},
 			{'colname': 'PartSublabel'},
 			{'colname': 'PreparationMethod'},
@@ -54,15 +53,26 @@ class SpecimenPartInserter():
 		self.json2temp.set_datadicts(self.csp_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__setCollectionIDs()
+		self.__setDummyCollectionIDs()
 		self.__setMissingAccessionNumbers()
 		self.__overwriteUnknownMaterialCategories()
 		
 		self.__insertSpecimenParts()
 		
 		self.__updateCSPTempTable()
-		
 		self.__updateCSPDicts()
+		
+		collections = []
+		
+		for csp_dict in self.csp_dicts:
+			if 'Collection' in csp_dict:
+				c_dict = csp_dict['Collection']
+				c_dict['SpecimenPartID'] = csp_dict['SpecimenPartID']
+				collections.append(c_dict)
+		
+		c_inserter = CollectionInserter(self.dc_db)
+		c_inserter.setCollectionDicts(collections)
+		c_inserter.insertCollectionData()
 		
 		return
 
@@ -119,7 +129,11 @@ class SpecimenPartInserter():
 		return
 
 
-	def __setCollectionIDs(self):
+	def __setDummyCollectionIDs(self):
+		"""
+		set dummy CollectionIDs because the CollectionIDs will later be updated against the Collection data in json
+		"""
+		'''
 		query = """
 		UPDATE csp_temp
 		SET csp_temp.[CollectionID] = c.CollectionID
@@ -129,8 +143,9 @@ class SpecimenPartInserter():
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
-		
 		# set the CollectionNames that can not be found to 'No collection' and the according CollectionID in Collection table
+		'''
+		
 		query = """
 		UPDATE csp_temp
 		SET csp_temp.[CollectionID] = c.CollectionID,
@@ -278,7 +293,9 @@ class SpecimenPartInserter():
 			entry_num = csp_dict['entry_num']
 			csp_dict['AccessionNumber'] = csp_ids[entry_num]['AccessionNumber']
 			csp_dict['SpecimenPartID'] = csp_ids[entry_num]['SpecimenPartID']
-			csp_dict['CollectionID'] = csp_ids[entry_num]['CollectionID']
+			
+			#csp_dict['CollectionID'] = csp_ids[entry_num]['CollectionID']
+			
 			csp_dict['MaterialCategory'] = csp_ids[entry_num]['MaterialCategory']
 			csp_dict['RowGUID'] = csp_ids[entry_num]['RowGUID']
 		return

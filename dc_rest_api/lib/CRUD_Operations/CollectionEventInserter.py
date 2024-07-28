@@ -290,23 +290,6 @@ class CollectionEventInserter():
 		return
 
 
-	def __updateEventIDsInTempTable(self):
-		query = """
-		UPDATE ce_temp
-		SET ce_temp.[CollectionEventID] = ue_temp.[CollectionEventID],
-		ce_temp.[RowGUID] = ue_temp.[RowGUID]
-		FROM [{0}] ce_temp
-		INNER JOIN [{1}] ue_temp 
-		ON ce_temp.[event_sha] = ue_temp.[event_sha]
-		 -- WHERE ce_temp.[CollectionEventID] IS NULL
-		;""".format(self.temptable, self.unique_events_temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
 	def createNewEvents(self):
 		# insert only one version of each event when the same event occurres multiple times in json data
 		self.__setUniqueEventsTempTable()
@@ -513,7 +496,7 @@ class CollectionEventInserter():
 			[CountryCache],
 			[RowGUID]
 		)
-		SELECT DISTINCT -- insert only one version of each event when the same event occurres multiple times in json data
+		SELECT DISTINCT -- the uniqueness is set by ue_temp.[RowGUID] which was set before in __setUniqueEventsTemptable when the CollectionEvent data is the same but Localisations differ
 			ue_temp.[CollectorsEventNumber],
 			ue_temp.[CollectionDate],
 			ue_temp.[CollectionDay],
@@ -553,6 +536,23 @@ class CollectionEventInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		
+		return
+
+
+	def __updateEventIDsInTempTable(self):
+		query = """
+		UPDATE ce_temp
+		SET ce_temp.[CollectionEventID] = ue_temp.[CollectionEventID],
+		ce_temp.[RowGUID] = ue_temp.[RowGUID]
+		FROM [{0}] ce_temp
+		INNER JOIN [{1}] ue_temp 
+		ON ce_temp.[event_sha] = ue_temp.[event_sha]
+		 -- WHERE ce_temp.[CollectionEventID] IS NULL
+		;""".format(self.temptable, self.unique_events_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		return
 
 
