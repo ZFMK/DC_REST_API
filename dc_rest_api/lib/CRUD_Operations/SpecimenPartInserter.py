@@ -62,6 +62,7 @@ class SpecimenPartInserter():
 		self.__updateCSPTempTable()
 		self.__updateCSPDicts()
 		
+		'''
 		collections = []
 		
 		for csp_dict in self.csp_dicts:
@@ -73,6 +74,7 @@ class SpecimenPartInserter():
 		c_inserter = CollectionInserter(self.dc_db)
 		c_inserter.setCollectionDicts(collections)
 		c_inserter.insertCollectionData()
+		'''
 		
 		return
 

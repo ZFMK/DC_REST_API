@@ -55,6 +55,7 @@ class CollectionSpecimenInserter():
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
 		
+		'''
 		collections = []
 		for cs_dict in self.specimen_dicts:
 			if 'Collection' in cs_dict:
@@ -79,6 +80,7 @@ class CollectionSpecimenInserter():
 		e_inserter.setCollectionEventDicts(events)
 		e_inserter.insertCollectionEventData()
 		
+		
 		externaldatasources = []
 		for cs_dict in self.specimen_dicts:
 			if 'CollectionExternalDatasource' in cs_dict:
@@ -90,7 +92,7 @@ class CollectionSpecimenInserter():
 		ed_inserter = ExternalDatasourceInserter(self.dc_db, users_roles = self.users_roles)
 		ed_inserter.setExternalDatasourceDicts(externaldatasources)
 		ed_inserter.insertExternalDatasourceData()
-		
+		'''
 		
 		identificationunits = []
 		for cs_dict in self.specimen_dicts:

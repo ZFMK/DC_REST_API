@@ -10,18 +10,20 @@ from dc_rest_api.lib.CRUD_Operations.Matchers.CollectionMatcher import Collectio
 
 
 class CollectionInserter():
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, users_roles = []):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = 'collection_temptable'
-		self.unique_collections_temptable = 'unique_c_temptable'
+		self.users_roles = users_roles
+		
+		self.temptable = '#collection_temptable'
+		self.unique_collections_temptable = '#unique_c_temptable'
 		
 		
 		self.schema = [
-			{'colname': 'entry_num', 'None allowed': False},
+			{'colname': '@id', 'None allowed': False},
 			{'colname': 'CollectionID'},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'SpecimenPartID'},
@@ -44,7 +46,8 @@ class CollectionInserter():
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
 
 
-	def insertCollectionData(self):
+	def insertCollectionData(self, json_dicts = []):
+		self.c_dicts = json_dicts
 		
 		self.__createCollectionTempTable()
 		
@@ -65,16 +68,6 @@ class CollectionInserter():
 		return
 
 
-	def setCollectionDicts(self, json_dicts = []):
-		self.c_dicts = []
-		c_count = 1
-		for c_dict in json_dicts:
-			c_dict['entry_num'] = c_count
-			c_count += 1
-			self.c_dicts.append(c_dict)
-		return
-
-
 	def __createCollectionTempTable(self):
 		query = """
 		DROP TABLE IF EXISTS [{0}];
@@ -86,7 +79,7 @@ class CollectionInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[entry_num] INT NOT NULL,
+		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionID] INT,
 		[CollectionSpecimenID] INT,
 		[SpecimenPartID] INT,
@@ -108,8 +101,7 @@ class CollectionInserter():
 		[Type] NVARCHAR(50) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER,
 		[collection_sha] VARCHAR(64) COLLATE {1},
-		PRIMARY KEY ([entry_num]),
-		INDEX [entry_num_idx] ([entry_num]),
+		PRIMARY KEY ([@id]),
 		INDEX [CollectionID_idx] (CollectionID),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
@@ -344,16 +336,16 @@ class CollectionInserter():
 	def __updateCollectionDicts(self):
 		c_ids = self.getIDsForCollectionDicts()
 		for c_dict in self.c_dicts:
-			entry_num = c_dict['entry_num']
-			c_dict['CollectionID'] = c_ids[entry_num]['CollectionID']
-			c_dict['RowGUID'] = c_ids[entry_num]['RowGUID']
+			entry_id = c_dict['@id']
+			c_dict['CollectionID'] = c_ids[entry_id]['CollectionID']
+			c_dict['RowGUID'] = c_ids[entry_id]['RowGUID']
 		return
 
 
 	def getIDsForCollectionDicts(self):
 		query = """
 		SELECT 
-			c_temp.[entry_num],
+			c_temp.[@id],
 			c.[CollectionID],
 			c.[RowGUID]
 		FROM [Collection] c
@@ -373,7 +365,6 @@ class CollectionInserter():
 		
 		return c_ids
 
-################################################
 
 
 
@@ -386,34 +377,7 @@ class CollectionInserter():
 
 
 
-	'''
-	def __setExistingCollections(self):
-		query = """
-		UPDATE c_temp
-		SET c_temp.[CollectionID] = eds.[CollectionID],
-		c_temp.[RowGUID] = eds.[RowGUID]
-		FROM [{0}] c_temp
-		INNER JOIN Collection c
-		ON (
-				c_temp.[CollectionName] = c.[CollectionName]
-				AND ((c_temp.[CollectionAcronym] = c.[CollectionAcronym]) OR (c_temp.[CollectionAcronym] ICollectionAcronymS NULL AND c.[CollectionAcronym] IS NULL))
-				AND ((c_temp.[AdministrativeContactName] = c.[AdministrativeContactName]) OR (c_temp.[AdministrativeContactName] IS NULL AND c.[AdministrativeContactName] IS NULL))
-				AND ((c_temp.[AdministrativeContactAgentURI] = c.[AdministrativeContactAgentURI]) OR (c_temp.[AdministrativeContactAgentURI] IS NULL AND c.[AdministrativeContactAgentURI] IS NULL))
-				AND ((c_temp.[Description_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', c_temp[Description]), 2)) OR (c_temp.[Description] IS NULL AND c.[Description] IS NULL))
-				AND ((c_temp.[Location] = c.[Location]) OR (c_temp.[Location] IS NULL AND c.[Location] IS NULL))
-				AND ((c_temp.[CollectionOwner] = c.[CollectionOwner]) OR (c_temp.[CollectionOwner] IS NULL AND c.[CollectionOwner] IS NULL))
-				AND ((c_temp.[Type] = c.[Type]) OR (c_temp.[Type] IS NULL AND c.[Type] IS NULL))
-			)
-		WHERE c_temp.[CollectionID] IS NULL
-		;
-		""".format(self.temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		return
-	'''
+
 
 
 

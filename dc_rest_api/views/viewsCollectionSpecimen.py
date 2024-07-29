@@ -13,6 +13,10 @@ from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
 from dc_rest_api.lib.CRUD_Operations.JSON2Datadicts import JSON2Datadicts
+
+from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
+from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
+from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
 
@@ -74,11 +78,26 @@ class CollectionSpecimenViews():
 		pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		
-		#referenced_json.extractSubdicts()
-		referenced_json.insertSubdicts()
+		referenced_json.extractSubdicts()
+		#referenced_json.insertSubdicts()
 		
 		#dataparser = JSON2Datadicts(self.request_params.json_body)
 		#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
+		
+		if 'Collections' in self.request_params.json_body:
+			collections = self.request_params.json_body['Collections']
+			c_inserter = CollectionInserter(self.dc_db, users_roles = self.roles)
+			c_inserter.insertCollectionData(collections)
+		
+		if 'CollectionEvents' in self.request_params.json_body:
+			events = self.request_params.json_body['CollectionEvents']
+			ce_inserter = CollectionEventInserter(self.dc_db)
+			ce_inserter.insertCollectionEventData(events)
+		
+		if 'CollectionExternalDatasources' in self.request_params.json_body:
+			datasources = self.request_params.json_body['CollectionExternalDatasources']
+			ed_inserter = ExternalDatasourceInserter(self.dc_db)
+			ed_inserter.insertExternalDatasourceData(datasources)
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			#pudb.set_trace()

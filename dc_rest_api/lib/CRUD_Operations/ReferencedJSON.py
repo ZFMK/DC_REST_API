@@ -34,6 +34,10 @@ class ReferencedJSON():
 		for key in self.json_dicts:
 			if key not in self.extracted_dicts:
 				self.__insertRefererencedSubdicts(self.json_dicts[key])
+		# delete the referenced dicts when they have been inserted as subdicts
+		for key in self.extracted_dicts:
+			if key in self.json_dicts:
+				self.json_dicts[key] = []
 
 
 	def __insertRefererencedSubdicts(self, subdicts):
@@ -143,3 +147,50 @@ class ReferencedJSON():
 		return
 
 
+
+
+
+	
+	def updateIDs(self, key, id_columns = []):
+		if not key in self.references:
+			raise ValueError('ReferencedJSON.updateIDs: key must be in one of: {0}'.format(', '.join([refkey for refkey in self.references])))
+		if len(id_columns) < 1:
+			raise ValueError('ReferencedJSON.updateIDs: At least one id column must be given')
+		
+		self.__updateIDsInReferences(key, id_columns, json_dicts)
+		self.__updateIDsInExtractedDicts(key, id_columns, json_dicts)
+		return
+
+
+	def __updateIDsInReferences(self, key, id_columns, subdicts):
+		for subdict in subdicts:
+			if isinstance(subdict, dict) and key in subdict:
+				extracted_ids = [element['@id'] for element in self.extracted_dicts[self.references[key]]]
+				
+				if isinstance(subdict[key], dict):
+					if '@id' in subdict[key] and len(subdict[key]) == 1:
+						if subdict[key]['@id'] in extracted_ids:
+							for element in self.extracted_dicts[self.references[key]]:
+								if subdict[key]['@id'] == element['@id']:
+									for id_column in id_columns:
+										#if id_column in element:
+										subdict[id_column] = element[id_column]
+				
+				if isinstance(subdict[key], list) or isinstance(subdict[key], tuple):
+					for subdictelement in subdict[key]:
+						
+						if '@id' in subdictelement and len(subdictelement) == 1:
+							if subdictelement['@id'] in extracted_ids:
+								for element in self.extracted_dicts[self.references[key]]:
+									if subdictelement['@id'] == element['@id']:
+										for id_column in id_columns:
+											if id_column not in subdict:
+												subdict[id_column] = []
+											subdict[id_column].append(element[id_column])
+				#else:
+				#	self.__updateIDsInReferences(key, id_columns, subdict[key])
+			
+			else:
+				self.__updateIDsInReferences(key, id_columns, subdict[key])
+		return
+	
