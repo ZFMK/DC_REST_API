@@ -79,7 +79,11 @@ class CollectionSpecimenViews():
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		
 		referenced_json.extractSubdicts()
-		#referenced_json.insertSubdicts()
+		referenced_json.insertSubdicts()
+		referenced_json.flatten2ListsOfDicts()
+		pudb.set_trace()
+		referenced_json.insertFlattenedSubdicts()
+		pudb.set_trace()
 		
 		#dataparser = JSON2Datadicts(self.request_params.json_body)
 		#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
