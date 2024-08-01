@@ -34,6 +34,10 @@ class ReferencedJSON():
 		for key in self.json_dicts:
 			if key not in self.extracted_dicts:
 				self.__insertRefererencedSubdicts(self.json_dicts[key])
+		# delete the referenced dicts when they have been inserted as subdicts
+		for key in self.extracted_dicts:
+			if key in self.json_dicts:
+				del self.json_dicts[key]
 
 
 	def __insertRefererencedSubdicts(self, subdicts):
@@ -45,7 +49,7 @@ class ReferencedJSON():
 					if key in self.references:
 						if isinstance(subdict[key], dict):
 							if '@id' in subdict[key] and len(subdict[key]) == 1:
-								for element in self.extracted_dicts[self.references[key]]:
+								for element in self.json_dicts[self.references[key]]:
 									if element['@id'] == subdict[key]['@id']:
 										subdict[key] = dict(element)
 						
@@ -54,7 +58,7 @@ class ReferencedJSON():
 							
 							for refdict in subdict[key]:
 								if '@id' in refdict and len(refdict) == 1:
-									for element in self.extracted_dicts[self.references[key]]:
+									for element in self.json_dicts[self.references[key]]:
 										if element['@id'] == refdict['@id']:
 											referenced_elements.append(dict(element))
 							subdict[key] = referenced_elements

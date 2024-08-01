@@ -52,7 +52,7 @@ class JSON2TempTable():
 					# just let the json_dict entry as it is
 					pass
 				
-				if entry['colname'] != 'dataset_num' and json_dict[entry['colname']] is not None:
+				if entry['colname'] != 'entry_num' and json_dict[entry['colname']] is not None:
 					values_not_none += 1
 			
 			# check that at least one value in json_dict entries is not None
@@ -115,7 +115,7 @@ class JSON2TempTable():
 					{1}
 				)
 				VALUES {2}
-				;""".format(temptable, ',\n'.join(colnames), placeholderstring)
+				;""".format(temptable, ',\n'.join(['[{0}]'.format(colname) for colname in colnames]), placeholderstring)
 				
 				querylog.info(query)
 				querylog.info(values)
