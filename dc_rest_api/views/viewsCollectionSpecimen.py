@@ -12,7 +12,6 @@ from dc_rest_api.lib.Authentication.UserLogin import UserLogin
 from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
-from dc_rest_api.lib.CRUD_Operations.JSON2Datadicts import JSON2Datadicts
 
 from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
@@ -85,9 +84,6 @@ class CollectionSpecimenViews():
 		referenced_json.insertFlattenedSubdicts()
 		pudb.set_trace()
 		
-		#dataparser = JSON2Datadicts(self.request_params.json_body)
-		#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
-		
 		if 'Collections' in self.request_params.json_body:
 			collections = self.request_params.json_body['Collections']
 			c_inserter = CollectionInserter(self.dc_db, users_roles = self.roles)
@@ -104,9 +100,6 @@ class CollectionSpecimenViews():
 			ed_inserter.insertExternalDatasourceData(datasources)
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
-			#pudb.set_trace()
-			#dataparser = JSON2Datadicts(self.request_params.json_body)
-			#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
 			
 			self.payload = self.request_params.json_body['CollectionSpecimens']
 			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)

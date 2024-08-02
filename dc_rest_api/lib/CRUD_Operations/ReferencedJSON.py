@@ -220,6 +220,7 @@ class ReferencedJSON():
 
 
 	def insertFlattenedSubdicts(self):
+		self.insertSubdicts()
 		self.__insertFlattenedSubdicts(self.json_dicts)
 		# delete the referenced dicts when they have been inserted as subdicts
 		for key in self.flattened_keys:
@@ -227,6 +228,14 @@ class ReferencedJSON():
 			if key != 'CollectionSpecimens':
 				if key in self.json_dicts:
 					del self.json_dicts[key]
+		
+		if 'CollectionSpecimens' in self.json_dicts:
+			new_specimen_list = []
+			for specimen_dict_key in self.json_dicts['CollectionSpecimens']:
+				self.json_dicts['CollectionSpecimens'][specimen_dict_key]['@id'] = specimen_dict_key
+				new_specimen_list.append(self.json_dicts['CollectionSpecimens'][specimen_dict_key])
+			self.json_dicts['CollectionSpecimens'] = new_specimen_list
+		
 		return
 
 
