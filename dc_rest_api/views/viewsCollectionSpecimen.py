@@ -12,7 +12,6 @@ from dc_rest_api.lib.Authentication.UserLogin import UserLogin
 from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
-from dc_rest_api.lib.CRUD_Operations.JSON2Datadicts import JSON2Datadicts
 from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
 
@@ -77,13 +76,7 @@ class CollectionSpecimenViews():
 		#referenced_json.extractSubdicts()
 		referenced_json.insertSubdicts()
 		
-		#dataparser = JSON2Datadicts(self.request_params.json_body)
-		#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
-		
 		if 'CollectionSpecimens' in self.request_params.json_body:
-			#pudb.set_trace()
-			#dataparser = JSON2Datadicts(self.request_params.json_body)
-			#self.datadicts = dataparser.parseJSON(self.request_params.json_body)
 			
 			self.payload = self.request_params.json_body['CollectionSpecimens']
 			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)

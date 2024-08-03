@@ -11,6 +11,7 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
 
+from dc_rest_api.lib.CRUD_Operations.ProjectInserter import ProjectInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
 from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
@@ -54,6 +55,20 @@ class CollectionSpecimenInserter():
 		self.__setMissingAccessionNumbers()
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
+		
+		pudb.set_trace()
+		projects = []
+		for cs_dict in self.specimen_dicts:
+			if 'Projects' in cs_dict:
+				p_dict = cs_dict['Projects']
+				# add the CollectionSpecimenID here for CollectionProject table
+				p_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+				projects.append(p_dict)
+		
+		p_inserter = ProjectInserter(self.dc_db)
+		p_inserter.setProjectDicts(projects)
+		p_inserter.insertProjectData()
+		
 		
 		collections = []
 		for cs_dict in self.specimen_dicts:

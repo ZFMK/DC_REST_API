@@ -16,8 +16,8 @@ class CollectionInserter():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = 'collection_temptable'
-		self.unique_collections_temptable = 'unique_c_temptable'
+		self.temptable = '#collection_temptable'
+		self.unique_collections_temptable = '#unique_c_temptable'
 		
 		
 		self.schema = [

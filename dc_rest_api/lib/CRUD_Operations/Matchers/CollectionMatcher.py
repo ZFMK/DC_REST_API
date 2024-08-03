@@ -14,7 +14,7 @@ class CollectionMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = 'prefiltered_collections'
+		self.prefiltered_temptable = '#prefiltered_collections'
 
 
 	def matchExistingCollections(self):
@@ -26,9 +26,6 @@ class CollectionMatcher():
 
 
 	def __createPrefilteredTempTable(self):
-		# create a temptable that contains all events that
-		# match in CollectionEvent table columns
-		# use this prefiltered table to check the matching of EventLocalisations
 		
 		query = """
 		DROP TABLE IF EXISTS [{0}]
@@ -108,6 +105,7 @@ class CollectionMatcher():
 		INNER JOIN [{1}] c_temp
 		ON ((c_temp.[CollectionName] = c.[CollectionName]) OR (c_temp.[CollectionName] IS NULL AND c.[CollectionName] IS NULL))
 		AND ((c_temp.[CollectionAcronym] = c.[CollectionAcronym]) OR (c_temp.[CollectionAcronym] IS NULL AND c.[CollectionAcronym] IS NULL))
+		 -- WHERE c_temp.[CollectionID] IS NULL
 		;""".format(self.prefiltered_temptable, self.temptable)
 		
 		querylog.info(query)
