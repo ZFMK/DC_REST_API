@@ -9,11 +9,13 @@ from dc_rest_api.lib.CRUD_Operations.Matchers.ProjectMatcher import ProjectMatch
 
 
 class ProjectInserter():
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, users_roles = []):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
+		
+		self.users_roles = users_roles
 		
 		self.temptable = '#project_temptable'
 		self.unique_projects_temptable = '#unique_p_temptable'
@@ -22,7 +24,7 @@ class ProjectInserter():
 		self.min_project_id = 271176
 		
 		self.schema = [
-			{'colname': 'entry_num', 'None allowed': False},
+			{'colname': '@id', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
 			{'colname': 'ProjectID'},
 			{'colname': 'Project', 'None allowed': False},
@@ -32,9 +34,11 @@ class ProjectInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
+		self.messages = []
 
 
-	def insertProjectData(self):
+	def insertProjectData(self, json_dicts = []):
+		self.project_dicts = json_dicts
 		
 		self.__createProjectTempTable()
 		
@@ -52,21 +56,28 @@ class ProjectInserter():
 				self.createNewProjects()
 			else:
 				self.messages.append('You do not have the rights to insert new projects')
+				raise ValueError()
 		
 		self.__updateProjectDicts()
 		
 		return
 
 
-	def setProjectDicts(self, json_dicts = []):
-		self.project_dicts = []
-		p_count = 1
-		for project_dict in json_dicts:
-			project_dict['entry_num'] = p_count
-			p_count += 1
-			self.project_dicts.append(project_dict)
-		return
-
+	def __getNumberOfUnmatchedProjects(self):
+		query = """
+		SELECT COUNT([@id])
+		FROM [{0}] p_temp
+		WHERE p_temp.[ProjectID] IS NULL
+		;""".format(self.temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		row = self.cur.fetchone()
+		if row is not None:
+			num = int(row[0])
+			return num
+		else:
+			return 0
 
 
 	def __createProjectTempTable(self):
@@ -80,7 +91,7 @@ class ProjectInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[entry_num] INT NOT NULL,
+		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[ProjectID] INT DEFAULT NULL,
 		[Project] NVARCHAR(50) COLLATE {1} NOT NULL,
@@ -89,7 +100,7 @@ class ProjectInserter():
 		 -- [StableIdentifierTypeID] INT,
 		[RowGUID] UNIQUEIDENTIFIER,
 		[project_sha] VARCHAR(64) COLLATE {1},
-		PRIMARY KEY ([entry_num]),
+		PRIMARY KEY ([@id]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [ProjectID_idx] ([ProjectID]),
 		INDEX [Project_idx] ([Project]),
@@ -268,17 +279,17 @@ class ProjectInserter():
 
 	def __updateProjectDicts(self):
 		p_ids = self.getIDsForProjectDicts()
-		for p_dict in self.project_dicts:
-			entry_num = p_dict['entry_num']
-			p_dict['ProjectID'] = p_ids[entry_num]['ProjectID']
-			p_dict['RowGUID'] = p_ids[entry_num]['RowGUID']
+		for dict_id in self.project_dicts:
+			p_dict = self.project_dicts[dict_id]
+			p_dict['ProjectID'] = p_ids[dict_id]['ProjectID']
+			p_dict['RowGUID'] = p_ids[dict_id]['RowGUID']
 		return
 
 
-	def getIDsForCollectionDicts(self):
+	def getIDsForProjectDicts(self):
 		query = """
 		SELECT 
-			p_temp.[entry_num],
+			p_temp.[@id],
 			pp.[ProjectID],
 			pp.[RowGUID]
 		FROM [ProjectProxy] pp
@@ -296,7 +307,7 @@ class ProjectInserter():
 			p_ids[row[0]]['ProjectID'] = row[1]
 			p_ids[row[0]]['RowGUID'] = row[2]
 		
-		return c_ids
+		return p_ids
 
 
 

@@ -30,7 +30,10 @@ class JSON2TempTable():
 		
 		self.datadicts = []
 		
-		for json_dict in json_dicts:
+		for key in json_dicts:
+			json_dict = json_dicts[key]
+		
+			#for json_dict in json_dicts:
 			#try:
 			values_not_none = 0
 			for entry in self.schema:

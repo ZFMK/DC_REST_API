@@ -44,6 +44,7 @@ class CollectionInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
+		self.messages = []
 
 
 	def insertCollectionData(self, json_dicts = []):
@@ -335,10 +336,10 @@ class CollectionInserter():
 
 	def __updateCollectionDicts(self):
 		c_ids = self.getIDsForCollectionDicts()
-		for c_dict in self.c_dicts:
-			entry_id = c_dict['@id']
-			c_dict['CollectionID'] = c_ids[entry_id]['CollectionID']
-			c_dict['RowGUID'] = c_ids[entry_id]['RowGUID']
+		for dict_id in self.c_dicts:
+			c_dict = self.c_dicts[dict_id]
+			c_dict['CollectionID'] = c_ids[dict_id]['CollectionID']
+			c_dict['RowGUID'] = c_ids[dict_id]['RowGUID']
 		return
 
 

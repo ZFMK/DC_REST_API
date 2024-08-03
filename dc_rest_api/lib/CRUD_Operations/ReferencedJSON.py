@@ -16,9 +16,18 @@ class ReferencedJSON():
 		self.json_dicts = json_dicts
 		
 		self.references = {
+			"Projects": "Projects", 
 			"Collection": "Collections",
 			"CollectionEvent": "CollectionEvents",
 			"CollectionExternalDatasource": "CollectionExternalDatasources",
+		}
+		
+		self.flat_references = {
+			"Projects": "Projects", 
+			"Collection": "Collections",
+			"CollectionEvent": "CollectionEvents",
+			"CollectionExternalDatasource": "CollectionExternalDatasources",
+			"CollectionSpecimens": "CollectionSpecimens"
 		}
 		
 		self.initExtractedDicts()
@@ -33,14 +42,14 @@ class ReferencedJSON():
 	def insertSubdicts(self):
 		for key in self.json_dicts:
 			if key not in self.extracted_dicts:
-				self.__insertRefererencedSubdicts(self.json_dicts[key])
+				self.__insertSubdicts(self.json_dicts[key])
 		# delete the referenced dicts when they have been inserted as subdicts
 		for key in self.extracted_dicts:
 			if key in self.json_dicts:
 				del self.json_dicts[key]
 
 
-	def __insertRefererencedSubdicts(self, subdicts):
+	def __insertSubdicts(self, subdicts):
 		for subdict in subdicts:
 			#if isinstance(subdict, dict) or isinstance(subdict[key], list) or isinstance(subdict[key], tuple)
 			
@@ -57,15 +66,19 @@ class ReferencedJSON():
 							referenced_elements = []
 							
 							for refdict in subdict[key]:
+								reference_solved = False
 								if '@id' in refdict and len(refdict) == 1:
 									for element in self.json_dicts[self.references[key]]:
 										if element['@id'] == refdict['@id']:
 											referenced_elements.append(dict(element))
+											reference_solved = True
+								if reference_solved is False:
+									referenced_elements.append(refdict)
 							subdict[key] = referenced_elements
 					elif isinstance(subdict[key], list) or isinstance(subdict[key], tuple):
-						self.__insertRefererencedSubdicts(subdict[key])
+						self.__insertSubdicts(subdict[key])
 			elif isinstance(subdict, list) or isinstance(subdict, tuple):
-				self.__insertRefererencedSubdicts(subdict)
+				self.__insertSubdicts(subdict)
 		return
 
 
@@ -103,7 +116,6 @@ class ReferencedJSON():
 			if isinstance(subdict, dict):
 				for key in subdict:
 					if key in self.references:
-						
 						# there might be a list of elements or just one (e. g. ProjectProxy or Collection)
 						
 						extracted_ids = [element['@id'] for element in self.extracted_dicts[self.references[key]]]
@@ -151,21 +163,20 @@ class ReferencedJSON():
 		self.insertSubdicts()
 		
 		self.flattened_dicts = {
-			'Collection': {},
-			'CollectionExternalDatasource': {},
-			'CollectionEvent': {},
+			'Projects': {},
+			'Collections': {},
+			'CollectionExternalDatasources': {},
+			'CollectionEvents': {},
 			'CollectionSpecimens': {},
-			'IdentificationUnits': {},
-			'Identifications': {},
-			'CollectionSpecimenParts': {},
-			'CollectionAgents': {},
+			#'IdentificationUnits': {},
+			#'Identifications': {},
+			#'CollectionSpecimenParts': {},
+			#'CollectionAgents': {},
 		}
 		
 		self.flattened_keys = [key for key in self.flattened_dicts]
-		
-		#json_copy = dict(self.json_dicts)
-		#self.__flatten_dicts(json_copy)
 		self.__flatten_dicts(self.json_dicts)
+		
 		self.__overwriteJSONWithFlattenedDicts()
 		
 		return
@@ -183,7 +194,6 @@ class ReferencedJSON():
 
 
 	def __flatten_dicts(self, subdicts):
-		#pudb.set_trace()
 		for key in subdicts:
 			# run into the leafs and replace them before replacing the parent nodes
 			if isinstance(subdicts[key], dict):
@@ -194,25 +204,29 @@ class ReferencedJSON():
 					if isinstance(subdict, list) or isinstance(subdict, tuple) or isinstance(subdict, dict):
 						self.__flatten_dicts(subdict)
 			
-			if key in self.flattened_keys:
+			# dicts with the same id will be overwritten, could this be shortened
+			if key in self.flat_references:
 				if isinstance(subdicts[key], dict):
 					dict_id, copied_dict = self.__calculateSHA(key, subdicts[key])
-					self.flattened_dicts[key][dict_id] = copied_dict
+					self.flattened_dicts[self.flat_references[key]][dict_id] = copied_dict
+					self.flattened_dicts[self.flat_references[key]][dict_id]['@id'] = dict_id
 					subdicts[key] = dict_id
 				elif isinstance(subdicts[key], list) or isinstance(subdicts[key], tuple):
 					idslist = []
 					for subdict in subdicts[key]:
 						if isinstance(subdict, dict):
 							dict_id, copied_dict = self.__calculateSHA(key, subdict)
-							self.flattened_dicts[key][dict_id] = copied_dict
+							self.flattened_dicts[self.flat_references[key]][dict_id] = copied_dict
+							self.flattened_dicts[self.flat_references[key]][dict_id]['@id'] = dict_id
 							idslist.append(dict_id)
 					subdicts[key] = idslist
+		
 		return
 
 
 	def __calculateSHA(self, key, json_dict):
 		copied_dict = dict(json_dict)
-		self.cs_independend_tables = ['Collection', 'CollectionEvent', 'CollectionExternalDatasource']
+		self.cs_independend_tables = [key for key in self.flat_references]
 		if key in self.cs_independend_tables and '@id' in copied_dict:
 			del copied_dict['@id']
 		dict_id = '_:' + hashlib.sha256(json.dumps(copied_dict).encode()).hexdigest()
@@ -220,7 +234,6 @@ class ReferencedJSON():
 
 
 	def insertFlattenedSubdicts(self):
-		self.insertSubdicts()
 		self.__insertFlattenedSubdicts(self.json_dicts)
 		# delete the referenced dicts when they have been inserted as subdicts
 		for key in self.flattened_keys:
@@ -242,18 +255,18 @@ class ReferencedJSON():
 	def __insertFlattenedSubdicts(self, subdict):
 		if isinstance(subdict, dict):
 			for key in subdict:
-				if isinstance(key, str) and key in self.flattened_keys:
+				if isinstance(key, str) and key in self.flat_references:
 					
-					if isinstance(subdict[key], str) and subdict[key] in self.json_dicts[key] and isinstance(self.json_dicts[key][subdict[key]], dict):
-						if key == 'CollectionEvent':
-							pudb.set_trace()
+					if isinstance(subdict[key], str) and subdict[key] in self.json_dicts[self.flat_references[key]] and isinstance(self.json_dicts[self.flat_references[key]][subdict[key]], dict):
+						#if key == 'CollectionEvent':
+						#	pudb.set_trace()
 						dict_id = str(subdict[key])
-						subdict[key] = self.json_dicts[key][dict_id]
+						subdict[key] = self.json_dicts[self.flat_references[key]][dict_id]
 					
 					elif isinstance(subdict[key], list) or isinstance(subdict[key], tuple):
 						for i in range(len(subdict[key])):
-							if isinstance(subdict[key][i], str) and subdict[key][i] in self.json_dicts[key] and isinstance(self.json_dicts[key][subdict[key][i]], dict):
-								subdict[key][i] = self.json_dicts[key][subdict[key][i]]
+							if isinstance(subdict[key][i], str) and subdict[key][i] in self.json_dicts[self.flat_references[key]] and isinstance(self.json_dicts[self.flat_references[key]][subdict[key][i]], dict):
+								subdict[key][i] = self.json_dicts[self.flat_references[key]][subdict[key][i]]
 							else:
 								self.__insertFlattenedSubdicts(subdict[key][i])
 					

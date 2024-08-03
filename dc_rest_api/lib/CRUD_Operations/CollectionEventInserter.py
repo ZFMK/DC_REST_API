@@ -697,11 +697,11 @@ class CollectionEventInserter():
 
 	def __updateCEDicts(self):
 		ce_ids = self.getIDsForCEDicts()
-		for ce_dict in self.ce_dicts:
-			entry_id = ce_dict['@id']
-			ce_dict['CollectionEventID'] = ce_ids[entry_id]['CollectionEventID']
-			ce_dict['RowGUID'] = ce_ids[entry_id]['RowGUID']
-			ce_dict['CollectionSpecimenID'] = ce_ids[entry_id]['CollectionSpecimenID']
+		for dict_id in self.ce_dicts:
+			ce_dict = self.ce_dicts[dict_id]
+			ce_dict['CollectionEventID'] = ce_ids[dict_id]['CollectionEventID']
+			ce_dict['RowGUID'] = ce_ids[dict_id]['RowGUID']
+			ce_dict['CollectionSpecimenID'] = ce_ids[dict_id]['CollectionSpecimenID']
 		return
 
 

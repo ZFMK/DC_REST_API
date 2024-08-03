@@ -24,7 +24,7 @@ import pudb
 import json
 
 
-class CollectionSpecimenViews():
+class CollectionSpecimensViews():
 
 	def __init__(self, request):
 		
@@ -47,7 +47,7 @@ class CollectionSpecimenViews():
 		self.users_project_ids = [project[0] for project in self.users_projects]
 
 
-	@view_config(route_name='specimen', accept='application/json', renderer="json", request_method = "POST")
+	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
@@ -58,64 +58,73 @@ class CollectionSpecimenViews():
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return jsonresponse
 		
-		# TODO: move this into extra method and shorten the way to get self.dc_db
-		try:
-			security = SecurityPolicy()
-			token = security.get_token_from_request(self.request)
-			dbsession = DBSession()
-			username, password = dbsession.get_credentials_from_session(token)
-			dc_config = dbsession.get_mssql_connectionparams_by_token(token)
-			if dc_config is None:
-				self.messages.append('There is no valid database connection for your session, try to login again')
-				return jsonresponse
-			dc_config['username'] = username
-			dc_config['password'] = password
-			self.dc_db = MSSQLConnector(config = dc_config)
-		except:
-			self.messages.append('Can not connect to DiversityCollection server. Please contact server administrator')
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
 		pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		
-		referenced_json.extractSubdicts()
-		referenced_json.insertSubdicts()
+		#referenced_json.extractSubdicts()
+		#referenced_json.insertSubdicts()
 		referenced_json.flatten2ListsOfDicts()
 		pudb.set_trace()
-		referenced_json.insertFlattenedSubdicts()
-		pudb.set_trace()
+		#referenced_json.insertFlattenedSubdicts()
+		#pudb.set_trace()
 		
 		if 'Projects' in self.request_params.json_body:
-			projects = self.request_params.json_body['Projects']
-			p_inserter = ProjectInserter(self.dc_db, users_roles = self.roles)
-			p_inserter.insertProjectData(projects)
+			try:
+				projects = self.request_params.json_body['Projects']
+				p_inserter = ProjectInserter(self.dc_db, users_roles = self.roles)
+				p_inserter.insertProjectData(projects)
+			except:
+				self.messages.extend(p_inserter.messages)
+				pudb.set_trace()
 		
 		if 'Collections' in self.request_params.json_body:
-			collections = self.request_params.json_body['Collections']
-			c_inserter = CollectionInserter(self.dc_db, users_roles = self.roles)
-			c_inserter.insertCollectionData(collections)
+			try:
+				collections = self.request_params.json_body['Collections']
+				c_inserter = CollectionInserter(self.dc_db, users_roles = self.roles)
+				c_inserter.insertCollectionData(collections)
+			except:
+				self.messages.extend(c_inserter.messages)
+				pudb.set_trace()
 		
 		if 'CollectionEvents' in self.request_params.json_body:
-			events = self.request_params.json_body['CollectionEvents']
-			ce_inserter = CollectionEventInserter(self.dc_db)
-			ce_inserter.insertCollectionEventData(events)
+			try:
+				events = self.request_params.json_body['CollectionEvents']
+				ce_inserter = CollectionEventInserter(self.dc_db)
+				ce_inserter.insertCollectionEventData(events)
+			except:
+				self.messages.extend(ce_inserter.messages)
 		
 		if 'CollectionExternalDatasources' in self.request_params.json_body:
-			datasources = self.request_params.json_body['CollectionExternalDatasources']
-			ed_inserter = ExternalDatasourceInserter(self.dc_db)
-			ed_inserter.insertExternalDatasourceData(datasources)
+			try:
+				datasources = self.request_params.json_body['CollectionExternalDatasources']
+				ed_inserter = ExternalDatasourceInserter(self.dc_db)
+				ed_inserter.insertExternalDatasourceData(datasources)
+			except:
+				self.messages.extend(ed_inserter.messages)
+				pudb.set_trace()
+		
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
-			
-			self.payload = self.request_params.json_body['CollectionSpecimens']
-			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
-			cs_inserter.setSpecimenDicts(self.payload)
-			cs_inserter.insertSpecimenData()
+			try:
+				specimens = self.request_params.json_body['CollectionSpecimens']
+				cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
+				cs_inserter.insertSpecimenData(specimens)
+			except:
+				self.messages.extend(cs_inserter.messages)
+				pudb.set_trace()
 		
 		else:
 			self.messages.append('Error: no "CollectionSpecimens" array in json data')
 		
-		cs_data = json.loads(json.dumps(self.payload, default = str))
+		referenced_json.insertFlattenedSubdicts()
+		
+		cs_data = json.loads(json.dumps(self.request_params.json_body['CollectionSpecimens'], default = str))
 		
 		jsonresponse = {
 			'title': 'DC REST API Create Resources',

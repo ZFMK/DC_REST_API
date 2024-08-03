@@ -36,6 +36,7 @@ class ExternalDatasourceInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
+		self.messages = []
 
 
 	def insertExternalDatasourceData(self, json_dicts = []):
@@ -54,6 +55,7 @@ class ExternalDatasourceInserter():
 				self.__insertNewDatasources()
 			else:
 				self.messages.append('You do not have the rights to insert external datasources')
+				raise ValueError()
 		
 		# self.__setExternalDatasourceIDsInCollectionSpecimen()
 		
@@ -278,11 +280,11 @@ class ExternalDatasourceInserter():
 
 	def __updateEDDicts(self):
 		ed_ids = self.getIDsForEDDicts()
-		for ed_dict in self.ed_dicts:
-			entry_id = ed_dict['@id']
-			ed_dict['ExternalDatasourceID'] = ed_ids[entry_id]['ExternalDatasourceID']
-			ed_dict['RowGUID'] = ed_ids[entry_id]['RowGUID']
-			ed_dict['CollectionSpecimenID'] = ed_ids[entry_id]['CollectionSpecimenID']
+		for dict_id in self.ed_dicts:
+			ed_dict = self.ed_dicts[dict_id]
+			ed_dict['ExternalDatasourceID'] = ed_ids[dict_id]['ExternalDatasourceID']
+			ed_dict['RowGUID'] = ed_ids[dict_id]['RowGUID']
+			ed_dict['CollectionSpecimenID'] = ed_ids[dict_id]['CollectionSpecimenID']
 		return
 
 

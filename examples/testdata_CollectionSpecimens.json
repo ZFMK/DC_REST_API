@@ -9,7 +9,7 @@
 			"Project": "Project 2 for Unittests",
 			"ProjectURI": "https://localhost/Projects/02"
 		}
-	]
+	],
 	"CollectionEvents": [
 		{
 			"@id": "_:ce1",
@@ -259,7 +259,7 @@
 				},
 				{
 					"@id": "_:p2"
-				},
+				}
 			]
 		},
 		{
@@ -346,11 +346,11 @@
 						}
 					]
 				}
-			]
+			],
 			"Projects": [
 				{
 					"@id": "_:p2"
-				},
+				}
 			]
 		},
 		{

@@ -33,7 +33,7 @@ class RequestParams():
 					else:
 						self.params_dict[key].append(self.json_body[key])
 		except:
-			pass
+			raise ValueError('Can not parse json data')
 		return
 
 

@@ -2,7 +2,7 @@ import pudb
 
 
 from dwb_authentication.dbsession import DBSession
-
+from DBConnectors.MSSQLConnector import MSSQLConnector
 
 class SecurityPolicy:
 	def __init__(self):
@@ -105,7 +105,16 @@ class SecurityPolicy:
 		return token
 
 
-
+	def get_mssql_connector(self, request):
+		token = self.get_token_from_request(request)
+		username, password = self.dbsession.get_credentials_from_session(token)
+		dc_config = self.dbsession.get_mssql_connectionparams_by_token(token)
+		if dc_config is None:
+			return None
+		dc_config['username'] = username
+		dc_config['password'] = password
+		db_connector = MSSQLConnector(config = dc_config)
+		return db_connector
 
 
 
