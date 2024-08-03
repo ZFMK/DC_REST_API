@@ -13,6 +13,7 @@ from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
 
+from dc_rest_api.lib.CRUD_Operations.ProjectInserter import ProjectInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
 from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
@@ -83,6 +84,11 @@ class CollectionSpecimenViews():
 		pudb.set_trace()
 		referenced_json.insertFlattenedSubdicts()
 		pudb.set_trace()
+		
+		if 'Projects' in self.request_params.json_body:
+			projects = self.request_params.json_body['Projects']
+			p_inserter = ProjectInserter(self.dc_db, users_roles = self.roles)
+			p_inserter.insertProjectData(projects)
 		
 		if 'Collections' in self.request_params.json_body:
 			collections = self.request_params.json_body['Collections']
