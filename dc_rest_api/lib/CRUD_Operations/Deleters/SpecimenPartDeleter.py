@@ -4,8 +4,8 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_importer.DCImporter.DCDeleter import DCDeleter
-from dc_importer.DCImporter.IdentificationUnitInPartDeleter import IdentificationUnitInPartDeleter
+from dc_rest_api.lib.CRUD_Operations.Deleters.DCDeleter import DCDeleter
+from dc_rest_api.lib.CRUD_Operations.Deleters.IdentificationUnitInPartDeleter import IdentificationUnitInPartDeleter
 
 
 class SpecimenPartDeleter(DCDeleter):

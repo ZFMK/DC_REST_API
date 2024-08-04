@@ -19,6 +19,7 @@ from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEv
 from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
+from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
 
 import pudb
 import json
@@ -64,20 +65,21 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		pudb.set_trace()
+		#pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		
 		#referenced_json.extractSubdicts()
 		#referenced_json.insertSubdicts()
 		referenced_json.flatten2ListsOfDicts()
-		pudb.set_trace()
+		
 		#referenced_json.insertFlattenedSubdicts()
 		#pudb.set_trace()
 		
+		# TODO: move this into parent class for specimen insert and handle errors and messages
 		if 'Projects' in self.request_params.json_body:
 			try:
 				projects = self.request_params.json_body['Projects']
-				p_inserter = ProjectInserter(self.dc_db, users_roles = self.roles)
+				p_inserter = ProjectInserter(self.dc_db, self.uid, users_roles = self.roles)
 				p_inserter.insertProjectData(projects)
 			except:
 				self.messages.extend(p_inserter.messages)
@@ -127,7 +129,7 @@ class CollectionSpecimensViews():
 		cs_data = json.loads(json.dumps(self.request_params.json_body['CollectionSpecimens'], default = str))
 		
 		jsonresponse = {
-			'title': 'DC REST API Create Resources',
+			'title': 'DC REST API CREATE CollectionSpecimens',
 			#'aggregations': aggregations,
 			'messages': self.messages,
 			'CollectionSpecimens': cs_data
@@ -136,4 +138,46 @@ class CollectionSpecimensViews():
 		return jsonresponse
 
 
+	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")
+	def deleteSpecimensJSON(self):
+		jsonresponse = {
+			'title': 'API for requests on DiversityCollection database, delete CollectionSpecimens',
+			'messages': self.messages
+		}
+		
+		if not self.uid:
+			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
+			return jsonresponse
+		
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
+			return jsonresponse
+		
+		pudb.set_trace()
+		
+		specimen_deleter = CollectionSpecimenDeleter(self.dc_db)
+		
+		deleted = []
+		if 'CollectionSpecimenIDs' in self.request_params.json_body:
+			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
+			specimen_deleter.deleteByPrimaryKeys(specimen_ids)
+			deleted = specimen_ids
+		
+		elif 'RowGUIDs' in self.request_params.json_body:
+			rowguids = self.request_params.json_body['RowGUIDs']
+			specimen_deleter.deleteByRowGUIDs(rowguids)
+			deleted = rowguids
+			pass
+		
+		jsonresponse = {
+			'title': 'DC REST API DELETE CollectionSpecimens',
+			#'aggregations': aggregations,
+			'messages': self.messages,
+			'deleted': deleted,
+			#'CollectionSpecimens': cs_data
+		}
+		
+		return jsonresponse
 

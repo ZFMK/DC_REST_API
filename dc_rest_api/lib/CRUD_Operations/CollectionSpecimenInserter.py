@@ -60,77 +60,38 @@ class CollectionSpecimenInserter():
 		self.__updateCSTempTable()
 		self.__updateSpecimenDicts()
 		
-		'''
-		collections = []
-		for cs_dict in self.specimen_dicts:
-			if 'Collection' in cs_dict:
-				c_dict = cs_dict['Collection']
-				# add the CollectionSpecimenID here as the events should be inserted for specific Specimens
-				c_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
-				collections.append(c_dict)
-		
-		c_inserter = CollectionInserter(self.dc_db)
-		c_inserter.setCollectionDicts(collections)
-		c_inserter.insertCollectionData()
-		
-		events = []
-		for cs_dict in self.specimen_dicts:
-			if 'CollectionEvent' in cs_dict:
-				e_dict = cs_dict['CollectionEvent']
-				# add the CollectionSpecimenID here as the events should be inserted for specific Specimens
-				e_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
-				events.append(e_dict)
-		
-		e_inserter = CollectionEventInserter(self.dc_db)
-		e_inserter.setCollectionEventDicts(events)
-		e_inserter.insertCollectionEventData()
-		
-		
-		externaldatasources = []
-		for cs_dict in self.specimen_dicts:
-			if 'CollectionExternalDatasource' in cs_dict:
-				ed_dict = cs_dict['CollectionExternalDatasource']
-				# add the CollectionSpecimenID here as the ExternalDatasorces should be inserted for specific Specimens
-				ed_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
-				externaldatasources.append(ed_dict)
-		
-		ed_inserter = ExternalDatasourceInserter(self.dc_db, users_roles = self.users_roles)
-		ed_inserter.setExternalDatasourceDicts(externaldatasources)
-		ed_inserter.insertExternalDatasourceData()
-		'''
-		
-		identificationunits = []
-		for cs_dict in self.specimen_dicts:
+		pudb.set_trace()
+		for dict_id in self.specimen_dicts:
+			cs_dict = self.specimen_dicts[dict_id]
+			identificationunits = []
 			if 'IdentificationUnits' in cs_dict:
 				for iu_dict in cs_dict['IdentificationUnits']:
 					iu_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 					identificationunits.append(iu_dict)
-					
-		iu_inserter = IdentificationUnitInserter(self.dc_db)
-		iu_inserter.setIdentificationUnitDicts(identificationunits)
-		iu_inserter.insertIdentificationUnitData()
-		
-		collectionagents = []
-		for cs_dict in self.specimen_dicts:
+			
+			iu_inserter = IdentificationUnitInserter(self.dc_db)
+			iu_inserter.setIdentificationUnitDicts(identificationunits)
+			iu_inserter.insertIdentificationUnitData()
+	
+			collectionagents = []
 			if 'CollectionAgents' in cs_dict:
 				for ca_dict in cs_dict['CollectionAgents']:
 					ca_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 					collectionagents.append(ca_dict)
 		
-		ca_inserter = CollectionAgentInserter(self.dc_db)
-		ca_inserter.setCollectionAgentDicts(collectionagents)
-		ca_inserter.insertCollectionAgentData()
-		
-		specimenparts = []
-		for cs_dict in self.specimen_dicts:
+			ca_inserter = CollectionAgentInserter(self.dc_db)
+			ca_inserter.setCollectionAgentDicts(collectionagents)
+			ca_inserter.insertCollectionAgentData()
+	
+			specimenparts = []
 			if 'CollectionSpecimenParts' in cs_dict:
 				for csp_dict in cs_dict['CollectionSpecimenParts']:
 					csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 					specimenparts.append(csp_dict)
 		
-		csp_inserter = SpecimenPartInserter(self.dc_db)
-		csp_inserter.setSpecimenPartDicts(specimenparts)
-		csp_inserter.insertSpecimenPartData()
+			csp_inserter = SpecimenPartInserter(self.dc_db)
+			csp_inserter.setSpecimenPartDicts(specimenparts)
+			csp_inserter.insertSpecimenPartData()
 		
 		return
 

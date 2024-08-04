@@ -21,6 +21,18 @@ class JSON2TempTable():
 		self.schema = schema
 
 
+	def copy_to_list_of_dicts(self, json_dicts):
+		dict_list = []
+		if isinstance(json_dicts, dict):
+			for key in json_dicts:
+				dict_list.append(json_dicts[key])
+			return dict_list
+		elif isinstance(json_dicts, list) or isinstance(json_dicts, tuple):
+			return json_dicts
+		else:
+			raise TypeError('json_dicts must be a dict or array')
+
+
 	def set_datadicts(self, json_dicts = []):
 		'''
 		the set_datadicts method is used by the child objects to compare the data with the data schemes given in each child object
@@ -30,8 +42,9 @@ class JSON2TempTable():
 		
 		self.datadicts = []
 		
-		for key in json_dicts:
-			json_dict = json_dicts[key]
+		dict_list = self.copy_to_list_of_dicts(json_dicts)
+		
+		for json_dict in dict_list:
 		
 			#for json_dict in json_dicts:
 			#try:

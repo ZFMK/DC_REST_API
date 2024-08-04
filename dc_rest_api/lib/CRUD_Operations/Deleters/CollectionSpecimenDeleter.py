@@ -4,9 +4,9 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_importer.DCImporter.DCDeleter import DCDeleter
-from dc_importer.DCImporter.SpecimenPartDeleter import SpecimenPartDeleter
-from dc_importer.DCImporter.IdentificationUnitDeleter import IdentificationUnitDeleter
+from dc_rest_api.lib.CRUD_Operations.Deleters.DCDeleter import DCDeleter
+from dc_rest_api.lib.CRUD_Operations.Deleters.SpecimenPartDeleter import SpecimenPartDeleter
+from dc_rest_api.lib.CRUD_Operations.Deleters.IdentificationUnitDeleter import IdentificationUnitDeleter
 
 class CollectionSpecimenDeleter(DCDeleter):
 	def __init__(self, dc_db):
@@ -35,7 +35,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 			query = """
 			CREATE TABLE [#cs_pks_to_delete_temptable] (
 				[CollectionSpecimenID] INT NOT NULL,
-				INDEX ([CollectionSpecimenID])
+				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID])
 			)
 			;"""
 			querylog.info(query)
