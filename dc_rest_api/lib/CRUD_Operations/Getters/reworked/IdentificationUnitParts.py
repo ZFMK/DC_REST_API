@@ -6,11 +6,12 @@ querylog = logging.getLogger('query')
 
 
 class IdentificationUnitParts():
-	def __init__(self, datagetter):
-		self.datagetter = datagetter
+	def __init__(self, dc_db):
+		self.dc_db = dc_db
+		self.con = self.dc_db.getConnection()
+		self.cur = self.dc_db.getCursor()
 		
-		self.cur = self.datagetter.cur
-		self.con = self.datagetter.con
+		
 
 
 	def get_data_page(self):

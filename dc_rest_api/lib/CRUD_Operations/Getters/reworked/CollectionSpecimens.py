@@ -11,10 +11,204 @@ class CollectionSpecimens():
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		
-		self.temptable = '#get_specimen_temptable'
+		'''
+		self.ids_temptable = '#getter_ids_temptable'
+		#self.temptable = '#get_specimen_temptable'
+		
+		self.max_page = 1
+		self.pagesize = 1000
+		'''
 
 
-	def createTempTable(self):
+	def getDataPage(self, page):
+		if page <= self.max_page:
+			first_row = (page - 1) * self.pagesize + 1
+			last_row = page * self.pagesize
+		
+		query = """
+		SELECT 
+		ids_temp.[row_num],
+		ids_temp.[CollectionSpecimenID],
+		ids_temp.[RowGUID],
+		cs.[CollectionEventID],
+		cs.[ExternalDatasourceID],
+		cs.[ExternalIdentifier],
+		cs.[AccessionNumber],
+		cs.[AccessionDate],
+		cs.[AccessionDay],
+		cs.[AccessionMonth],
+		cs.[AccessionYear],
+		cs.[AccessionDateSupplement],
+		cs.[AccessionDateCategory],
+		cs.[DepositorsName],
+		cs.[DepositorsAgentURI],
+		cs.[DepositorsAccessionNumber],
+		cs.[LabelTitle],
+		cs.[LabelType],
+		cs.[LabelTranscriptionState],
+		cs.[LabelTranscriptionNotes],
+		cs.[ExsiccataURI],
+		cs.[ExsiccataAbbreviation],
+		cs.[OriginalNotes],
+		cs.[AdditionalNotes],
+		cs.[Problems],
+		cs.[DataWithholdingReason]
+		FROM [{0}] ids_temp
+		INNER JOIN [CollectionSpecimen] cs
+		ON cs.[CollectionSpecimenID] = ids_temp.[CollectionSpecimenID]
+		WHERE ids_temp.[row_num] BETWEEN ? AND ?
+		;""".format(self.ids_temptable)
+		querylog.info(query)
+		self.cur.execute(query, [first_row, last_row])
+		self.columns = [column[0] for column in self.cur.description]
+		
+		self.cs_rows = self.cur.fetchall()
+		self.rows2dict()
+		
+
+
+	def rows2dict(self):
+		cs_list = []
+		for row in self.cs_rows:
+			cs_list.append(dict(zip(self.columns, row)))
+		
+		self.cs_dict = {}
+		for element in cs_list:
+			self.cs_dict[element['CollectionSpecimenID']] = element
+		
+		return
+
+
+#############################################
+
+
+	'''
+	def createIDsTempTable(self):
+		query = """
+		DROP TABLE IF EXISTS [{0}]
+		;""".format(self.ids_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		CREATE TABLE [{0}] (
+			[row_num] INT IDENTITY,
+			[CollectionSpecimenID] INT UNIQUE,
+			[RowGUID] VARCHAR(64) COLLATE {1} UNIQUE,
+			[CollectionEventID] INT,
+			[ExternalDatasourceID] INT,
+			[AccessionNumber] NVARCHAR(50) COLLATE {1},
+			PRIMARY KEY ([row_num])
+			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+			INDEX [CollectionEventID] ([CollectionEventID]),
+			INDEX [ExternalDatasourceID] ([ExternalDatasourceID]),
+			INDEX [AccessionNumber] ([AccessionNumber]),
+			INDEX [RowGUID] ([RowGUID])
+		)
+		;""".format(self.ids_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		return
+
+
+
+	def fillIDsTempTableByPrimaryKeys(self, specimen_ids):
+		self.createIDsTempTable()
+		
+		# insert of with placeholders is limited to 2100 values
+		pagesize = 1000
+		while len(specimen_ids) > 0:
+			cached_ids = specimen_ids[:pagesize]
+			del specimen_ids[:pagesize]
+			placeholders = ['(?)' for _ in cached_ids]
+			values = [value for value in cached_ids]
+			
+			query = """
+			INSERT INTO [{0}] ([CollectionSpecimenID])
+			VALUES {1}
+			;""".format(self.ids_temptable)
+			querylog.info(query)
+			self.cur.execute(query, [values])
+			self.con.commit()
+			
+		query = """
+		UPDATE ids_temp
+		SET ids_temp.[RowGUID] = cs.[RowGUID]
+		FROM [{0}] ids_temp
+		INNER JOIN [CollectionSpecimen] cs
+		ON cs.[CollectionSpecimenID] = ids_temp.[CollectionSpecimenID]
+		;""".format(self.ids_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		return
+
+
+	def fillIDsTempTableByRowGUIDs(self, rowguids):
+		self.createIDsTempTable()
+		
+		# insert of with placeholders is limited to 2100 values
+		pagesize = 1000
+		while len(rowguids) > 0:
+			cached_ids = rowguids[:pagesize]
+			del rowguids[:pagesize]
+			placeholders = ['(?)' for _ in cached_ids]
+			values = [value for value in cached_ids]
+			
+			query = """
+			INSERT INTO [{0}] ([RowGUID])
+			VALUES {1}
+			;""".format(self.ids_temptable)
+			querylog.info(query)
+			self.cur.execute(query, [values])
+			self.con.commit()
+			
+		query = """
+		UPDATE ids_temp
+		SET ids_temp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		FROM [{0}] ids_temp
+		INNER JOIN [CollectionSpecimen] cs
+		ON cs.[RowGUID] = ids_temp.[RowGUID]
+		;""".format(self.ids_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		return
+
+
+	def set_max_page(self):
+		query = """
+		SELECT COUNT(CollectionSpecimenID) FROM [{0}]
+		;""".format(self.ids_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		row = self.cur.fetchone()
+		self.rownumber = row[0]
+		
+		self.max_page = math.ceil(self.rownumber / self.pagesize)
+		if self.max_page < 1:
+			self.max_page = 1
+		
+		return
+	'''
+
+
+
+
+
+
+
+	##########################################
+	'''
+	def createDataTempTable(self):
 		query = """
 		DROP TABLE IF EXISTS [{0}]
 		;""".format(self.temptable)
@@ -25,7 +219,8 @@ class CollectionSpecimens():
 		
 		query = """
 		CREATE TABLE [{0}] (
-			[CollectionSpecimenID] INT NOT NULL,
+			[row_num] INT IDENTITY,
+			[CollectionSpecimenID] INT NOT NULL UNIQUE,
 			[RowGUID] VARCHAR(64) COLLATE {1},
 			[CollectionEventID] INT,
 			[ExternalDatasourceID] INT,
@@ -49,171 +244,31 @@ class CollectionSpecimens():
 			[OriginalNotes] NVARCHAR(MAX) COLLATE {1},
 			[AdditionalNotes] NVARCHAR(MAX) COLLATE {1},
 			[Problems] NVARCHAR(255) COLLATE {1},
-			[DataWithholdingReason] NVARCHAR(255)
+			[DataWithholdingReason] NVARCHAR(255),
+			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+			INDEX [CollectionEventID] ([CollectionEventID]),
+			INDEX [ExternalDatasourceID] ([ExternalDatasourceID]),
+			INDEX [AccessionNumber] ([AccessionNumber]),
+			INDEX [RowGUID] ([RowGUID])
 		) 
-		;""".format(self.temptable)
+		;""".format(self.temptable, self.collation)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
-
-
-
-
-
-	def get_data_page(self):
-		
-		query = """
-		SELECT 
-		idstemp.[idshash] AS [_id], 
-		idstemp.[DatabaseURI],
-		idstemp.[DatabaseAccronym],
-		idstemp.[DatabaseID],
-		idstemp.[CollectionSpecimenID], 
-		idstemp.[IdentificationUnitID], 
-		idstemp.[SpecimenPartID], 
-		idstemp.[SpecimenAccessionNumber], 
-		idstemp.[PartAccessionNumber],
-		CONCAT_WS('/', REPLACE(dbo.StableIdentifierBase(), 'http:', 'https:'), idstemp.[CollectionSpecimenID], idstemp.[IdentificationUnitID], idstemp.[SpecimenPartID]) AS [StableIdentifierURL],
-		CONVERT (NVARCHAR, cs.[LogUpdatedWhen], 121) AS [LastUpdated],
-		CONVERT(NVARCHAR, cs.[AccessionDate], 120) AS [AccessionDate], 
-		cs.[DepositorsName], 
-		cs.[DataWithholdingReason] AS SpecimenWithholdingReason, 
-		CASE 
-			WHEN cs.[DataWithholdingReason] = '' THEN 'false'
-			WHEN cs.[DataWithholdingReason] IS NULL THEN 'false'
-			ELSE 'true'
-		END AS SpecimenWithhold,
-		cs.Version AS SpecimenVersion,
-		CONVERT(NVARCHAR, cs.LogCreatedWhen, 121) AS SpecimenCreatedWhen,
-		cs.LogCreatedBy AS SpecimenCreatedBy,
-		CONVERT(NVARCHAR, cs.LogUpdatedWhen, 121) AS SpecimenUpdatedWhen,
-		cs.LogUpdatedBy AS SpecimenUpdatedBy,
-		csp.PreparationMethod,
-		CONVERT(NVARCHAR, csp.PreparationDate, 120) AS PreparationDate,
-		csp.MaterialCategory,
-		csp.StorageLocation,
-		csp.StorageContainer,
-		csp.Stock AS StockNumber,
-		csp.StockUnit AS StockNumberUnit,
-		csp.[DataWithholdingReason] AS PartWithholdingReason, 
-		CASE 
-			WHEN csp.[DataWithholdingReason] = '' THEN 'false'
-			WHEN csp.[DataWithholdingReason] IS NULL THEN 'false'
-			ELSE 'true'
-		END AS PartWithhold,
-		-- event data
-		ce.CollectionEventID,
-		ce.CollectorsEventNumber,
-		ce.LocalityDescription,
-		ce.LocalityVerbatim,
-		ce.HabitatDescription,
-		ce.CollectingMethod,
-		ce.CountryCache,
-		CONVERT(NVARCHAR, ce.CollectionDate, 120) AS CollectionDate,
-		ce.[DataWithholdingReason] AS EventWithholdingReason,
-		CASE 
-			WHEN ce.[DataWithholdingReason] = '' THEN 'false'
-			WHEN ce.[DataWithholdingReason] IS NULL THEN 'false'
-			ELSE 'true'
-		END AS EventWithhold,
-		ce.[DataWithholdingReasonDate] AS EventWithholdingReasonDate, 
-		CASE 
-			WHEN ce.[DataWithholdingReasonDate] = '' THEN 'false'
-			WHEN ce.[DataWithholdingReasonDate] IS NULL THEN 'false'
-			ELSE 'true'
-		END AS EventWithholdDate,
-		CASE 
-			WHEN celcoord.Location1 IS NOT NULL AND celcoord.Location2 IS NOT NULL
-				THEN REPLACE(CONCAT('POINT(', celcoord.Location1, ' ', celcoord.Location2, ')'), ',', '.')
-			ELSE NULL
-		END AS WGS84_Coordinate,
-		celcoord.LocationAccuracy AS [WGS84_Accuracy m],
-		celaltitude.Location1 AS [Altitude mNN],
-		celaltitude.LocationAccuracy AS [Altitude_Accuracy mNN],
-		cel_named_area.Location1 AS [NamedArea],
-		cel_named_area.Location2 AS [NamedAreaURL],
-		cel_named_area.LocationNotes AS [NamedAreaNotes],
-		TRIM(iu.[LastIdentificationCache]) AS [LastIdentificationCache],
-		TRIM(iu.[FamilyCache]) AS [FamilyCache],
-		TRIM(iu.[OrderCache]) AS [OrderCache],
-		TRIM(iu.[TaxonomicGroup]) AS [TaxonomicGroup],
-		iu.[HierarchyCache],
-		i_last.NameURI AS [TaxonNameURI],
-		CONVERT(VARCHAR(256), HASHBYTES('SHA2_256', i_last.NameURI), 2) AS [TaxonNameURI_sha],
-		CASE 
-			WHEN iu.[OnlyObserved] = 0 THEN 'false'
-			ELSE 'true'
-		END AS [OnlyObserved],
-		iu.[LifeStage],
-		iu.[Gender],
-		iu.[NumberOfUnits],
-		iu.[NumberOfUnitsModifier],
-		iu.[UnitIdentifier],
-		iu.[UnitDescription],
-		iu.[Notes] AS [IdentificationUnitNotes],
-		iu.[Circumstances] AS [IdentificationUnitCircumstances],
-		iu.[DataWithholdingReason] AS [IUWithholdingReason], 
-		CASE 
-			WHEN iu.[DataWithholdingReason] = '' THEN 'false'
-			WHEN iu.[DataWithholdingReason] IS NULL THEN 'false'
-			ELSE 'true'
-		END AS IUWithhold,
-		iu.[DisplayOrder] AS [IUDisplayOrder]
-		FROM [#temp_iu_part_ids] idstemp
-		INNER JOIN IdentificationUnit iu 
-		ON iu.[CollectionSpecimenID] = idstemp.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = idstemp.[IdentificationUnitID]
-		LEFT JOIN (
-			SELECT i.TaxonomicName, i.NameURI, i.IdentificationUnitID, i.CollectionSpecimenID
-			FROM Identification i
-			INNER JOIN (
-				SELECT i.IdentificationUnitID, i.CollectionSpecimenID, MAX(i.IdentificationSequence) AS IdentificationSequence_Max
-				FROM Identification i
-				GROUP BY i.IdentificationUnitID, i.CollectionSpecimenID
-			) i_max
-			ON i.IdentificationUnitID = i_max.IdentificationUnitID 
-			AND i.CollectionSpecimenID = i_max.CollectionSpecimenID
-			AND i.IdentificationSequence = i_max.IdentificationSequence_Max
-		) i_last
-		ON i_last.[CollectionSpecimenID] = idstemp.[CollectionSpecimenID] AND i_last.IdentificationUnitID = idstemp.[IdentificationUnitID]
-		LEFT JOIN CollectionSpecimenPart csp 
-		ON csp.[CollectionSpecimenID] = idstemp.[CollectionSpecimenID] AND csp.[SpecimenPartID] = idstemp.[SpecimenPartID]
-		INNER JOIN CollectionSpecimen cs 
-		ON cs.[CollectionSpecimenID] = idstemp.[CollectionSpecimenID]
-		LEFT JOIN CollectionEvent ce
-		ON cs.CollectionEventID = ce.CollectionEventID
-		LEFT JOIN CollectionEventLocalisation celcoord
-		ON (celcoord.CollectionEventID = ce.CollectionEventID and celcoord.LocalisationSystemID = 8)
-		LEFT JOIN CollectionEventLocalisation celaltitude
-		ON (celaltitude.CollectionEventID = ce.CollectionEventID and celaltitude.LocalisationSystemID = 4)
-		LEFT JOIN CollectionEventLocalisation cel_named_area
-		ON (cel_named_area.CollectionEventID = ce.CollectionEventID and cel_named_area.LocalisationSystemID = 7)
-		;"""
-		self.cur.execute(query)
-		self.columns = [column[0] for column in self.cur.description]
-		
-		self.iup_rows = self.cur.fetchall()
-		self.rows2dict()
-		
-		
-		return self.iu_parts_dict
-
-
-	def rows2dict(self):
-		iu_parts_list = []
-		for row in self.iup_rows:
-			iu_parts_list.append(dict(zip(self.columns, row)))
-		
-		self.iu_parts_dict = {}
-		for element in iu_parts_list:
-			element = self.set_initial_default_values(element)
-			self.iu_parts_dict[element['_id']] = element
 		
 		return
+	'''
 
 
-	def set_initial_default_values(self, iu_part_dict):
-		iu_part_dict['ImageAvailable'] = False
-		return iu_part_dict
+
+
+
+
+
+
+
+
+
 
 
 
