@@ -130,7 +130,6 @@ class CollectionSpecimensViews():
 		
 		jsonresponse = {
 			'title': 'DC REST API CREATE CollectionSpecimens',
-			#'aggregations': aggregations,
 			'messages': self.messages,
 			'CollectionSpecimens': cs_data
 		}
@@ -173,7 +172,6 @@ class CollectionSpecimensViews():
 		
 		jsonresponse = {
 			'title': 'DC REST API DELETE CollectionSpecimens',
-			#'aggregations': aggregations,
 			'messages': self.messages,
 			'deleted': deleted,
 			#'CollectionSpecimens': cs_data
