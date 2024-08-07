@@ -67,13 +67,7 @@ class CollectionSpecimensViews():
 		
 		#pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
-		
-		#referenced_json.extractSubdicts()
-		#referenced_json.insertSubdicts()
 		referenced_json.flatten2ListsOfDicts()
-		
-		#referenced_json.insertFlattenedSubdicts()
-		#pudb.set_trace()
 		
 		# TODO: move this into parent class for specimen insert and handle errors and messages
 		if 'Projects' in self.request_params.json_body:
