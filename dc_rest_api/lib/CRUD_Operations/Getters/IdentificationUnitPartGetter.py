@@ -5,7 +5,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 
-class IdentificationUnitParts():
+class IdentificationUnitPartGetter():
 	def __init__(self, dc_db):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()

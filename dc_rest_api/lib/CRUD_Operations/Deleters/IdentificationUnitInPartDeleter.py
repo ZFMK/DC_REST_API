@@ -7,9 +7,10 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Deleters.DCDeleter import DCDeleter
 
 class IdentificationUnitInPartDeleter(DCDeleter):
-	def __init__(self, dc_db):
-		DCDeleter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = []):
+		DCDeleter.__init__(self, dc_db, users_project_ids)
 		
+		self.prohibited = []
 		self.delete_temptable = '#iuip_to_delete'
 
 
@@ -69,7 +70,7 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 			self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnitInPart')
-		
+		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnitInPart', ['CollectionSpecimenID', 'SpecimenPartID', 'IdentificationUnitID'])
 		self.deleteFromTable('IdentificationUnitInPart')
 		
 		return
@@ -82,7 +83,7 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 		self.fillDeleteTempTable()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnitInPart')
-		
+		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnitInPart', ['CollectionSpecimenID', 'SpecimenPartID', 'IdentificationUnitID'])
 		self.deleteFromTable('IdentificationUnitInPart')
 		return
 

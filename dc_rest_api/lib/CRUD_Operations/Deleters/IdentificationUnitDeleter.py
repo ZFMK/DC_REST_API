@@ -8,9 +8,10 @@ from dc_rest_api.lib.CRUD_Operations.Deleters.DCDeleter import DCDeleter
 from dc_rest_api.lib.CRUD_Operations.Deleters.IdentificationDeleter import IdentificationDeleter
 
 class IdentificationUnitDeleter(DCDeleter):
-	def __init__(self, dc_db):
-		DCDeleter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = []):
+		DCDeleter.__init__(self, dc_db, users_project_ids)
 		
+		self.prohibited = []
 		self.delete_temptable = '#ius_to_delete'
 
 
@@ -66,6 +67,7 @@ class IdentificationUnitDeleter(DCDeleter):
 			self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnit')
+		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnit', ['CollectionSpecimenID', 'IdentificationUnitID'])
 		self.deleteChildIdentifications()
 		self.deleteFromTable('IdentificationUnit')
 		
@@ -79,6 +81,7 @@ class IdentificationUnitDeleter(DCDeleter):
 		self.fillDeleteTempTable()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnit')
+		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnit', ['CollectionSpecimenID', 'IdentificationUnitID'])
 		self.deleteChildIdentifications()
 		
 		self.deleteFromTable('IdentificationUnit')
@@ -100,7 +103,7 @@ class IdentificationUnitDeleter(DCDeleter):
 		for row in rows:
 			id_lists.append(row)
 		
-		i_deleter = IdentificationDeleter(self.dc_db)
+		i_deleter = IdentificationDeleter(self.dc_db, self.users_project_ids)
 		i_deleter.deleteByPrimaryKeys(id_lists)
 		
 		return

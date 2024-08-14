@@ -9,13 +9,13 @@ from dc_rest_api.lib.CRUD_Operations.Deleters.SpecimenPartDeleter import Specime
 from dc_rest_api.lib.CRUD_Operations.Deleters.IdentificationUnitDeleter import IdentificationUnitDeleter
 
 class CollectionSpecimenDeleter(DCDeleter):
-	def __init__(self, dc_db):
-		DCDeleter.__init__(self, dc_db)
-		
+	def __init__(self, dc_db, users_project_ids = []):
+		DCDeleter.__init__(self, dc_db, users_project_ids)
+		self.prohibited = []
 		self.delete_temptable = '#cs_to_delete'
 
 
-	def deleteByPrimaryKeys(self, specimen_ids):
+	def deleteByPrimaryKeys(self, specimen_ids, users_project_ids = []):
 		self.createDeleteTempTable()
 		
 		pagesize = 1000
@@ -23,7 +23,6 @@ class CollectionSpecimenDeleter(DCDeleter):
 			cached_ids = specimen_ids[:pagesize]
 			del specimen_ids[:pagesize]
 			placeholders = ['(?)' for _ in cached_ids]
-			values = [value for value in cached_ids]
 			
 			query = """
 			DROP TABLE IF EXISTS [#cs_pks_to_delete_temptable]
@@ -49,7 +48,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 			VALUES {0}
 			""".format(', '.join(placeholders))
 			querylog.info(query)
-			self.cur.execute(query, values)
+			self.cur.execute(query, cached_ids)
 			self.con.commit()
 			
 			query = """
@@ -63,6 +62,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 			self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('CollectionSpecimen')
+		self.prohibited = self.filter_allowed_RowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
 		self.deleteChildSpecimenParts()
 		self.deleteChildIdentificationUnits()
 		self.deleteFromTable('CollectionSpecimen')
@@ -75,8 +75,9 @@ class CollectionSpecimenDeleter(DCDeleter):
 		
 		self.createDeleteTempTable()
 		self.fillDeleteTempTable()
-		
+		pudb.set_trace()
 		self.checkRowGUIDsUniqueness('CollectionSpecimen')
+		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
 		self.deleteChildSpecimenParts()
 		self.deleteChildIdentificationUnits()
 		
@@ -101,7 +102,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		for row in rows:
 			id_lists.append(row)
 		
-		csp_deleter = SpecimenPartDeleter(self.dc_db)
+		csp_deleter = SpecimenPartDeleter(self.dc_db, self.users_project_ids)
 		csp_deleter.deleteByPrimaryKeys(id_lists)
 		
 		return
@@ -124,7 +125,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		for row in rows:
 			id_lists.append(row)
 		
-		iu_deleter = IdentificationUnitDeleter(self.dc_db)
+		iu_deleter = IdentificationUnitDeleter(self.dc_db, self.users_project_ids)
 		iu_deleter.deleteByPrimaryKeys(id_lists)
 		
 		return

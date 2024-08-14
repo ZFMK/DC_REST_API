@@ -6,22 +6,12 @@ querylog = logging.getLogger('query')
 
 
 class DCDeleter():
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, users_project_ids = []):
 		self.dc_db = dc_db
+		self.users_project_ids = users_project_ids
+		
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
-
-
-	# not sure where to put this method, doubled in each child or once here but then with the need to provide the tablename as parameter
-	def deleteFromTableByRowGUIDs(self, tablename, row_guids = []):
-		self.row_guids = row_guids
-		
-		self.createDeleteTempTable()
-		self.fillDeleteTempTable()
-		
-		self.checkRowGUIDsUniqueness(tablename)
-		self.deleteIdentifications(tablename)
-		return
 
 
 	def checkRowGUIDsUniqueness(self, tablename):
@@ -90,4 +80,49 @@ class DCDeleter():
 		return
 
 
-
+	def filterAllowedRowGUIDs(self, table, columns):
+		# this methods checks if the Specimen or its child data are in one of the users projects
+		# does only work with tables that have CollectionSpecimenID as part of their key
+		prohibited = []
+		
+		if len(self.users_project_ids) < 1:
+			raise ValueError('user has no Projects and can not delete any data set')
+		
+		placeholders = ['?' for project_id in self.users_project_ids]
+		placeholderstring = ', '.join(placeholders)
+		
+		if not 'RowGUID' in columns:
+			columns.append('RowGUID')
+		columnstring = ', '.join(['t.' + column for column in columns])
+		
+		query = """
+		SELECT {0}
+		FROM [{1}] d_temp
+		INNER JOIN [{2}] t 
+		ON t.RowGUID = d_temp.[rowguid_to_delete]
+		LEFT JOIN [CollectionProject] cp
+		ON t.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
+		WHERE cp.ProjectID NOT IN ({3})
+		;""".format(columnstring, self.delete_temptable, table, placeholderstring)
+		
+		querylog.info(query)
+		self.cur.execute(query, self.users_project_ids)
+		rows = self.cur.fetchall()
+		for row in rows:
+			prohibited.append(dict(zip(columns, row)))
+		
+		query = """
+		DELETE d_temp
+		FROM [{0}] d_temp
+		INNER JOIN [{1}] t
+		ON t.RowGUID = d_temp.[rowguid_to_delete]
+		LEFT JOIN [CollectionProject] cp
+		ON t.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
+		WHERE cp.ProjectID NOT IN ({2})
+		;""".format(self.delete_temptable, table, placeholderstring)
+		
+		querylog.info(query)
+		self.cur.execute(query, self.users_project_ids)
+		self.con.commit()
+		
+		return prohibited

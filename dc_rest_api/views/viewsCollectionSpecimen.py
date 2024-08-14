@@ -20,6 +20,7 @@ from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalD
 from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenGetter import CollectionSpecimenGetter
 
 import pudb
 import json
@@ -28,7 +29,6 @@ import json
 class CollectionSpecimensViews():
 
 	def __init__(self, request):
-		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -65,9 +65,9 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		#pudb.set_trace()
+		pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
-		referenced_json.flatten2ListsOfDicts()
+		referenced_json.flatten2Dicts()
 		
 		# TODO: move this into parent class for specimen insert and handle errors and messages
 		if 'Projects' in self.request_params.json_body:
@@ -105,10 +105,14 @@ class CollectionSpecimensViews():
 				self.messages.extend(ed_inserter.messages)
 				pudb.set_trace()
 		
+		referenced_json.setEventIDsInCS()
+		referenced_json.setExternaDatasourceIDsInCS()
+		referenced_json.setCollectionIDsInCS()
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
 				specimens = self.request_params.json_body['CollectionSpecimens']
+				
 				cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
 				cs_inserter.insertSpecimenData(specimens)
 			except:
@@ -148,9 +152,7 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		pudb.set_trace()
-		
-		specimen_deleter = CollectionSpecimenDeleter(self.dc_db)
+		specimen_deleter = CollectionSpecimenDeleter(self.dc_db, self.users_project_ids)
 		
 		deleted = []
 		if 'CollectionSpecimenIDs' in self.request_params.json_body:
@@ -173,3 +175,43 @@ class CollectionSpecimensViews():
 		
 		return jsonresponse
 
+
+	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "GET")
+	def getSpecimensJSON(self):
+		pudb.set_trace()
+		
+		jsonresponse = {
+			'title': 'API for requests on DiversityCollection database, get CollectionSpecimens',
+			'messages': self.messages
+		}
+		
+		if not self.uid:
+			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
+			return jsonresponse
+		
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
+			return jsonresponse
+		
+		# TODO: params for page and pagesize missing
+		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids, 1, 1000)
+		
+		specimens = []
+		
+		if 'CollectionSpecimenIDs' in self.request_params.json_body:
+			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
+			specimens = specimen_getter.getByPrimaryKeys(specimen_ids)
+		
+		elif 'RowGUIDs' in self.request_params.json_body:
+			rowguids = self.request_params.json_body['RowGUIDs']
+			specimens = specimen_getter.getByRowGUIDs(rowguids)
+		
+		jsonresponse = {
+			'title': 'DC REST API GET CollectionSpecimens',
+			'messages': self.messages,
+			'specimens': specimens
+		}
+		
+		return jsonresponse

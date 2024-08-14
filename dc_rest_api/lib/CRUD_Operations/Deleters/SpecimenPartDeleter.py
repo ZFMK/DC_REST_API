@@ -9,9 +9,9 @@ from dc_rest_api.lib.CRUD_Operations.Deleters.IdentificationUnitInPartDeleter im
 
 
 class SpecimenPartDeleter(DCDeleter):
-	def __init__(self, dc_db):
-		DCDeleter.__init__(self, dc_db)
-		
+	def __init__(self, dc_db, users_project_ids = []):
+		DCDeleter.__init__(self, dc_db, users_project_ids)
+		self.prohibited = []
 		self.delete_temptable = '#csp_to_delete'
 
 
@@ -24,8 +24,8 @@ class SpecimenPartDeleter(DCDeleter):
 			del specimen_part_ids[:pagesize]
 			placeholders = ['(?, ?)' for _ in cached_ids]
 			values = []
-			for ids in cached_ids:
-				values.extend(ids)
+			for ids_list in cached_ids:
+				values.extend(ids_list)
 			
 			query = """
 			DROP TABLE IF EXISTS [#csp_pks_to_delete_temptable]
@@ -67,6 +67,7 @@ class SpecimenPartDeleter(DCDeleter):
 			self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('CollectionSpecimenPart')
+		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimenPart', ['CollectionSpecimenID', 'SpecimenPartID'])
 		self.deleteChildIdentificationUnitsInPart()
 		self.deleteFromTable('CollectionSpecimenPart')
 		
@@ -80,6 +81,7 @@ class SpecimenPartDeleter(DCDeleter):
 		self.fillDeleteTempTable()
 		
 		self.checkRowGUIDsUniqueness('CollectionSpecimenPart')
+		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimenPart', ['CollectionSpecimenID', 'SpecimenPartID'])
 		self.deleteChildIdentificationUnitsInPart()
 		
 		self.deleteFromTable('CollectionSpecimenPart')
@@ -103,12 +105,9 @@ class SpecimenPartDeleter(DCDeleter):
 		for row in rows:
 			iuip_id_lists.append(row)
 		
-		iuip_deleter = IdentificationUnitInPartDeleter(self.dc_db)
+		iuip_deleter = IdentificationUnitInPartDeleter(self.dc_db, self.users_project_ids)
 		iuip_deleter.deleteByPrimaryKeys(iuip_id_lists)
 		
 		return
-
-
-
 
 
