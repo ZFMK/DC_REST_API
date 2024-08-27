@@ -6,24 +6,31 @@ querylog = logging.getLogger('query')
 
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.SpecimenPartGetter import SpecimenPartGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitGetter import IdentificationUnitGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionAgentGetter import CollectionAgentGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionEventGetter import CollectionEventGetter
 
 
 class CollectionSpecimenGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = [], page = 1, pagesize = 1000):
-		DataGetter.__init__(self, dc_db, page, pagesize)
+	def __init__(self, dc_db, users_project_ids = []):
+		DataGetter.__init__(self, dc_db)
 		
 		self.withholded = []
 		self.users_project_ids = users_project_ids
-		self.get_temptable = 'get_specimen_temptable'
+		self.get_temptable = '#get_specimen_temptable'
+		
+		self.specimens = {}
 
 
 	def getByPrimaryKeys(self, specimen_ids):
 		self.createGetTempTable()
 		
-		pagesize = 1000
+		batchsize = 1000
 		while len(specimen_ids) > 0:
-			cached_ids = specimen_ids[:pagesize]
-			del specimen_ids[:pagesize]
+			cached_ids = specimen_ids[:batchsize]
+			del specimen_ids[:batchsize]
 			placeholders = ['(?)' for _ in cached_ids]
 			values = [value for value in cached_ids]
 			
@@ -64,11 +71,10 @@ class CollectionSpecimenGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		#self.getChildSpecimenParts()
-		#self.getChildIdentificationUnits()
-		
 		self.withholded = self.filterAllowedRowGUIDs()
-		specimens = self.getDataPage()
+		specimens = self.getData()
+		
+		self.setConnectedTableData()
 		
 		return specimens
 
@@ -79,20 +85,24 @@ class CollectionSpecimenGetter(DataGetter):
 		self.createGetTempTable()
 		self.fillGetTempTable()
 		
-		#self.deleteChildSpecimenParts()
-		#self.deleteChildIdentificationUnits()
-		
 		self.withholded = self.filterAllowedRowGUIDs()
-		specimens = self.getDataPage()
+		specimens = self.getData()
+		
+		self.setConnectedTableData()
 		
 		return specimens
 
 
+	def setConnectedTableData(self):
+		self.setChildSpecimenParts()
+		self.setChildIdentificationUnits()
+		self.setChildCollectionAgents()
+		self.setChildCollections()
+		self.setChildCollectionEvents()
+		return
 
-	def getDataPage(self):
-		if self.page <= self.max_page:
-			first_row = (self.page - 1) * self.pagesize + 1
-			last_row = self.page * self.pagesize
+
+	def getData(self):
 		
 		query = """
 		SELECT 
@@ -125,32 +135,36 @@ class CollectionSpecimenGetter(DataGetter):
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimen] cs
 		ON cs.[RowGUID] = g_temp.[rowguid_to_get]
-		WHERE g_temp.[row_num] BETWEEN ? AND ?
 		;""".format(self.get_temptable)
 		querylog.info(query)
-		self.cur.execute(query, [first_row, last_row])
+		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
 		self.cs_rows = self.cur.fetchall()
-		self.rows2dict()
-		return self.cs_dict
+		self.rows2list()
+		
+		return self.cs_list
 
 
-	def rows2dict(self):
-		cs_list = []
+	def rows2list(self):
+		self.cs_list = []
 		for row in self.cs_rows:
-			cs_list.append(dict(zip(self.columns, row)))
-		
-		self.cs_dict = {}
-		for element in cs_list:
-			self.cs_dict[element['CollectionSpecimenID']] = element
-		
+			self.cs_list.append(dict(zip(self.columns, row)))
 		return
+
+
+	def list2dict(self):
+		self.cs_dict = {}
+		for element in self.cs_list:
+			self.cs_dict[element['CollectionSpecimenID']] = element
+		return
+
 
 
 	def filterAllowedRowGUIDs(self):
 		# this methods checks if the connected Specimen is in one of the users projects or if the Withholding column is empty
 		
+		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
 		withholded = []
 		
 		projectclause = self.getProjectClause()
@@ -178,8 +192,8 @@ class CollectionSpecimenGetter(DataGetter):
 		ON cs.RowGUID = g_temp.[rowguid_to_get]
 		LEFT JOIN [CollectionProject] cp
 		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '' {2}
-		;""".format(self.get_temptable, placeholderstring, projectclause)
+		WHERE cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '' {1}
+		;""".format(self.get_temptable, projectclause)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)
@@ -188,208 +202,158 @@ class CollectionSpecimenGetter(DataGetter):
 		return withholded
 
 
-
-
-#############################################
-
-
-	'''
-	def createIDsTempTable(self):
-		query = """
-		DROP TABLE IF EXISTS [{0}]
-		;""".format(self.ids_temptable)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
+	def setChildSpecimenParts(self):
 		
+		id_lists = []
 		query = """
-		CREATE TABLE [{0}] (
-			[row_num] INT IDENTITY,
-			[CollectionSpecimenID] INT UNIQUE,
-			[RowGUID] VARCHAR(64) COLLATE {1} UNIQUE,
-			[CollectionEventID] INT,
-			[ExternalDatasourceID] INT,
-			[AccessionNumber] NVARCHAR(50) COLLATE {1},
-			PRIMARY KEY ([row_num])
-			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-			INDEX [CollectionEventID] ([CollectionEventID]),
-			INDEX [ExternalDatasourceID] ([ExternalDatasourceID]),
-			INDEX [AccessionNumber] ([AccessionNumber]),
-			INDEX [RowGUID] ([RowGUID])
-		)
-		;""".format(self.ids_temptable)
+		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [CollectionSpecimenPart] csp
+		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		;""".format(self.get_temptable)
+		
 		querylog.info(query)
 		self.cur.execute(query)
-		self.con.commit()
+		rows = self.cur.fetchall()
+		for row in rows:
+			id_lists.append((row[0], row[1]))
+		
+		csp_getter = SpecimenPartGetter(self.dc_db, self.users_project_ids)
+		csp_getter.getByPrimaryKeys(id_lists)
+		csp_getter.list2dict()
+		
+		for specimen_id in csp_getter.csp_dict:
+			for cs in self.cs_list:
+				if specimen_id == cs['CollectionSpecimenID']:
+					if 'CollectionSpecimenParts' not in cs:
+						cs['CollectionSpecimenParts'] = []
+						for csp_id in csp_getter.csp_dict[specimen_id]:
+							cs['CollectionSpecimenParts'].append(csp_getter.csp_dict[specimen_id][csp_id])
 		
 		return
 
 
-
-	def fillIDsTempTableByPrimaryKeys(self, specimen_ids):
-		self.createIDsTempTable()
+	def setChildIdentificationUnits(self):
 		
-		# insert of with placeholders is limited to 2100 values
-		pagesize = 1000
-		while len(specimen_ids) > 0:
-			cached_ids = specimen_ids[:pagesize]
-			del specimen_ids[:pagesize]
-			placeholders = ['(?)' for _ in cached_ids]
-			values = [value for value in cached_ids]
-			
-			query = """
-			INSERT INTO [{0}] ([CollectionSpecimenID])
-			VALUES {1}
-			;""".format(self.ids_temptable)
-			querylog.info(query)
-			self.cur.execute(query, [values])
-			self.con.commit()
-			
+		id_lists = []
 		query = """
-		UPDATE ids_temp
-		SET ids_temp.[RowGUID] = cs.[RowGUID]
-		FROM [{0}] ids_temp
-		INNER JOIN [CollectionSpecimen] cs
-		ON cs.[CollectionSpecimenID] = ids_temp.[CollectionSpecimenID]
-		;""".format(self.ids_temptable)
+		SELECT iu.[CollectionSpecimenID], iu.[IdentificationUnitID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [IdentificationUnit] iu
+		ON cs.[CollectionSpecimenID] = iu.[CollectionSpecimenID]
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		;""".format(self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		self.con.commit()
+		rows = self.cur.fetchall()
+		for row in rows:
+			id_lists.append((row[0], row[1]))
+		
+		iu_getter = IdentificationUnitGetter(self.dc_db, self.users_project_ids)
+		iu_getter.getByPrimaryKeys(id_lists)
+		iu_getter.list2dict()
+		
+		for specimen_id in iu_getter.iu_dict:
+			for cs in self.cs_list:
+				if specimen_id == cs['CollectionSpecimenID']:
+					if 'IdentificationUnits' not in cs:
+						cs['IdentificationUnits'] = []
+						for iu_id in iu_getter.iu_dict[specimen_id]:
+							cs['IdentificationUnits'].append(iu_getter.iu_dict[specimen_id][iu_id])
 		
 		return
 
 
-	def fillIDsTempTableByRowGUIDs(self, rowguids):
-		self.createIDsTempTable()
+	def setChildCollectionAgents(self):
 		
-		# insert of with placeholders is limited to 2100 values
-		pagesize = 1000
-		while len(rowguids) > 0:
-			cached_ids = rowguids[:pagesize]
-			del rowguids[:pagesize]
-			placeholders = ['(?)' for _ in cached_ids]
-			values = [value for value in cached_ids]
-			
-			query = """
-			INSERT INTO [{0}] ([RowGUID])
-			VALUES {1}
-			;""".format(self.ids_temptable)
-			querylog.info(query)
-			self.cur.execute(query, [values])
-			self.con.commit()
-			
+		id_lists = []
 		query = """
-		UPDATE ids_temp
-		SET ids_temp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
-		FROM [{0}] ids_temp
-		INNER JOIN [CollectionSpecimen] cs
-		ON cs.[RowGUID] = ids_temp.[RowGUID]
-		;""".format(self.ids_temptable)
+		SELECT ca.[CollectionSpecimenID], ca.[CollectorsName]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [CollectionAgent] ca
+		ON cs.[CollectionSpecimenID] = ca.[CollectionSpecimenID]
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		;""".format(self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		self.con.commit()
+		rows = self.cur.fetchall()
+		for row in rows:
+			id_lists.append((row[0], row[1]))
+		
+		ca_getter = CollectionAgentGetter(self.dc_db, self.users_project_ids)
+		ca_getter.getByPrimaryKeys(id_lists)
+		ca_getter.list2dict()
+		
+		for specimen_id in ca_getter.ca_dict:
+			for cs in self.cs_list:
+				if specimen_id == cs['CollectionSpecimenID']:
+					if 'CollectionAgents' not in cs:
+						cs['CollectionAgents'] = []
+						for ca_id in ca_getter.ca_dict[specimen_id]:
+							cs['CollectionAgents'].append(ca_getter.ca_dict[specimen_id][ca_id])
 		
 		return
 
 
-	def set_max_page(self):
+	def setChildCollections(self):
+		
+		id_lists = []
 		query = """
-		SELECT COUNT(CollectionSpecimenID) FROM [{0}]
-		;""".format(self.ids_temptable)
+		SELECT DISTINCT cs.[CollectionID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		WHERE cs.[CollectionID] IS NOT NULL
+		;""".format(self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		row = self.cur.fetchone()
-		self.rownumber = row[0]
+		rows = self.cur.fetchall()
+		for row in rows:
+			id_lists.append((row[0]))
 		
-		self.max_page = math.ceil(self.rownumber / self.pagesize)
-		if self.max_page < 1:
-			self.max_page = 1
+		c_getter = CollectionGetter(self.dc_db)
+		c_getter.getByPrimaryKeys(id_lists)
+		c_getter.list2dict()
+		
+		for collection_id in c_getter.c_dict:
+			for cs in self.cs_list:
+				if 'CollectionID' in cs and collection_id == cs['CollectionID']:
+					cs['Collection'] = c_getter.c_dict[collection_id]
 		
 		return
-	'''
 
 
-
-
-
-
-
-	##########################################
-	'''
-	def createDataTempTable(self):
+	def setChildCollectionEvents(self):
+		
+		id_lists = []
 		query = """
-		DROP TABLE IF EXISTS [{0}]
-		;""".format(self.temptable)
+		SELECT DISTINCT cs.[CollectionEventID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		WHERE cs.[CollectionEventID] IS NOT NULL
+		;""".format(self.get_temptable)
+		
 		querylog.info(query)
 		self.cur.execute(query)
-		self.con.commit()
+		rows = self.cur.fetchall()
+		for row in rows:
+			id_lists.append((row[0]))
 		
+		ce_getter = CollectionEventGetter(self.dc_db, self.users_project_ids)
+		ce_getter.getByPrimaryKeys(id_lists)
+		ce_getter.list2dict()
 		
-		query = """
-		CREATE TABLE [{0}] (
-			[row_num] INT IDENTITY,
-			[CollectionSpecimenID] INT NOT NULL UNIQUE,
-			[RowGUID] VARCHAR(64) COLLATE {1},
-			[CollectionEventID] INT,
-			[ExternalDatasourceID] INT,
-			[ExternalIdentifier] NVARCHAR(100) COLLATE {1},
-			[AccessionNumber] NVARCHAR(50) COLLATE {1},
-			[AccessionDate] DATETIME,
-			[AccessionDay] TINYINT,
-			[AccessionMonth] TINYINT,
-			[AccessionYear] SMALLINT,
-			[AccessionDateSupplement] NVARCHAR(255) COLLATE {1},
-			[AccessionDateCategory] NVARCHAR(50) COLLATE {1},
-			[DepositorsName] NVARCHAR(255) COLLATE {1},
-			[DepositorsAgentURI] VARCHAR(255) COLLATE {1},
-			[DepositorsAccessionNumber] NVARCHAR(50) COLLATE {1},
-			[LabelTitle] NVARCHAR(MAX) COLLATE {1},
-			[LabelType] NVARCHAR(50) COLLATE {1},
-			[LabelTranscriptionState] NVARCHAR(50) COLLATE {1},
-			[LabelTranscriptionNotes] NVARCHAR(MAX) COLLATE {1},
-			[ExsiccataURI] VARCHAR(255) COLLATE {1},
-			[ExsiccataAbbreviation] NVARCHAR(255) COLLATE {1},
-			[OriginalNotes] NVARCHAR(MAX) COLLATE {1},
-			[AdditionalNotes] NVARCHAR(MAX) COLLATE {1},
-			[Problems] NVARCHAR(255) COLLATE {1},
-			[DataWithholdingReason] NVARCHAR(255),
-			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-			INDEX [CollectionEventID] ([CollectionEventID]),
-			INDEX [ExternalDatasourceID] ([ExternalDatasourceID]),
-			INDEX [AccessionNumber] ([AccessionNumber]),
-			INDEX [RowGUID] ([RowGUID])
-		) 
-		;""".format(self.temptable, self.collation)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
+		for event_id in ce_getter.ce_dict:
+			for cs in self.cs_list:
+				if 'CollectionEventID' in cs and event_id == cs['CollectionEventID']:
+					cs['CollectionEvent'] = ce_getter.ce_dict[event_id]
 		
 		return
-	'''
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

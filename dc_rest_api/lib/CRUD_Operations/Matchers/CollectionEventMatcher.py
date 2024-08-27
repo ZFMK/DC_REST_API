@@ -83,6 +83,10 @@ class CollectionEventMatcher():
 		[Height_max_m] VARCHAR(255) COLLATE {1},
 		[Height_Accuracy_m] VARCHAR(50) COLLATE {1},
 		[Height_RecordingMethod_m] VARCHAR(500) COLLATE {1},
+		 -- 
+		[DataWithholdingReason] NVARCHAR(255) COLLATE {1},
+		[DataWithholdingReasonDate] NVARCHAR(50) COLLATE {1},
+		 -- 
 		INDEX [event_sha_idx] ([event_sha])
 		)
 		;""".format(self.prefiltered_temptable, self.collation)
@@ -137,7 +141,10 @@ class CollectionEventMatcher():
 			[Height_min_m],
 			[Height_max_m],
 			[Height_Accuracy_m],
-			[Height_RecordingMethod_m]
+			[Height_RecordingMethod_m],
+			 -- 
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)
 		SELECT 
 			e.[CollectionEventID],
@@ -179,7 +186,11 @@ class CollectionEventMatcher():
 			h.Location1 AS [Height_min_m],
 			h.Location2 AS [Height_max_m],
 			h.LocationAccuracy AS [Height_Accuracy_m],
-			h.RecordingMethod AS [Height_RecordingMethod_m]
+			h.RecordingMethod AS [Height_RecordingMethod_m],
+			 -- 
+			e.[DataWithholdingReason],
+			e.[DataWithholdingReasonDate]
+			 -- 
 		FROM [CollectionEvent] e
 		INNER JOIN [{1}] ce_temp
 		ON 
@@ -200,6 +211,8 @@ class CollectionEventMatcher():
 			AND ((e.[CollectionTime] = ce_temp.[CollectionTime]) OR (e.[CollectionTime] IS NULL AND ce_temp.[CollectionTime] IS NULL))
 			AND ((e.[CollectionTimeSpan] = ce_temp.[CollectionTimeSpan]) OR (e.[CollectionTimeSpan] IS NULL AND ce_temp.[CollectionTimeSpan] IS NULL))
 			AND ((e.[CountryCache] = ce_temp.[Country]) OR (e.[CountryCache] IS NULL AND ce_temp.[Country] IS NULL))
+			AND ((e.[DataWithholdingReason] = ce_temp.[DataWithholdingReason]) OR (e.[DataWithholdingReason] IS NULL AND ce_temp.[DataWithholdingReason] IS NULL))
+			AND ((e.[DataWithholdingReasonDate] = ce_temp.[DataWithholdingReasonDate]) OR (e.[DataWithholdingReasonDate] IS NULL AND ce_temp.[DataWithholdingReasonDate] IS NULL))
 		LEFT JOIN [CollectionEventLocalisation] alt
 		ON alt.CollectionEventID = e.CollectionEventID AND alt.LocalisationSystemID = 4
 		LEFT JOIN [CollectionEventLocalisation] wgs
@@ -258,7 +271,10 @@ class CollectionEventMatcher():
 			[Height_min_m],
 			[Height_max_m],
 			[Height_Accuracy_m],
-			[Height_RecordingMethod_m]
+			[Height_RecordingMethod_m],
+			 -- 
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)), 2)
 		FROM [{0}] pf
 		;""".format(self.prefiltered_temptable)

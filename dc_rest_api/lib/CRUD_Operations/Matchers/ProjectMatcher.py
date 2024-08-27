@@ -60,6 +60,7 @@ class ProjectMatcher():
 		INSERT INTO [{0}] (
 			[ProjectID],
 			[Project],
+			[ProjectURI],
 			 -- [StableIdentifierBase],
 			 -- [StableIdentifierTypeID],
 			[RowGUID]
@@ -67,6 +68,7 @@ class ProjectMatcher():
 		SELECT 
 			pp.[ProjectID],
 			pp.[Project],
+			pp.[ProjectURI],
 			 -- pp.[StableIdentifierBase],
 			 -- pp.[StableIdentifierTypeID],
 			pp.[RowGUID]

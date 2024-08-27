@@ -282,38 +282,6 @@ class ReferencedJSON():
 		return
 
 
-	# these methods do only work with the flattened dicts
-	def setEventIDsInCS(self):
-		for cs_id in self.json_dicts['CollectionSpecimens']:
-			cs_dict = self.json_dicts['CollectionSpecimens'][cs_id]
-			try:
-				event_id = cs_dict['CollectionEvent']
-				cs_dict['CollectionEventID'] = self.json_dicts['CollectionEvents'][event_id]['CollectionEventID']
-			except:
-				pass
-		return
-
-
-	def setExternaDatasourceIDsInCS(self):
-		for cs_id in self.json_dicts['CollectionSpecimens']:
-			cs_dict = self.json_dicts['CollectionSpecimens'][cs_id]
-			try:
-				ed_id = cs_dict['CollectionExternalDatasource']
-				cs_dict['ExternalDatasourceID'] = self.json_dicts['CollectionExternalDatasources'][ed_id]['ExternalDatasourceID']
-			except:
-				pass
-		return
-
-
-	def setCollectionIDsInCS(self):
-		for cs_id in self.json_dicts['CollectionSpecimens']:
-			cs_dict = self.json_dicts['CollectionSpecimens'][cs_id]
-			try:
-				collection_id = cs_dict['Collection']
-				cs_dict['CollectionID'] = self.json_dicts['Collections'][collection_id]['CollectionID']
-			except:
-				pass
-		return
 
 	'''
 	def updateIDs(self, key, id_columns = []):

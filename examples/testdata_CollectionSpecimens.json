@@ -365,7 +365,9 @@
 			"CollectionAgents": [
 				{
 					"CollectorsName": "Testuser Collector2",
-					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest",
+					"CollectorsNumber": "FieldNumber 1 for Unittest",
+					"Notes": "test the Notes"
 				},
 				{
 					"CollectorsName": "Testuser Collector4",
@@ -373,7 +375,9 @@
 				},
 				{
 					"CollectorsName": "Testuser Collector1",
-					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest",
+					"CollectorsNumber": "FieldNumber 2 for Unittest",
+					"Notes": "test the Notes 2"
 				}
 			],
 			"CollectionEvent": {

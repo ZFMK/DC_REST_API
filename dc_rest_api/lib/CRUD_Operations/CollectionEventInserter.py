@@ -271,7 +271,10 @@ class CollectionEventInserter():
 			[Height_min_m],
 			[Height_max_m],
 			[Height_Accuracy_m],
-			[Height_RecordingMethod_m]
+			[Height_RecordingMethod_m],
+			 -- 
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)), 2)
 		FROM [{0}] ce_temp
 		;""".format(self.temptable)
@@ -354,6 +357,10 @@ class CollectionEventInserter():
 			[Height_max_m] VARCHAR(255) COLLATE {1},
 			[Height_Accuracy_m] VARCHAR(50) COLLATE {1},
 			[Height_RecordingMethod_m] VARCHAR(500) COLLATE {1},
+			 -- 
+			[DataWithholdingReason] NVARCHAR(255) COLLATE {1},
+			[DataWithholdingReasonDate] NVARCHAR(50) COLLATE {1},
+			 -- 
 			INDEX [event_sha_idx] ([event_sha]),
 			INDEX [RowGUID_idx] ([RowGUID])
 		)
@@ -405,7 +412,10 @@ class CollectionEventInserter():
 			[Height_min_m],
 			[Height_max_m],
 			[Height_Accuracy_m],
-			[Height_RecordingMethod_m]
+			[Height_RecordingMethod_m],
+			 -- 
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)
 		SELECT DISTINCT
 			ce_temp.[CollectorsEventNumber],
@@ -448,7 +458,10 @@ class CollectionEventInserter():
 			ce_temp.[Height_min_m],
 			ce_temp.[Height_max_m],
 			ce_temp.[Height_Accuracy_m],
-			ce_temp.[Height_RecordingMethod_m]
+			ce_temp.[Height_RecordingMethod_m],
+			 -- 
+			ce_temp.[DataWithholdingReason],
+			ce_temp.[DataWithholdingReasonDate]
 		FROM [{1}] ce_temp
 		WHERE ce_temp.[CollectionEventID] IS NULL
 		;""".format(self.unique_events_temptable, self.temptable)
@@ -485,7 +498,9 @@ class CollectionEventInserter():
 			[CollectingMethod],
 			[Notes],
 			[CountryCache],
-			[RowGUID]
+			[RowGUID],
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)
 		SELECT DISTINCT -- the uniqueness is set by ue_temp.[RowGUID] which was set before in __setUniqueEventsTemptable when the CollectionEvent data is the same but Localisations differ
 			ue_temp.[CollectorsEventNumber],
@@ -509,7 +524,9 @@ class CollectionEventInserter():
 			ue_temp.[CollectingMethod],
 			ue_temp.[Notes],
 			ue_temp.[CountryCache],
-			ue_temp.[RowGUID]
+			ue_temp.[RowGUID],
+			ue_temp.[DataWithholdingReason],
+			ue_temp.[DataWithholdingReasonDate]
 		FROM [{0}] ue_temp
 		;""".format(self.unique_events_temptable)
 		querylog.info(query)

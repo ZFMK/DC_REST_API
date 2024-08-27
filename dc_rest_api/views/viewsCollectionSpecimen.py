@@ -13,10 +13,6 @@ from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
 
-from dc_rest_api.lib.CRUD_Operations.ProjectInserter import ProjectInserter
-from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
-from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
-from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
@@ -65,56 +61,15 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		referenced_json.flatten2Dicts()
 		
-		# TODO: move this into parent class for specimen insert and handle errors and messages
-		if 'Projects' in self.request_params.json_body:
-			try:
-				projects = self.request_params.json_body['Projects']
-				p_inserter = ProjectInserter(self.dc_db, self.uid, users_roles = self.roles)
-				p_inserter.insertProjectData(projects)
-			except:
-				self.messages.extend(p_inserter.messages)
-				pudb.set_trace()
-		
-		if 'Collections' in self.request_params.json_body:
-			try:
-				collections = self.request_params.json_body['Collections']
-				c_inserter = CollectionInserter(self.dc_db, users_roles = self.roles)
-				c_inserter.insertCollectionData(collections)
-			except:
-				self.messages.extend(c_inserter.messages)
-				pudb.set_trace()
-		
-		if 'CollectionEvents' in self.request_params.json_body:
-			try:
-				events = self.request_params.json_body['CollectionEvents']
-				ce_inserter = CollectionEventInserter(self.dc_db)
-				ce_inserter.insertCollectionEventData(events)
-			except:
-				self.messages.extend(ce_inserter.messages)
-		
-		if 'CollectionExternalDatasources' in self.request_params.json_body:
-			try:
-				datasources = self.request_params.json_body['CollectionExternalDatasources']
-				ed_inserter = ExternalDatasourceInserter(self.dc_db)
-				ed_inserter.insertExternalDatasourceData(datasources)
-			except:
-				self.messages.extend(ed_inserter.messages)
-				pudb.set_trace()
-		
-		referenced_json.setEventIDsInCS()
-		referenced_json.setExternaDatasourceIDsInCS()
-		referenced_json.setCollectionIDsInCS()
+		pudb.set_trace()
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
-				specimens = self.request_params.json_body['CollectionSpecimens']
-				
-				cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
-				cs_inserter.insertSpecimenData(specimens)
+				cs_inserter = CollectionSpecimenInserter(self.dc_db, self.uid, users_roles = self.roles)
+				cs_inserter.insertSpecimenData(self.request_params.json_body)
 			except:
 				self.messages.extend(cs_inserter.messages)
 				pudb.set_trace()
@@ -154,6 +109,7 @@ class CollectionSpecimensViews():
 		
 		specimen_deleter = CollectionSpecimenDeleter(self.dc_db, self.users_project_ids)
 		
+		pudb.set_trace()
 		deleted = []
 		if 'CollectionSpecimenIDs' in self.request_params.json_body:
 			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
@@ -195,8 +151,7 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		# TODO: params for page and pagesize missing
-		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids, 1, 1000)
+		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids)
 		
 		specimens = []
 		
@@ -208,10 +163,12 @@ class CollectionSpecimensViews():
 			rowguids = self.request_params.json_body['RowGUIDs']
 			specimens = specimen_getter.getByRowGUIDs(rowguids)
 		
+		specimens = json.loads(json.dumps(specimens, default = str))
+		
 		jsonresponse = {
 			'title': 'DC REST API GET CollectionSpecimens',
 			'messages': self.messages,
-			'specimens': specimens
+			'CollectionSpecimens': specimens
 		}
 		
 		return jsonresponse

@@ -7,18 +7,12 @@ querylog = logging.getLogger('query')
 
 
 class DataGetter():
-	def __init__(self, dc_db, page = 1, pagesize = 1000):
+	def __init__(self, dc_db):
 		
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
-		
-		#self.ids_temptable = '#getter_ids_temptable'
-		#self.get_temptable = '#getter_temptable'
-		
-		self.pagesize = pagesize
-		self.page = page
-		self.max_page = 1
+		self.collation = self.dc_db.collation
 
 
 	def createGetTempTable(self):
@@ -61,29 +55,13 @@ class DataGetter():
 		return
 
 
-	def set_max_page(self):
-		query = """
-		SELECT COUNT(CollectionSpecimenID) FROM [{0}]
-		;""".format(self.get_temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		row = self.cur.fetchone()
-		self.rownumber = row[0]
-		
-		self.max_page = math.ceil(self.rownumber / self.pagesize)
-		if self.max_page < 1:
-			self.max_page = 1
-		
-		return
-
-
-	def getProjectClause(self):
+	def getProjectClause(self, clause_connector = 'AND'):
 		projectclause = ""
 		if len(self.users_project_ids) > 0:
 			placeholders = ['?' for project_id in self.users_project_ids]
 			placeholderstring = ', '.join(placeholders)
-			projectclause = " AND cp.ProjectID NOT IN ({1})".format(placeholderstring)
+			projectclause = "{0} cp.ProjectID NOT IN ({1})".format(clause_connector, placeholderstring)
+		
 		return projectclause
 
 

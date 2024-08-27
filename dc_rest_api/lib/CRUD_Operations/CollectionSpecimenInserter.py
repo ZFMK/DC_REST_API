@@ -10,6 +10,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.IndependentTablesInsert import IndependentTablesInsert
 
 from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
 from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
@@ -20,12 +21,13 @@ from dc_rest_api.lib.CRUD_Operations.SpecimenPartInserter import SpecimenPartIns
 
 class CollectionSpecimenInserter():
 	
-	def __init__(self, dc_db, users_roles = []):
+	def __init__(self, dc_db, uid, users_roles = []):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
+		self.uid = uid
 		self.users_roles = users_roles
 		
 		self.temptable = '#specimen_temptable'
@@ -49,54 +51,63 @@ class CollectionSpecimenInserter():
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
 
 
-	def insertSpecimenData(self, json_dicts = []):
-		self.specimen_dicts = json_dicts
-		
-		self.__createSpecimenTempTable()
-		
-		self.json2temp.set_datadicts(self.specimen_dicts)
-		self.json2temp.fill_temptable(self.temptable)
-		
-		
-		self.__insertSpecimen()
-		self.__setMissingAccessionNumbers()
-		self.__updateCSTempTable()
-		self.__updateSpecimenDicts()
-		
-		pudb.set_trace()
-		for dict_id in self.specimen_dicts:
-			cs_dict = self.specimen_dicts[dict_id]
-			identificationunits = []
-			if 'IdentificationUnits' in cs_dict:
-				for iu_dict in cs_dict['IdentificationUnits']:
-					iu_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
-					identificationunits.append(iu_dict)
+	def insertSpecimenData(self, flattened_json):
+		if 'CollectionSpecimens' in flattened_json:
+			independent_tables = IndependentTablesInsert(self.dc_db, self.uid, self.users_roles)
+			independent_tables.insertIndependentTables(flattened_json)
 			
-			iu_inserter = IdentificationUnitInserter(self.dc_db)
-			iu_inserter.setIdentificationUnitDicts(identificationunits)
-			iu_inserter.insertIdentificationUnitData()
-	
-			collectionagents = []
-			if 'CollectionAgents' in cs_dict:
-				for ca_dict in cs_dict['CollectionAgents']:
-					ca_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
-					collectionagents.append(ca_dict)
+			independent_tables.setEventIDsInParentDicts('CollectionSpecimens')
+			independent_tables.setExternaDatasourceIDsInParentDicts('CollectionSpecimens')
+			independent_tables.setCollectionIDsInParentDicts('CollectionSpecimens')
+			independent_tables.setProjectIDsInParentDicts('CollectionSpecimens')
+			
+			self.specimen_dicts = flattened_json['CollectionSpecimens']
+			
+			self.__createSpecimenTempTable()
+			
+			self.json2temp.set_datadicts(self.specimen_dicts)
+			self.json2temp.fill_temptable(self.temptable)
+			
+			
+			self.__insertSpecimen()
+			self.__setMissingAccessionNumbers()
+			self.__updateCSTempTable()
+			self.__updateSpecimenDicts()
+			
+			for dict_id in self.specimen_dicts:
+				cs_dict = self.specimen_dicts[dict_id]
+				identificationunits = []
+				if 'IdentificationUnits' in cs_dict:
+					for iu_dict in cs_dict['IdentificationUnits']:
+						iu_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+						identificationunits.append(iu_dict)
+				
+				iu_inserter = IdentificationUnitInserter(self.dc_db)
+				iu_inserter.setIdentificationUnitDicts(identificationunits)
+				iu_inserter.insertIdentificationUnitData()
 		
-			ca_inserter = CollectionAgentInserter(self.dc_db)
-			ca_inserter.setCollectionAgentDicts(collectionagents)
-			ca_inserter.insertCollectionAgentData()
-	
-			specimenparts = []
-			if 'CollectionSpecimenParts' in cs_dict:
-				for csp_dict in cs_dict['CollectionSpecimenParts']:
-					csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
-					specimenparts.append(csp_dict)
+				collectionagents = []
+				if 'CollectionAgents' in cs_dict:
+					for ca_dict in cs_dict['CollectionAgents']:
+						ca_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+						collectionagents.append(ca_dict)
+			
+				ca_inserter = CollectionAgentInserter(self.dc_db)
+				ca_inserter.setCollectionAgentDicts(collectionagents)
+				ca_inserter.insertCollectionAgentData()
 		
-			csp_inserter = SpecimenPartInserter(self.dc_db)
-			csp_inserter.setSpecimenPartDicts(specimenparts)
-			csp_inserter.insertSpecimenPartData()
-		
-		return
+				specimenparts = []
+				if 'CollectionSpecimenParts' in cs_dict:
+					for csp_dict in cs_dict['CollectionSpecimenParts']:
+						csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+						specimenparts.append(csp_dict)
+			
+				csp_inserter = SpecimenPartInserter(self.dc_db)
+				csp_inserter.setSpecimenPartDicts(specimenparts)
+				csp_inserter.setLinkedCollectionIDs(flattened_json)
+				csp_inserter.insertSpecimenPartData()
+			
+			return
 
 
 	def __createSpecimenTempTable(self):
@@ -207,7 +218,7 @@ class CollectionSpecimenInserter():
 
 
 	def __updateSpecimenDicts(self):
-		# write the inserted ids back to the json_dicts that where provided as payload
+		# write the inserted ids back to the specimen_dicts
 		
 		cs_ids = self.getIDsForSpecimenDicts()
 		

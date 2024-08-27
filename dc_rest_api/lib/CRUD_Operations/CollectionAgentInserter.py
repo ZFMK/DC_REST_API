@@ -20,6 +20,8 @@ class CollectionAgentInserter():
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'CollectorsName', 'None allowed': False},
 			{'colname': 'CollectorsSequence'},
+			{'colname': 'CollectorsNumber'},
+			{'colname': 'Notes'},
 			{'colname': 'DataWithholdingReason'}
 		]
 		
@@ -69,6 +71,8 @@ class CollectionAgentInserter():
 		[CollectorsName] VARCHAR(255) COLLATE {1} NOT NULL,
 		[CollectorsSequence] DATETIME2 DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+		[CollectorsNumber] NVARCHAR(50) COLLATE {1},
+		[Notes] NVARCHAR(MAX) COLLATE {1},
 		[DataWithholdingReason] VARCHAR(255) COLLATE {1},
 		PRIMARY KEY ([entry_num]),
 		INDEX [CollectorsName_idx] ([CollectorsName]),
@@ -104,6 +108,8 @@ class CollectionAgentInserter():
 			[CollectorsName],
 			[CollectorsSequence],
 			[RowGUID],
+			[CollectorsNumber],
+			[Notes],
 			[DataWithholdingReason]
 		)
 		SELECT 
@@ -111,6 +117,8 @@ class CollectionAgentInserter():
 			[CollectorsName],
 			ISNULL([CollectorsSequence], DATEADD(ms, (ca_temp.[entry_num] * 200), SYSDATETIME())) AS [CollectorsSequence],
 			[RowGUID],
+			[CollectorsNumber],
+			[Notes],
 			[DataWithholdingReason]
 		FROM [{0}] ca_temp
 		;""".format(self.temptable)

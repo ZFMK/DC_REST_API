@@ -18,8 +18,8 @@ class CollectionInserter():
 		
 		self.users_roles = users_roles
 		
-		self.temptable = '#collection_temptable'
-		self.unique_collections_temptable = '#unique_c_temptable'
+		self.temptable = 'collection_temptable'
+		self.unique_collections_temptable = 'unique_c_temptable'
 		
 		
 		self.schema = [
@@ -48,6 +48,7 @@ class CollectionInserter():
 
 
 	def insertCollectionData(self, json_dicts = []):
+		pudb.set_trace()
 		self.c_dicts = json_dicts
 		
 		self.__createCollectionTempTable()
@@ -288,7 +289,8 @@ class CollectionInserter():
 	def __updateCollectionIDsInTempTable(self):
 		query = """
 		UPDATE c_temp
-		SET c_temp.CollectionID = c.CollectionID
+		SET c_temp.[CollectionID] = c.[CollectionID],
+		c_temp.[RowGUID] = c.[RowGUID]
 		FROM [{0}] c_temp
 		INNER JOIN [{1}] ue_temp
 		ON c_temp.[collection_sha] = ue_temp.[collection_sha]

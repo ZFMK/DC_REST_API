@@ -62,7 +62,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 			self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('CollectionSpecimen')
-		self.prohibited = self.filter_allowed_RowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
+		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
 		self.deleteChildSpecimenParts()
 		self.deleteChildIdentificationUnits()
 		self.deleteFromTable('CollectionSpecimen')

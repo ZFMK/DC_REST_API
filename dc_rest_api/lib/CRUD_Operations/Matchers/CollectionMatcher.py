@@ -14,7 +14,7 @@ class CollectionMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '#prefiltered_collections'
+		self.prefiltered_temptable = 'prefiltered_collections'
 
 
 	def matchExistingCollections(self):

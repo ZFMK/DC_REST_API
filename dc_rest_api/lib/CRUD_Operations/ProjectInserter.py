@@ -18,8 +18,8 @@ class ProjectInserter():
 		self.user_id = user_id
 		self.users_roles = users_roles
 		
-		self.temptable = 'project_temptable'
-		self.unique_projects_temptable = 'unique_p_temptable'
+		self.temptable = '#project_temptable'
+		self.unique_projects_temptable = '#unique_p_temptable'
 		
 		# set a minimum ProjectID for new projects to insert
 		self.min_project_id = 271176
@@ -230,6 +230,7 @@ class ProjectInserter():
 		INSERT INTO [ProjectProxy] (
 			[ProjectID],
 			[Project],
+			[ProjectURI],
 			 -- [StableIdentifierBase],
 			 -- [StableIdentifierTypeID],
 			[RowGUID]
@@ -237,6 +238,7 @@ class ProjectInserter():
 		SELECT
 			ROW_NUMBER() OVER(ORDER BY [RowGUID]) + pp.max_p_id AS [ProjectID], 
 			ue_temp.[Project],
+			ue_temp.[ProjectURI],
 			 -- ue_temp.[StableIdentifierBase],
 			 -- ue_temp.[StableIdentifierTypeID],
 			ue_temp.[RowGUID]
@@ -248,7 +250,8 @@ class ProjectInserter():
 			FROM ProjectProxy pp
 		) pp
 		GROUP BY 
-			ue_temp.[Project], 
+			ue_temp.[Project],
+			ue_temp.[ProjectURI],
 			 -- ue_temp.[StableIdentifierBase], 
 			 -- ue_temp.[StableIdentifierTypeID], 
 			ue_temp.[RowGUID],
@@ -349,7 +352,7 @@ class ProjectInserter():
 
 ########################################
 
-
+	'''
 	def __setExistingProjects(self):
 		query = """
 		UPDATE p_temp
@@ -364,6 +367,7 @@ class ProjectInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 
