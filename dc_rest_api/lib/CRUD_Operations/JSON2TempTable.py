@@ -45,7 +45,7 @@ class JSON2TempTable():
 		dict_list = self.copy_to_list_of_dicts(json_dicts)
 		
 		for json_dict in dict_list:
-		
+			
 			#for json_dict in json_dicts:
 			#try:
 			values_not_none = 0
@@ -73,6 +73,7 @@ class JSON2TempTable():
 			
 			# check that at least one value in json_dict entries is not None
 			if values_not_none < 1:
+				pudb.set_trace()
 				raise ValueError('Can not insert data, all fields are empty')
 			
 			self.datadicts.append(json_dict)

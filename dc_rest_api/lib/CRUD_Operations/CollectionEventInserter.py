@@ -20,8 +20,10 @@ class CollectionEventInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'CollectionEventID'},
+			# do not add CollectionSpecimenID as it should be set by code
+			#{'colname': 'CollectionSpecimenID'},
+			# do not add CollectionEventID as it should be set by comparison
+			#{'colname': 'CollectionEventID'},
 			{'colname': 'CollectorsEventNumber'},
 			{'colname': 'CollectionDate'},
 			{'colname': 'CollectionDay'},
@@ -44,11 +46,10 @@ class CollectionEventInserter():
 			{'colname': 'ReferenceURI'},
 			# {'colname': 'ReferenceDetails'},
 			{'colname': 'Notes'},
-			{'colname': 'Country'},
+			{'colname': 'CountryCache'},
 			#################
 			{'colname': 'State'},
 			{'colname': 'StateDistrict'},
-			{'colname': 'County'},
 			{'colname': 'Municipality'},
 			{'colname': 'StreetHouseNumber'},
 			#################
@@ -93,7 +94,7 @@ class CollectionEventInserter():
 		
 		self.createNewEvents()
 		
-		self.__insertEventIDsInCollectionSpecimen()
+		#self.__insertEventIDsInCollectionSpecimen()
 		#self.__deleteUnconnectedEvents()
 		
 		self.__updateCEDicts()
@@ -140,7 +141,7 @@ class CollectionEventInserter():
 		[CollectingMethod_sha] VARCHAR(64),
 		[Notes] VARCHAR(MAX) COLLATE {1},
 		 -- 
-		[Country] VARCHAR(255) COLLATE {1},
+		[CountryCache] VARCHAR(255) COLLATE {1},
 		[State] VARCHAR(255) COLLATE {1},
 		[StateDistrict] VARCHAR(255) COLLATE {1},
 		[County] VARCHAR(255) COLLATE {1},
@@ -253,7 +254,7 @@ class CollectionEventInserter():
 			[ReferenceURI],
 			 -- e.[ReferenceDetails],
 			[CollectingMethod_sha],
-			[Country],
+			[CountryCache],
 			 -- 
 			[Altitude],
 			[Altitude_Accuracy],
@@ -438,7 +439,7 @@ class CollectionEventInserter():
 			 -- ce_temp.[ReferenceDetails],
 			ce_temp.[CollectingMethod],
 			ce_temp.[Notes],
-			ce_temp.[Country],
+			ce_temp.[CountryCache],
 			 -- 
 			ce_temp.[event_sha],
 			 -- 
@@ -682,7 +683,7 @@ class CollectionEventInserter():
 		)
 		SELECT 
 			ce_temp.[CollectionEventID],
-			CONCAT_WS(', ', ce_temp.[Country], ce_temp.[State], ce_temp.[StateDistrict], ce_temp.[County], ce_temp.[Municipality], ce_temp.[StreetHouseNumber]),
+			CONCAT_WS(', ', ce_temp.[CountryCache], ce_temp.[State], ce_temp.[StateDistrict], ce_temp.[County], ce_temp.[Municipality], ce_temp.[StreetHouseNumber]),
 			ls.[LocalisationSystemID]
 		FROM [{0}] ce_temp
 		INNER JOIN [LocalisationSystem] ls
@@ -696,6 +697,7 @@ class CollectionEventInserter():
 	'''
 
 
+	'''
 	def __insertEventIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
@@ -710,6 +712,7 @@ class CollectionEventInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __updateCEDicts(self):

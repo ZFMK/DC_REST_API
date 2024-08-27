@@ -26,12 +26,14 @@ class ProjectInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'ProjectID'},
+			# do not add CollectionSpecimenID as it should be set by code
+			#{'colname': 'CollectionSpecimenID'},
+			# do not add ProjectID as it should be set by comparison
+			#{'colname': 'ProjectID'},
 			{'colname': 'Project', 'None allowed': False},
 			{'colname': 'ProjectURI'},
-			#{'colname': 'StableIdentifierBase'},
-			#{'colname': 'StableIdentifierTypeID'}
+			{'colname': 'StableIdentifierBase'},
+			{'colname': 'StableIdentifierTypeID'}
 		]
 		
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
@@ -97,15 +99,16 @@ class ProjectInserter():
 		[ProjectID] INT DEFAULT NULL,
 		[Project] NVARCHAR(50) COLLATE {1} NOT NULL,
 		[ProjectURI] VARCHAR(255) COLLATE {1},
-		 -- [StableIdentifierBase] VARCHAR(500) COLLATE {1},
-		 -- [StableIdentifierTypeID] INT,
+		[StableIdentifierBase] VARCHAR(500) COLLATE {1},
+		[StableIdentifierTypeID] INT,
 		[RowGUID] UNIQUEIDENTIFIER,
 		[project_sha] VARCHAR(64) COLLATE {1},
 		PRIMARY KEY ([@id]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [ProjectID_idx] ([ProjectID]),
 		INDEX [Project_idx] ([Project]),
-		 -- INDEX [StableIdentifierBase_idx] ([StableIdentifierBase])
+		INDEX [StableIdentifierBase_idx] ([StableIdentifierBase]),
+		INDEX [StableIdentifierTypeID_idx] ([StableIdentifierTypeID]),
 		INDEX [project_sha_idx] ([project_sha])
 		)
 		;""".format(self.temptable, self.collation)
@@ -121,8 +124,9 @@ class ProjectInserter():
 		UPDATE p_temp
 		SET [project_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[Project],
-			[ProjectURI]
-			 -- , [StableIdentifierBase]
+			[ProjectURI],
+			[StableIdentifierBase],
+			[StableIdentifierTypeID]
 		)), 2)
 		FROM [{0}] p_temp
 		;""".format(self.temptable)
@@ -178,8 +182,8 @@ class ProjectInserter():
 			[ProjectID] INT,
 			[Project] NVARCHAR(50) COLLATE {1},
 			[ProjectURI] VARCHAR(255) COLLATE {1},
-			 -- [StableIdentifierBase] VARCHAR(500) COLLATE {1},
-			 -- [StableIdentifierTypeID] INT,
+			[StableIdentifierBase] VARCHAR(500) COLLATE {1},
+			[StableIdentifierTypeID] INT,
 			[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 			 -- 
 			[project_sha] VARCHAR(64) COLLATE {1},
@@ -210,9 +214,9 @@ class ProjectInserter():
 		UPDATE ue_temp
 		SET 
 			[Project] = p_temp.[Project],
-			[ProjectURI] = p_temp.[ProjectURI]
-			 -- ,[StableIdentifierBase] = p_temp.[StableIdentifierBase],
-			 -- ,[StableIdentifierTypeID] = p_temp.[StableIdentifierTypeID]
+			[ProjectURI] = p_temp.[ProjectURI],
+			[StableIdentifierBase] = p_temp.[StableIdentifierBase],
+			[StableIdentifierTypeID] = p_temp.[StableIdentifierTypeID]
 		FROM [{0}] ue_temp
 		INNER JOIN [{1}] p_temp
 		ON ue_temp.[project_sha] = p_temp.[project_sha]
@@ -231,16 +235,16 @@ class ProjectInserter():
 			[ProjectID],
 			[Project],
 			[ProjectURI],
-			 -- [StableIdentifierBase],
-			 -- [StableIdentifierTypeID],
+			[StableIdentifierBase],
+			[StableIdentifierTypeID],
 			[RowGUID]
 		)
 		SELECT
 			ROW_NUMBER() OVER(ORDER BY [RowGUID]) + pp.max_p_id AS [ProjectID], 
 			ue_temp.[Project],
 			ue_temp.[ProjectURI],
-			 -- ue_temp.[StableIdentifierBase],
-			 -- ue_temp.[StableIdentifierTypeID],
+			ue_temp.[StableIdentifierBase],
+			ue_temp.[StableIdentifierTypeID],
 			ue_temp.[RowGUID]
 		FROM [{0}] ue_temp, (
 			SELECT 

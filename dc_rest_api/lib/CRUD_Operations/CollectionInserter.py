@@ -24,8 +24,10 @@ class CollectionInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			{'colname': 'CollectionID'},
-			{'colname': 'CollectionSpecimenID'},
+			# do not add CollectionID as it should be set by comparison
+			#{'colname': 'CollectionID'},
+			# do not add CollectionSpecimenID as it should be set by code
+			#{'colname': 'CollectionSpecimenID'},
 			{'colname': 'SpecimenPartID'},
 			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
 			{'colname': 'CollectionAcronym'},
@@ -48,7 +50,7 @@ class CollectionInserter():
 
 
 	def insertCollectionData(self, json_dicts = []):
-		pudb.set_trace()
+		
 		self.c_dicts = json_dicts
 		
 		self.__createCollectionTempTable()
@@ -63,8 +65,8 @@ class CollectionInserter():
 		
 		self.createNewCollections()
 		
-		self.__insertCollectionIDsInCollectionSpecimen()
-		self.__insertCollectionIDsInSpecimenPart()
+		#self.__insertCollectionIDsInCollectionSpecimen()
+		#self.__insertCollectionIDsInSpecimenPart()
 		
 		self.__updateCollectionDicts()
 		return
@@ -304,6 +306,7 @@ class CollectionInserter():
 		return
 
 
+	'''
 	def __insertCollectionIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
@@ -318,8 +321,10 @@ class CollectionInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
+	'''
 	def __insertCollectionIDsInSpecimenPart(self):
 		query = """
 		UPDATE csp
@@ -334,6 +339,7 @@ class CollectionInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __updateCollectionDicts(self):

@@ -36,9 +36,10 @@ class CollectionSpecimenInserter():
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'CollectionEventID'},
-			{'colname': 'ExternalDatasourceID'},
-			{'colname': 'CollectionID'},
+			# do not add parent table ids as they should be set by code
+			#{'colname': 'CollectionEventID'},
+			#{'colname': 'ExternalDatasourceID'},
+			#{'colname': 'CollectionID'},
 			{'colname': 'AccessionNumber'},
 			{'colname': 'DepositorsAccessionNumber'},
 			{'colname': 'DepositorsName'},

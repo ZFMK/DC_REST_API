@@ -29,7 +29,7 @@ class IdentificationInserter():
 			{'colname': 'IdentificationMonth'},
 			{'colname': 'IdentificationYear'},
 			{'colname': 'IdentificationDateSupplement'},
-			{'colname': 'ResponsibleName', 'None allowed': False, 'Minimal string length': 1},
+			{'colname': 'ResponsibleName'},
 			{'colname': 'ResponsibleAgentURI'},
 			{'colname': 'IdentificationCategory'},
 			{'colname': 'IdentificationQualifier'},

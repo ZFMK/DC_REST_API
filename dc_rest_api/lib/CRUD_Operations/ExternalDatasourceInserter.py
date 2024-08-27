@@ -20,13 +20,15 @@ class ExternalDatasourceInserter():
 		self.users_roles = users_roles
 		self.messages = []
 		
-		self.temptable = '#datasource_temptable'
-		self.unique_ed_temptable = '#unique_ed_temptable'
+		self.temptable = 'datasource_temptable'
+		self.unique_ed_temptable = 'unique_ed_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'ExternalDatasourceID'},
+			# do not add CollectionSpecimenID as it should be set by code
+			#{'colname': 'CollectionSpecimenID'},
+			# do not add ExternalDatasourceID as it should be set by comparison
+			#{'colname': 'ExternalDatasourceID'},
 			{'colname': 'ExternalDatasourceName', 'None allowed': False},
 			{'colname': 'ExternalDatasourceVersion'},
 			{'colname': 'ExternalDatasourceURI'},

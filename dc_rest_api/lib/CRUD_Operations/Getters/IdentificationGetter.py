@@ -22,7 +22,7 @@ class IdentificationGetter(DataGetter):
 	def getByPrimaryKeys(self, cs_i_ids):
 		self.createGetTempTable()
 		
-		batchsize = 1000
+		batchsize = 600
 		while len(cs_i_ids) > 0:
 			cached_ids = cs_i_ids[:batchsize]
 			del cs_i_ids[:batchsize]
@@ -177,7 +177,7 @@ class IdentificationGetter(DataGetter):
 		self.cur.execute(query, self.users_project_ids)
 		rows = self.cur.fetchall()
 		for row in rows:
-			withholded.append(dict(zip(columns, row)))
+			withholded.append((row[0], row[1], row[2]))
 		
 		query = """
 		DELETE g_temp

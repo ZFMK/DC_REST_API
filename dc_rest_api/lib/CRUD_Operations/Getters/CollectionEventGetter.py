@@ -188,7 +188,7 @@ class CollectionEventGetter(DataGetter):
 		self.cur.execute(query, self.users_project_ids)
 		rows = self.cur.fetchall()
 		for row in rows:
-			withholded.append(dict(zip(columns, row)))
+			withholded.append((row[0], row[1]))
 		
 		query = """
 		DELETE g_temp

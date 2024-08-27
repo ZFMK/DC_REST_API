@@ -210,7 +210,7 @@ class CollectionEventMatcher():
 			AND ((e.[CollectionDateCategory] = ce_temp.[CollectionDateCategory]) OR (e.[CollectionDateCategory] IS NULL AND ce_temp.[CollectionDateCategory] IS NULL))
 			AND ((e.[CollectionTime] = ce_temp.[CollectionTime]) OR (e.[CollectionTime] IS NULL AND ce_temp.[CollectionTime] IS NULL))
 			AND ((e.[CollectionTimeSpan] = ce_temp.[CollectionTimeSpan]) OR (e.[CollectionTimeSpan] IS NULL AND ce_temp.[CollectionTimeSpan] IS NULL))
-			AND ((e.[CountryCache] = ce_temp.[Country]) OR (e.[CountryCache] IS NULL AND ce_temp.[Country] IS NULL))
+			AND ((e.[CountryCache] = ce_temp.[CountryCache]) OR (e.[CountryCache] IS NULL AND ce_temp.[CountryCache] IS NULL))
 			AND ((e.[DataWithholdingReason] = ce_temp.[DataWithholdingReason]) OR (e.[DataWithholdingReason] IS NULL AND ce_temp.[DataWithholdingReason] IS NULL))
 			AND ((e.[DataWithholdingReasonDate] = ce_temp.[DataWithholdingReasonDate]) OR (e.[DataWithholdingReasonDate] IS NULL AND ce_temp.[DataWithholdingReasonDate] IS NULL))
 		LEFT JOIN [CollectionEventLocalisation] alt
@@ -327,7 +327,7 @@ class CollectionEventMatcher():
 			AND (pf.[CollectionDateCategory] = ce_temp.[CollectionDateCategory] OR (pf.[CollectionDateCategory] IS NULL AND ce_temp.[CollectionDateCategory] IS NULL))
 			AND (pf.[CollectionTime] = ce_temp.[CollectionTime] OR (pf.[CollectionTime] IS NULL AND ce_temp.[CollectionTime] IS NULL))
 			AND (pf.[CollectionTimeSpan] = ce_temp.[CollectionTimeSpan] OR (pf.[CollectionTimeSpan] IS NULL AND ce_temp.[CollectionTimeSpan] IS NULL))
-			AND (pf.[CountryCache] = ce_temp.[Country] OR (pf.[CountryCache] IS NULL AND ce_temp.[Country] IS NULL))
+			AND (pf.[CountryCache] = ce_temp.[CountryCache] OR (pf.[CountryCache] IS NULL AND ce_temp.[CountryCache] IS NULL))
 			 -- 
 			AND (pf.[LocalityDescription_sha] = ce_temp.[LocalityDescription_sha] OR (pf.[LocalityDescription_sha] IS NULL AND ce_temp.[LocalityDescription_sha] IS NULL))
 			AND (pf.[LocalityVerbatim_sha] = ce_temp.[LocalityVerbatim_sha] OR (pf.[LocalityVerbatim_sha] IS NULL AND ce_temp.[LocalityVerbatim_sha] IS NULL))

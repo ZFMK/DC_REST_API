@@ -50,7 +50,7 @@ class DCDeleter():
 
 
 	def fillDeleteTempTable(self):
-		pagesize = 2000
+		pagesize = 1000
 		while len(self.row_guids) > 0:
 			cached_guids = self.row_guids[:pagesize]
 			del self.row_guids[:pagesize]
