@@ -61,16 +61,16 @@ class ProjectMatcher():
 			[ProjectID],
 			[Project],
 			[ProjectURI],
-			 -- [StableIdentifierBase],
-			 -- [StableIdentifierTypeID],
+			[StableIdentifierBase],
+			[StableIdentifierTypeID],
 			[RowGUID]
 		)
 		SELECT 
 			pp.[ProjectID],
 			pp.[Project],
 			pp.[ProjectURI],
-			 -- pp.[StableIdentifierBase],
-			 -- pp.[StableIdentifierTypeID],
+			pp.[StableIdentifierBase],
+			pp.[StableIdentifierTypeID],
 			pp.[RowGUID]
 		FROM [ProjectProxy] pp
 		INNER JOIN [{1}] p_temp ON
@@ -91,9 +91,9 @@ class ProjectMatcher():
 		UPDATE pf
 		SET [project_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[Project],
-			[ProjectURI]
-			 -- , [StableIdentifierBase]
-			 -- , [StableIdentifierTypeID]
+			[ProjectURI],
+			[StableIdentifierBase],
+			[StableIdentifierTypeID]
 		)), 2)
 		FROM [{0}] pf
 		;""".format(self.prefiltered_temptable)

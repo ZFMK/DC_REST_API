@@ -65,7 +65,6 @@ class CollectionEventGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		collectionevents = self.getData()
 		
 		return collectionevents
@@ -76,8 +75,6 @@ class CollectionEventGetter(DataGetter):
 		
 		self.createGetTempTable()
 		self.fillGetTempTable()
-		
-		self.withholded = self.filterAllowedRowGUIDs()
 		collectionevents = self.getData()
 		
 		return collectionevents
@@ -85,6 +82,8 @@ class CollectionEventGetter(DataGetter):
 
 
 	def getData(self):
+		
+		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
@@ -138,6 +137,8 @@ class CollectionEventGetter(DataGetter):
 		LEFT JOIN [CollectionEventLocalisation] h
 		ON h.CollectionEventID = ce.CollectionEventID AND h.LocalisationSystemID = 15
 		;""".format(self.get_temptable)
+		
+		querylog.info(query)
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		

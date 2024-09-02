@@ -76,7 +76,6 @@ class IdentificationGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		identifications = self.getData()
 		
 		return identifications
@@ -87,8 +86,6 @@ class IdentificationGetter(DataGetter):
 		
 		self.createGetTempTable()
 		self.fillGetTempTable()
-		
-		self.withholded = self.filterAllowedRowGUIDs()
 		identifications = self.getData()
 		
 		return identifications
@@ -96,6 +93,7 @@ class IdentificationGetter(DataGetter):
 
 
 	def getData(self):
+		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT

@@ -19,8 +19,8 @@ class IdentificationUnitInserter():
 		self.temptable = '#iu_temptable'
 		
 		self.schema = [
-			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'entry_num', 'None allowed': False},
+			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'IdentificationUnitID'},
 			{'colname': 'LastIdentificationCache', 'default': 'unknown', 'None allowed': False},
 			{'colname': 'LifeStage'},

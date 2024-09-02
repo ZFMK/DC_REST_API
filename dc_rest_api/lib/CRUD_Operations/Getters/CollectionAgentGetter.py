@@ -71,7 +71,6 @@ class CollectionAgentGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		collectionagents = self.getData()
 		
 		#self.getChildCollections()
@@ -84,17 +83,14 @@ class CollectionAgentGetter(DataGetter):
 		
 		self.createGetTempTable()
 		self.fillGetTempTable()
-		
-		self.withholded = self.filterAllowedRowGUIDs()
 		collectionagents = self.getData()
-		
-		#self.getChildCollections()
 		
 		return collectionagents
 
 
 
 	def getData(self):
+		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT

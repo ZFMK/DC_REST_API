@@ -19,22 +19,24 @@ from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalD
 # this class do only work with the flattened dicts
 
 class IndependentTablesInsert():
-	def __init__(self, dc_db, uid, users_roles = []):
+	def __init__(self, dc_db, json_dict, uid, users_roles = []):
 		self.dc_db = dc_db
+		
+		self.json_dict = json_dict
+		
 		self.uid = uid
 		self.users_roles = users_roles
 
 
-	def insertIndependentTables(self, json_dict):
-		self.json_dict = json_dict
+	def insertIndependentTables(self):
 		
 		if 'Projects' in self.json_dict:
 			try:
 				projects = self.json_dict['Projects']
-				p_inserter = ProjectInserter(self.dc_db, self.uid, self.users_roles)
-				p_inserter.insertProjectData(projects)
+				self.p_inserter = ProjectInserter(self.dc_db, self.uid, self.users_roles)
+				self.p_inserter.insertProjectData(projects)
 			except:
-				self.messages.extend(p_inserter.messages)
+				self.messages.extend(self.p_inserter.messages)
 				pudb.set_trace()
 		
 		if 'Collections' in self.json_dict:
@@ -64,48 +66,56 @@ class IndependentTablesInsert():
 				#pudb.set_trace()
 
 
-	def setEventIDsInParentDicts(self, parent_key):
-		for p_id in self.json_dict[parent_key]:
-			p_dict = self.json_dict[parent_key][p_id]
+	def setLinkedEventIDs(self, data_dicts):
+		for data_dict in data_dicts:
 			try:
-				event_id = p_dict['CollectionEvent']
-				p_dict['CollectionEventID'] = self.json_dict['CollectionEvents'][event_id]['CollectionEventID']
+				ref_id = data_dict['CollectionEvent']
+				data_dict['CollectionEventID'] = self.json_dict['CollectionEvents'][ref_id]['CollectionEventID']
+			
 			except:
+				data_dict['CollectionEventID'] = None
 				pass
 		return
 
 
-	def setExternaDatasourceIDsInParentDicts(self, parent_key):
-		for p_id in self.json_dict[parent_key]:
-			p_dict = self.json_dict[parent_key][p_id]
+	def setLinkedCollectionIDs(self, data_dicts):
+		for data_dict in data_dicts:
 			try:
-				ed_id = p_dict['CollectionExternalDatasource']
-				p_dict['ExternalDatasourceID'] = self.json_dict['CollectionExternalDatasources'][ed_id]['ExternalDatasourceID']
+				ref_id = data_dict['Collection']
+				data_dict['CollectionID'] = self.json_dict['Collections'][ref_id]['CollectionID']
+			
 			except:
+				data_dict['CollectionID'] = None
 				pass
 		return
 
 
-	def setCollectionIDsInParentDicts(self, parent_key):
-		for p_id in self.json_dict[parent_key]:
-			p_dict = self.json_dict[parent_key][p_id]
+	def setLinkedExternalDatasourceIDs(self, data_dicts):
+		for data_dict in data_dicts:
 			try:
-				collection_id = p_dict['Collection']
-				p_dict['CollectionID'] = self.json_dict['Collections'][collection_id]['CollectionID']
+				ref_id = data_dict['CollectionExternalDatasource']
+				data_dict['ExternalDatasourceID'] = self.json_dict['CollectionExternalDatasources'][ref_id]['ExternalDatasourceID']
+			
 			except:
+				data_dict['ExternalDatasourceID'] = None
 				pass
 		return
 
 
-	def setProjectIDsInParentDicts(self, parent_key):
-		for p_id in self.json_dict[parent_key]:
-			p_dict = self.json_dict[parent_key][p_id]
+	def setLinkedProjectIDs(self, data_dicts):
+		for data_dict in data_dicts:
 			try:
-				project_ids = p_dict['Projects']
+				project_ids = data_dict['Projects']
 				for project_id in project_ids:
-					if not 'ProjectID' in p_dict:
-						p_dict['ProjectID'] = []
-					p_dict['ProjectID'].append(self.json_dict['Projects'][project_id]['ProjectID'])
+					if not 'ProjectID' in data_dict:
+						data_dict['ProjectID'] = []
+					data_dict['ProjectID'].append(self.json_dict['Projects'][project_id]['ProjectID'])
+			
 			except:
+				data_dict['ProjectID'] = []
 				pass
 		return
+
+
+	def insertCollectionProjects(self, specimens_list):
+		self.p_inserter.insertCollectionProjects(specimens_list)

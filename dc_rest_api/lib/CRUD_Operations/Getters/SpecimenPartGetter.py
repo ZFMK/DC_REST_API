@@ -72,10 +72,7 @@ class SpecimenPartGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		specimenparts = self.getData()
-		
-		self.setChildCollections()
 		
 		return specimenparts
 
@@ -85,17 +82,14 @@ class SpecimenPartGetter(DataGetter):
 		
 		self.createGetTempTable()
 		self.fillGetTempTable()
-		
-		self.withholded = self.filterAllowedRowGUIDs()
 		specimenparts = self.getData()
-		
-		self.setChildCollections()
 		
 		return specimenparts
 
 
 
 	def getData(self):
+		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
@@ -125,6 +119,8 @@ class SpecimenPartGetter(DataGetter):
 		
 		self.csp_rows = self.cur.fetchall()
 		self.rows2list()
+		
+		self.setChildCollections()
 		
 		return self.csp_list
 
@@ -189,29 +185,30 @@ class SpecimenPartGetter(DataGetter):
 
 	def setChildCollections(self):
 		
-		id_lists = []
+		c_getter = CollectionGetter(self.dc_db)
+		c_getter.createGetTempTable()
+		
 		query = """
-		SELECT DISTINCT csp.[CollectionID]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT c.[RowGUID]
 		FROM [CollectionSpecimenPart] csp
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON csp.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [Collection] c
+		ON csp.[CollectionID] = c.[CollectionID]
 		WHERE csp.[CollectionID] IS NOT NULL
-		;""".format(self.get_temptable)
+		;""".format(c_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0]))
+		self.con.commit()
 		
-		c_getter = CollectionGetter(self.dc_db)
-		c_getter.getByPrimaryKeys(id_lists)
+		c_getter.getData()
 		c_getter.list2dict()
 		
-		for collection_id in c_getter.c_dict:
-			for csp in self.csp_list:
-				if collection_id == csp['CollectionID']:
-					csp['Collection'] = c_getter.c_dict[collection_id]
+		for csp in self.csp_list:
+			if csp['CollectionID'] in c_getter.c_dict:
+				csp['Collection'] = c_getter.c_dict[csp['CollectionID']]
 		
 		return
 

@@ -26,9 +26,8 @@ class CollectionInserter():
 			{'colname': '@id', 'None allowed': False},
 			# do not add CollectionID as it should be set by comparison
 			#{'colname': 'CollectionID'},
-			# do not add CollectionSpecimenID as it should be set by code
 			#{'colname': 'CollectionSpecimenID'},
-			{'colname': 'SpecimenPartID'},
+			#{'colname': 'SpecimenPartID'},
 			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
 			{'colname': 'CollectionAcronym'},
 			{'colname': 'AdministrativeContactName'},

@@ -71,10 +71,7 @@ class CollectionSpecimenGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		specimens = self.getData()
-		
-		self.setConnectedTableData()
 		
 		return specimens
 
@@ -84,11 +81,7 @@ class CollectionSpecimenGetter(DataGetter):
 		
 		self.createGetTempTable()
 		self.fillGetTempTable()
-		
-		self.withholded = self.filterAllowedRowGUIDs()
 		specimens = self.getData()
-		
-		self.setConnectedTableData()
 		
 		return specimens
 
@@ -103,6 +96,7 @@ class CollectionSpecimenGetter(DataGetter):
 
 
 	def getData(self):
+		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT 
@@ -142,6 +136,9 @@ class CollectionSpecimenGetter(DataGetter):
 		
 		self.cs_rows = self.cur.fetchall()
 		self.rows2list()
+		
+		#pudb.set_trace()
+		self.setConnectedTableData()
 		
 		return self.cs_list
 
@@ -204,156 +201,151 @@ class CollectionSpecimenGetter(DataGetter):
 
 	def setChildSpecimenParts(self):
 		
-		id_lists = []
+		csp_getter = SpecimenPartGetter(self.dc_db, self.users_project_ids)
+		csp_getter.createGetTempTable()
+		
 		query = """
-		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT csp.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
 		INNER JOIN [{0}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
+		;""".format(csp_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0], row[1]))
+		self.con.commit()
 		
-		csp_getter = SpecimenPartGetter(self.dc_db, self.users_project_ids)
-		csp_getter.getByPrimaryKeys(id_lists)
+		csp_getter.getData()
 		csp_getter.list2dict()
 		
-		for specimen_id in csp_getter.csp_dict:
-			for cs in self.cs_list:
-				if specimen_id == cs['CollectionSpecimenID']:
-					if 'CollectionSpecimenParts' not in cs:
-						cs['CollectionSpecimenParts'] = []
-						for csp_id in csp_getter.csp_dict[specimen_id]:
-							cs['CollectionSpecimenParts'].append(csp_getter.csp_dict[specimen_id][csp_id])
+		for cs in self.cs_list:
+			if cs['CollectionSpecimenID'] in csp_getter.csp_dict:
+				cs['CollectionSpecimenParts'] = []
+				for csp_id in csp_getter.csp_dict[cs['CollectionSpecimenID']]:
+					cs['CollectionSpecimenParts'].append(csp_getter.csp_dict[cs['CollectionSpecimenID']][csp_id])
 		
 		return
 
 
 	def setChildIdentificationUnits(self):
 		
-		id_lists = []
+		iu_getter = IdentificationUnitGetter(self.dc_db, self.users_project_ids)
+		iu_getter.createGetTempTable()
+		
 		query = """
-		SELECT iu.[CollectionSpecimenID], iu.[IdentificationUnitID]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT iu.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [IdentificationUnit] iu
 		ON cs.[CollectionSpecimenID] = iu.[CollectionSpecimenID]
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
+		;""".format(iu_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0], row[1]))
+		self.con.commit()
 		
-		iu_getter = IdentificationUnitGetter(self.dc_db, self.users_project_ids)
-		iu_getter.getByPrimaryKeys(id_lists)
+		iu_getter.getData()
 		iu_getter.list2dict()
 		
-		for specimen_id in iu_getter.iu_dict:
-			for cs in self.cs_list:
-				if specimen_id == cs['CollectionSpecimenID']:
-					if 'IdentificationUnits' not in cs:
-						cs['IdentificationUnits'] = []
-						for iu_id in iu_getter.iu_dict[specimen_id]:
-							cs['IdentificationUnits'].append(iu_getter.iu_dict[specimen_id][iu_id])
+		for cs in self.cs_list:
+			if cs['CollectionSpecimenID'] in iu_getter.iu_dict:
+				cs['IdentificationUnits'] = []
+				for iu_id in iu_getter.iu_dict[cs['CollectionSpecimenID']]:
+					cs['IdentificationUnits'].append(iu_getter.iu_dict[cs['CollectionSpecimenID']][iu_id])
 		
 		return
 
 
 	def setChildCollectionAgents(self):
 		
-		id_lists = []
+		ca_getter = CollectionAgentGetter(self.dc_db, self.users_project_ids)
+		ca_getter.createGetTempTable()
+		
 		query = """
-		SELECT ca.[CollectionSpecimenID], ca.[CollectorsName]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT ca.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionAgent] ca
 		ON cs.[CollectionSpecimenID] = ca.[CollectionSpecimenID]
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
+		;""".format(ca_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0], row[1]))
+		self.con.commit()
 		
-		ca_getter = CollectionAgentGetter(self.dc_db, self.users_project_ids)
-		ca_getter.getByPrimaryKeys(id_lists)
+		ca_getter.getData()
 		ca_getter.list2dict()
 		
-		for specimen_id in ca_getter.ca_dict:
-			for cs in self.cs_list:
-				if specimen_id == cs['CollectionSpecimenID']:
-					if 'CollectionAgents' not in cs:
-						cs['CollectionAgents'] = []
-						for ca_id in ca_getter.ca_dict[specimen_id]:
-							cs['CollectionAgents'].append(ca_getter.ca_dict[specimen_id][ca_id])
+		for cs in self.cs_list:
+			if cs['CollectionSpecimenID'] in ca_getter.ca_dict:
+				cs['CollectionAgents'] = []
+				for ca_id in ca_getter.ca_dict[cs['CollectionSpecimenID']]:
+					cs['CollectionAgents'].append(ca_getter.ca_dict[cs['CollectionSpecimenID']][ca_id])
 		
 		return
 
 
 	def setChildCollections(self):
 		
-		id_lists = []
+		c_getter = CollectionGetter(self.dc_db)
+		c_getter.createGetTempTable()
+		
 		query = """
-		SELECT DISTINCT cs.[CollectionID]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT c.[RowGUID]
 		FROM [CollectionSpecimen] cs
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [Collection] c
+		ON cs.[CollectionID] = c.[CollectionID]
 		WHERE cs.[CollectionID] IS NOT NULL
-		;""".format(self.get_temptable)
+		;""".format(c_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0]))
+		self.con.commit()
 		
-		c_getter = CollectionGetter(self.dc_db)
-		c_getter.getByPrimaryKeys(id_lists)
+		c_getter.getData()
 		c_getter.list2dict()
 		
-		for collection_id in c_getter.c_dict:
-			for cs in self.cs_list:
-				if 'CollectionID' in cs and collection_id == cs['CollectionID']:
-					cs['Collection'] = c_getter.c_dict[collection_id]
+		for cs in self.cs_list:
+			if 'CollectionID' in cs and cs['CollectionID'] in c_getter.c_dict:
+				cs['Collection'] = c_getter.c_dict[cs['CollectionID']]
 		
 		return
 
 
 	def setChildCollectionEvents(self):
 		
-		id_lists = []
+		ce_getter = CollectionEventGetter(self.dc_db, self.users_project_ids)
+		ce_getter.createGetTempTable()
+		
 		query = """
-		SELECT DISTINCT cs.[CollectionEventID]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT ce.[RowGUID]
 		FROM [CollectionSpecimen] cs
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [CollectionEvent] ce
+		ON ce.[CollectionEventID] = cs.[CollectionEventID]
 		WHERE cs.[CollectionEventID] IS NOT NULL
-		;""".format(self.get_temptable)
+		;""".format(ce_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0]))
 		
-		ce_getter = CollectionEventGetter(self.dc_db, self.users_project_ids)
-		ce_getter.getByPrimaryKeys(id_lists)
+		ce_getter.getData()
 		ce_getter.list2dict()
 		
-		for event_id in ce_getter.ce_dict:
-			for cs in self.cs_list:
-				if 'CollectionEventID' in cs and event_id == cs['CollectionEventID']:
-					cs['CollectionEvent'] = ce_getter.ce_dict[event_id]
+		for cs in self.cs_list:
+			if 'CollectionEventID' and cs['CollectionEventID'] in ce_getter.ce_dict:
+				cs['CollectionEvent'] = ce_getter.ce_dict[cs['CollectionEventID']]
 		
 		return

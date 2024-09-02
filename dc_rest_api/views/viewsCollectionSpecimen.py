@@ -51,8 +51,6 @@ class CollectionSpecimensViews():
 			'messages': self.messages
 		}
 		
-		pudb.set_trace()
-		
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return jsonresponse
@@ -65,8 +63,6 @@ class CollectionSpecimensViews():
 		
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		referenced_json.flatten2Dicts()
-		
-		pudb.set_trace()
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
@@ -136,7 +132,6 @@ class CollectionSpecimensViews():
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "GET")
 	def getSpecimensJSON(self):
-		pudb.set_trace()
 		
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database, get CollectionSpecimens',

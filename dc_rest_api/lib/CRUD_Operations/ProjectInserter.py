@@ -18,18 +18,17 @@ class ProjectInserter():
 		self.user_id = user_id
 		self.users_roles = users_roles
 		
-		self.temptable = '#project_temptable'
-		self.unique_projects_temptable = '#unique_p_temptable'
+		self.temptable = 'project_temptable'
+		self.unique_projects_temptable = 'unique_p_temptable'
 		
 		# set a minimum ProjectID for new projects to insert
 		self.min_project_id = 271176
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			# do not add CollectionSpecimenID as it should be set by code
-			#{'colname': 'CollectionSpecimenID'},
 			# do not add ProjectID as it should be set by comparison
 			#{'colname': 'ProjectID'},
+			#{'colname': 'CollectionSpecimenID'},
 			{'colname': 'Project', 'None allowed': False},
 			{'colname': 'ProjectURI'},
 			{'colname': 'StableIdentifierBase'},
@@ -41,6 +40,7 @@ class ProjectInserter():
 
 
 	def insertProjectData(self, json_dicts = []):
+		
 		self.project_dicts = json_dicts
 		
 		self.__createProjectTempTable()
@@ -160,7 +160,7 @@ class ProjectInserter():
 		self.__insertNewProjects()
 		self.__updateProjectIDsInTempTable()
 		
-		self.__insertCollectionProjects()
+		#self.__insertCollectionProjects()
 		self.__insertProjectUser()
 		return
 
@@ -324,6 +324,41 @@ class ProjectInserter():
 		self.con.commit()
 		return
 
+
+	def insertCollectionProjects(self, specimens_list):
+		ids_list = []
+		
+		for specimen_dict in specimens_list:
+			if 'CollectionSpecimenID' in specimen_dict and 'ProjectID' in specimen_dict and len(specimen_dict['ProjectID']) > 0:
+				ids = [[specimen_dict['CollectionSpecimenID'], p_id] for p_id in specimen_dict['ProjectID']]
+				ids_list.extend(ids)
+		
+		
+		pagesize = 1000
+		
+		while len(ids_list) > 0:
+			values = []
+			cachedlist = ids_list[:pagesize]
+			del ids_list[:pagesize]
+			
+			placeholderstring = ', '.join(['(?, ?)' for _ in cachedlist])
+			
+			for valuelist in cachedlist:
+				values.extend(valuelist)
+				
+			query = """
+			INSERT INTO [CollectionProject] (
+				[CollectionSpecimenID], [ProjectID]
+			)
+			VALUES {0}
+			;""".format(placeholderstring)
+			
+			querylog.info(query)
+			#querylog.info(values)
+			self.cur.execute(query, values)
+			self.con.commit()
+		
+		return
 
 
 	def getIDsForProjectDicts(self):

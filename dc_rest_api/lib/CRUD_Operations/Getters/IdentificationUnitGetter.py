@@ -73,11 +73,7 @@ class IdentificationUnitGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		identificationunits = self.getData()
-		
-		#self.getChildSpecimenParts()
-		self.setChildIdentifications()
 		
 		return identificationunits
 
@@ -88,17 +84,14 @@ class IdentificationUnitGetter(DataGetter):
 		self.createGetTempTable()
 		self.fillGetTempTable()
 		
-		self.withholded = self.filterAllowedRowGUIDs()
 		identificationunits = self.getData()
-		
-		#self.getChildSpecimenParts()
-		self.setChildIdentifications()
 		
 		return identificationunits
 
 
 
 	def getData(self):
+		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
@@ -127,6 +120,8 @@ class IdentificationUnitGetter(DataGetter):
 		
 		self.iu_rows = self.cur.fetchall()
 		self.rows2list()
+		
+		self.setChildIdentifications()
 		
 		return self.iu_list
 
@@ -192,35 +187,32 @@ class IdentificationUnitGetter(DataGetter):
 
 	def setChildIdentifications(self):
 		
-		id_lists = []
+		i_getter = IdentificationGetter(self.dc_db, self.users_project_ids)
+		i_getter.createGetTempTable()
+		
 		query = """
-		SELECT i.[CollectionSpecimenID], i.[IdentificationUnitID], i.[IdentificationSequence]
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT i.[RowGUID]
 		FROM [IdentificationUnit] iu
 		INNER JOIN [Identification] i
 		ON iu.[CollectionSpecimenID] = i.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = i.[IdentificationUnitID]
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
+		;""".format(i_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		for row in rows:
-			id_lists.append((row[0], row[1], row[2]))
+		self.con.commit()
 		
-		i_getter = IdentificationGetter(self.dc_db, self.users_project_ids)
-		i_getter.getByPrimaryKeys(id_lists)
+		i_getter.getData()
 		i_getter.list2dict()
 		
-		for specimen_id in i_getter.i_dict:
-			for iu_id in i_getter.i_dict[specimen_id]:
-				
-				for iu in self.iu_list:
-					if specimen_id == iu['CollectionSpecimenID'] and iu_id == iu['IdentificationUnitID']:
-						if 'Identifications' not in iu:
-							iu['Identifications'] = []
-						for i_id in i_getter.i_dict[specimen_id][iu_id]:
-							iu['Identifications'].append(i_getter.i_dict[specimen_id][iu_id][i_id])
+		for iu in self.iu_list:
+			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
+				if 'Identifications' not in iu:
+					iu['Identifications'] = []
+				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
 		
 		return
 

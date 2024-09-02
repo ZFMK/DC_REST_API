@@ -25,7 +25,6 @@ class ExternalDatasourceInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			# do not add CollectionSpecimenID as it should be set by code
 			#{'colname': 'CollectionSpecimenID'},
 			# do not add ExternalDatasourceID as it should be set by comparison
 			#{'colname': 'ExternalDatasourceID'},
@@ -59,7 +58,7 @@ class ExternalDatasourceInserter():
 				self.messages.append('You do not have the rights to insert external datasources')
 				raise ValueError()
 		
-		# self.__setExternalDatasourceIDsInCollectionSpecimen()
+		#self.__setExternalDatasourceIDsInCollectionSpecimen()
 		
 		#if 'Administrator' in self.users_roles or 'DataManager' in self.users_roles:
 		#	self.__deleteUnconnectedExternalDatasources()

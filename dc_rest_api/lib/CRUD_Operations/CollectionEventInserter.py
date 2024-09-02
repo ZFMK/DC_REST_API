@@ -20,7 +20,6 @@ class CollectionEventInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			# do not add CollectionSpecimenID as it should be set by code
 			#{'colname': 'CollectionSpecimenID'},
 			# do not add CollectionEventID as it should be set by comparison
 			#{'colname': 'CollectionEventID'},

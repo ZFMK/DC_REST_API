@@ -73,17 +73,6 @@ class SpecimenPartInserter():
 		return
 
 
-	def setLinkedCollectionIDs(self, flattened_json):
-		for csp_dict in self.csp_dicts:
-			try:
-				collection_id = csp_dict['Collection']
-				csp_dict['CollectionID'] = flattened_json['Collections'][collection_id]['CollectionID']
-			
-			except:
-				pass
-		return
-
-
 	def setSpecimenPartDicts(self, json_dicts = []):
 		self.csp_dicts = []
 		csp_count = 1

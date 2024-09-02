@@ -36,10 +36,9 @@ class CollectionSpecimenInserter():
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID'},
-			# do not add parent table ids as they should be set by code
-			#{'colname': 'CollectionEventID'},
-			#{'colname': 'ExternalDatasourceID'},
-			#{'colname': 'CollectionID'},
+			{'colname': 'CollectionEventID'},
+			{'colname': 'ExternalDatasourceID'},
+			{'colname': 'CollectionID'},
 			{'colname': 'AccessionNumber'},
 			{'colname': 'DepositorsAccessionNumber'},
 			{'colname': 'DepositorsName'},
@@ -54,61 +53,114 @@ class CollectionSpecimenInserter():
 
 	def insertSpecimenData(self, flattened_json):
 		if 'CollectionSpecimens' in flattened_json:
-			independent_tables = IndependentTablesInsert(self.dc_db, self.uid, self.users_roles)
-			independent_tables.insertIndependentTables(flattened_json)
-			
-			independent_tables.setEventIDsInParentDicts('CollectionSpecimens')
-			independent_tables.setExternaDatasourceIDsInParentDicts('CollectionSpecimens')
-			independent_tables.setCollectionIDsInParentDicts('CollectionSpecimens')
-			independent_tables.setProjectIDsInParentDicts('CollectionSpecimens')
+			independent_tables = IndependentTablesInsert(self.dc_db, flattened_json, self.uid, self.users_roles)
+			independent_tables.insertIndependentTables()
 			
 			self.specimen_dicts = flattened_json['CollectionSpecimens']
+			
+			specimen_list = [self.specimen_dicts[cs_id] for cs_id in self.specimen_dicts]
+			
+			independent_tables.setLinkedEventIDs(specimen_list)
+			independent_tables.setLinkedExternalDatasourceIDs(specimen_list)
+			independent_tables.setLinkedCollectionIDs(specimen_list)
+			independent_tables.setLinkedProjectIDs(specimen_list)
 			
 			self.__createSpecimenTempTable()
 			
 			self.json2temp.set_datadicts(self.specimen_dicts)
 			self.json2temp.fill_temptable(self.temptable)
 			
-			
 			self.__insertSpecimen()
 			self.__setMissingAccessionNumbers()
 			self.__updateCSTempTable()
 			self.__updateSpecimenDicts()
 			
+			independent_tables.insertCollectionProjects(specimen_list)
+			
+			identificationunits = []
+			collectionagents = []
+			specimenparts = []
+			
 			for dict_id in self.specimen_dicts:
 				cs_dict = self.specimen_dicts[dict_id]
-				identificationunits = []
+				
 				if 'IdentificationUnits' in cs_dict:
 					for iu_dict in cs_dict['IdentificationUnits']:
 						iu_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 						identificationunits.append(iu_dict)
 				
-				iu_inserter = IdentificationUnitInserter(self.dc_db)
-				iu_inserter.setIdentificationUnitDicts(identificationunits)
-				iu_inserter.insertIdentificationUnitData()
-		
-				collectionagents = []
 				if 'CollectionAgents' in cs_dict:
 					for ca_dict in cs_dict['CollectionAgents']:
 						ca_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 						collectionagents.append(ca_dict)
-			
-				ca_inserter = CollectionAgentInserter(self.dc_db)
-				ca_inserter.setCollectionAgentDicts(collectionagents)
-				ca_inserter.insertCollectionAgentData()
-		
-				specimenparts = []
+				
 				if 'CollectionSpecimenParts' in cs_dict:
 					for csp_dict in cs_dict['CollectionSpecimenParts']:
 						csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 						specimenparts.append(csp_dict)
 			
-				csp_inserter = SpecimenPartInserter(self.dc_db)
-				csp_inserter.setSpecimenPartDicts(specimenparts)
-				csp_inserter.setLinkedCollectionIDs(flattened_json)
-				csp_inserter.insertSpecimenPartData()
+			iu_inserter = IdentificationUnitInserter(self.dc_db)
+			iu_inserter.setIdentificationUnitDicts(identificationunits)
+			iu_inserter.insertIdentificationUnitData()
+			
+			ca_inserter = CollectionAgentInserter(self.dc_db)
+			ca_inserter.setCollectionAgentDicts(collectionagents)
+			ca_inserter.insertCollectionAgentData()
+			
+			csp_inserter = SpecimenPartInserter(self.dc_db)
+			csp_inserter.setSpecimenPartDicts(specimenparts)
+			independent_tables.setLinkedCollectionIDs(specimenparts)
+			csp_inserter.insertSpecimenPartData()
 			
 			return
+
+
+
+	def setLinkedEventIDs(self, data_dicts, flattened_json):
+		for data_dict in data_dicts:
+			try:
+				ref_id = data_dict['CollectionEvent']
+				data_dict['CollectionEventID'] = flattened_json['CollectionEvents'][ref_id]['CollectionEventID']
+			
+			except:
+				pass
+		return
+
+
+	def setLinkedCollectionIDs(self, data_dicts, flattened_json):
+		for data_dict in data_dicts:
+			try:
+				ref_id = data_dict['Collection']
+				data_dict['CollectionID'] = flattened_json['Collections'][ref_id]['CollectionID']
+			
+			except:
+				pass
+		return
+
+
+	def setLinkedExternalDatasourceIDs(self, data_dicts, flattened_json):
+		for data_dict in data_dicts:
+			try:
+				ref_id = data_dict['CollectionExternalDatasource']
+				data_dict['ExternalDatasourceID'] = flattened_json['CollectionExternalDatasources'][ref_id]['ExternalDatasourceID']
+			
+			except:
+				pass
+		return
+
+
+	def setLinkedProjectIDs(self, data_dicts, flattened_json):
+		for data_dict in data_dicts:
+			try:
+				project_ids = data_dict['Projects']
+				for project_id in project_ids:
+					if not 'ProjectID' in data_dict:
+						data_dict['ProjectID'] = []
+					data_dict['ProjectID'].append(flattened_json['Projects'][project_id]['ProjectID'])
+			
+			except:
+				pass
+		return
 
 
 	def __createSpecimenTempTable(self):
