@@ -9,7 +9,7 @@ from dwb_authentication.dbsession import DBSession
 from dc_rest_api.lib.Authentication.UserLogin import UserLogin
 from dc_rest_api.views.RequestParams import RequestParams
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
-from dc_rest_api.lib.CRUD_Operations.ProjectInserter import ProjectInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.ProjectInserter import ProjectInserter
 
 import pudb
 import json

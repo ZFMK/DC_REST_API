@@ -11,6 +11,7 @@ from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitGetter import Ide
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionAgentGetter import CollectionAgentGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionEventGetter import CollectionEventGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionProjectGetter import CollectionProjectGetter
 
 
 class CollectionSpecimenGetter(DataGetter):
@@ -87,11 +88,12 @@ class CollectionSpecimenGetter(DataGetter):
 
 
 	def setConnectedTableData(self):
-		self.setChildSpecimenParts()
-		self.setChildIdentificationUnits()
-		self.setChildCollectionAgents()
-		self.setChildCollections()
-		self.setChildCollectionEvents()
+		self.setSpecimenParts()
+		self.setIdentificationUnits()
+		self.setCollectionAgents()
+		self.setCollections()
+		self.setCollectionEvents()
+		self.setCollectionProjects()
 		return
 
 
@@ -177,6 +179,7 @@ class CollectionSpecimenGetter(DataGetter):
 		;""".format(self.get_temptable, projectclause)
 		
 		querylog.info(query)
+		querylog.info(', '.join(self.users_project_ids))
 		self.cur.execute(query, self.users_project_ids)
 		rows = self.cur.fetchall()
 		for row in rows:
@@ -199,7 +202,7 @@ class CollectionSpecimenGetter(DataGetter):
 		return withholded
 
 
-	def setChildSpecimenParts(self):
+	def setSpecimenParts(self):
 		
 		csp_getter = SpecimenPartGetter(self.dc_db, self.users_project_ids)
 		csp_getter.createGetTempTable()
@@ -230,7 +233,7 @@ class CollectionSpecimenGetter(DataGetter):
 		return
 
 
-	def setChildIdentificationUnits(self):
+	def setIdentificationUnits(self):
 		
 		iu_getter = IdentificationUnitGetter(self.dc_db, self.users_project_ids)
 		iu_getter.createGetTempTable()
@@ -261,7 +264,7 @@ class CollectionSpecimenGetter(DataGetter):
 		return
 
 
-	def setChildCollectionAgents(self):
+	def setCollectionAgents(self):
 		
 		ca_getter = CollectionAgentGetter(self.dc_db, self.users_project_ids)
 		ca_getter.createGetTempTable()
@@ -292,7 +295,7 @@ class CollectionSpecimenGetter(DataGetter):
 		return
 
 
-	def setChildCollections(self):
+	def setCollections(self):
 		
 		c_getter = CollectionGetter(self.dc_db)
 		c_getter.createGetTempTable()
@@ -322,7 +325,39 @@ class CollectionSpecimenGetter(DataGetter):
 		return
 
 
-	def setChildCollectionEvents(self):
+	def setCollectionProjects(self):
+		
+		cp_getter = CollectionProjectGetter(self.dc_db)
+		cp_getter.createGetTempTable()
+		
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT cp.[RowGUID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{1}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [CollectionProject] cp
+		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
+		;""".format(cp_getter.get_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		cp_getter.getData()
+		cp_getter.list2dict()
+		
+		for cs in self.cs_list:
+			if cs['CollectionSpecimenID'] in cp_getter.cp_dict:
+				cs['Projects'] = []
+				for cp_id in cp_getter.cp_dict[cs['CollectionSpecimenID']]:
+					cs['Projects'].append(cp_getter.cp_dict[cs['CollectionSpecimenID']][cp_id])
+		
+		return
+
+
+
+	def setCollectionEvents(self):
 		
 		ce_getter = CollectionEventGetter(self.dc_db, self.users_project_ids)
 		ce_getter.createGetTempTable()

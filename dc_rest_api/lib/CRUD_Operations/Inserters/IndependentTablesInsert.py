@@ -10,10 +10,10 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 
-from dc_rest_api.lib.CRUD_Operations.ProjectInserter import ProjectInserter
-from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
-from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
-from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.ProjectInserter import ProjectInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionEventInserter import CollectionEventInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.ExternalDatasourceInserter import ExternalDatasourceInserter
 
 
 # this class do only work with the flattened dicts

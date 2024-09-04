@@ -13,7 +13,7 @@ from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
 
-from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenInserter import CollectionSpecimenInserter
 
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenGetter import CollectionSpecimenGetter
@@ -61,6 +61,8 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
+		pudb.set_trace()
+		
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		referenced_json.flatten2Dicts()
 		
@@ -107,7 +109,6 @@ class CollectionSpecimensViews():
 		
 		specimen_deleter = CollectionSpecimenDeleter(self.dc_db, self.users_project_ids)
 		
-		pudb.set_trace()
 		deleted = []
 		if 'CollectionSpecimenIDs' in self.request_params.json_body:
 			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
@@ -147,6 +148,8 @@ class CollectionSpecimensViews():
 		if self.dc_db is None:
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
+		
+		pudb.set_trace()
 		
 		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids)
 		

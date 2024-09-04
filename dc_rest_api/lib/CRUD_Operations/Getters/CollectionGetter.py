@@ -37,7 +37,7 @@ class CollectionGetter(DataGetter):
 				[CollectionID] INT NOT NULL,
 				INDEX [CollectionID_idx] ([CollectionID])
 			)
-			;""".format(self.collation)
+			;"""
 			querylog.info(query)
 			self.cur.execute(query)
 			self.con.commit()

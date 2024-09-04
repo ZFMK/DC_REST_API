@@ -4,7 +4,7 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.ProjectMatcher import ProjectMatcher
 
 
@@ -256,8 +256,8 @@ class ProjectInserter():
 		GROUP BY 
 			ue_temp.[Project],
 			ue_temp.[ProjectURI],
-			 -- ue_temp.[StableIdentifierBase], 
-			 -- ue_temp.[StableIdentifierTypeID], 
+			ue_temp.[StableIdentifierBase], 
+			ue_temp.[StableIdentifierTypeID], 
 			ue_temp.[RowGUID],
 			pp.[max_p_id]
 		;""".format(self.unique_projects_temptable, int(self.min_project_id))

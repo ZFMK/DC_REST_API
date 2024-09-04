@@ -9,15 +9,15 @@ import logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
-from dc_rest_api.lib.CRUD_Operations.IndependentTablesInsert import IndependentTablesInsert
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.IndependentTablesInsert import IndependentTablesInsert
 
-from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
-from dc_rest_api.lib.CRUD_Operations.CollectionEventInserter import CollectionEventInserter
-from dc_rest_api.lib.CRUD_Operations.ExternalDatasourceInserter import ExternalDatasourceInserter
-from dc_rest_api.lib.CRUD_Operations.IdentificationUnitInserter import IdentificationUnitInserter
-from dc_rest_api.lib.CRUD_Operations.CollectionAgentInserter import CollectionAgentInserter
-from dc_rest_api.lib.CRUD_Operations.SpecimenPartInserter import SpecimenPartInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionEventInserter import CollectionEventInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.ExternalDatasourceInserter import ExternalDatasourceInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitInserter import IdentificationUnitInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionAgentInserter import CollectionAgentInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.SpecimenPartInserter import SpecimenPartInserter
 
 class CollectionSpecimenInserter():
 	
