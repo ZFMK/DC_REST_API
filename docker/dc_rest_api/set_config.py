@@ -12,7 +12,7 @@ class ConfigSetter():
 		'ACCNR_PREFIX': None,
 		'SESSION_DB_HOST': None,
 		'SESSION_DB_CHARSET': None,
-		'SESSION_DB_USER': None,
+		'SESSION_DB_USERNAME': None,
 		'SESSION_DB_PASSWORD': None,
 		'SESSION_DB_DATABASE': None,
 		'SESSION_DB_PORT': None,
