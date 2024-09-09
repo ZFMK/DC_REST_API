@@ -93,7 +93,6 @@ class IdentificationGetter(DataGetter):
 
 
 	def getData(self):
-		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
@@ -152,46 +151,6 @@ class IdentificationGetter(DataGetter):
 		
 		return
 
-
-	def filterAllowedRowGUIDs(self):
-		# this methods checks if the connected Specimen is in one of the users projects or if the Withholding column is empty
-		
-		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
-		withholded = []
-		
-		projectclause = self.getProjectClause(clause_connector = 'WHERE')
-		
-		query = """
-		SELECT i.[CollectionSpecimenID], i.[IdentificationUnitID], i.[RowGUID]
-		FROM [{0}] g_temp
-		INNER JOIN [Identification] i
-		ON i.RowGUID = g_temp.[rowguid_to_get]
-		LEFT JOIN [CollectionProject] cp
-		ON i.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		{1}
-		;""".format(self.get_temptable, projectclause)
-		
-		querylog.info(query)
-		self.cur.execute(query, self.users_project_ids)
-		rows = self.cur.fetchall()
-		for row in rows:
-			withholded.append((row[0], row[1], row[2]))
-		
-		query = """
-		DELETE g_temp
-		FROM [{0}] g_temp
-		INNER JOIN [Identification] i
-		ON i.RowGUID = g_temp.[rowguid_to_get]
-		LEFT JOIN [CollectionProject] cp
-		ON i.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		{1}
-		;""".format(self.get_temptable, projectclause)
-		
-		querylog.info(query)
-		self.cur.execute(query, self.users_project_ids)
-		self.con.commit()
-		
-		return withholded
 
 
 

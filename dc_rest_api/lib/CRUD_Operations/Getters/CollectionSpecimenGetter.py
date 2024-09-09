@@ -139,7 +139,6 @@ class CollectionSpecimenGetter(DataGetter):
 		self.cs_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		#pudb.set_trace()
 		self.setConnectedTableData()
 		
 		return self.cs_list
@@ -166,17 +165,16 @@ class CollectionSpecimenGetter(DataGetter):
 		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
 		withholded = []
 		
-		projectclause = self.getProjectClause()
+		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
 		SELECT cs.[CollectionSpecimenID], cs.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimen] cs
 		ON cs.RowGUID = g_temp.[rowguid_to_get]
-		LEFT JOIN [CollectionProject] cp
-		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		{1}
+		WHERE cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		querylog.info(', '.join(self.users_project_ids))
@@ -190,10 +188,9 @@ class CollectionSpecimenGetter(DataGetter):
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimen] cs
 		ON cs.RowGUID = g_temp.[rowguid_to_get]
-		LEFT JOIN [CollectionProject] cp
-		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		{1}
+		WHERE cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)

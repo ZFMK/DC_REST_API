@@ -65,4 +65,28 @@ class DataGetter():
 		return projectclause
 
 
+	def getProjectJoinForWithhold(self, clause_connector = 'AND'):
+		projectjoin = ""
+		projectwhere = ""
+		
+		if len(self.users_project_ids) > 0:
+			placeholders = ['?' for project_id in self.users_project_ids]
+			placeholderstring = ', '.join(placeholders)
+		
+			projectjoin = """
+			LEFT JOIN (
+			SELECT cs.[CollectionSpecimenID], cs.[RowGUID], cp.ProjectID
+					FROM [CollectionSpecimen] cs
+					INNER JOIN [CollectionProject] cp
+					ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
+					AND 
+					cp.ProjectID IN ({0})
+			) AS users_cs
+			ON users_cs.RowGUID = cs.RowGUID
+			""".format(placeholderstring)
+			
+			projectwhere = "{0} users_cs.ProjectID IS NULL".format(clause_connector)
+		
+		return projectjoin, projectwhere
+		
 

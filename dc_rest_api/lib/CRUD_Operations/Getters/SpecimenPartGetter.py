@@ -148,17 +148,17 @@ class SpecimenPartGetter(DataGetter):
 		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
 		withholded = []
 		
-		projectclause = self.getProjectClause()
+		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
 		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID], csp.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON csp.RowGUID = g_temp.[rowguid_to_get]
-		LEFT JOIN [CollectionProject] cp
-		ON csp.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		INNER JOIN [CollectionSpecimen] cs ON csp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		{1}
+		WHERE csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)
@@ -171,10 +171,10 @@ class SpecimenPartGetter(DataGetter):
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON csp.RowGUID = g_temp.[rowguid_to_get]
-		LEFT JOIN [CollectionProject] cp
-		ON csp.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		INNER JOIN [CollectionSpecimen] cs ON csp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		{1}
+		WHERE csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)

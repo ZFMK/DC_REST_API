@@ -61,8 +61,6 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		pudb.set_trace()
-		
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		referenced_json.flatten2Dicts()
 		
@@ -148,8 +146,6 @@ class CollectionSpecimensViews():
 		if self.dc_db is None:
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
-		
-		pudb.set_trace()
 		
 		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids)
 		

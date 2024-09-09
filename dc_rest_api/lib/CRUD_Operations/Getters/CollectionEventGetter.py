@@ -171,7 +171,7 @@ class CollectionEventGetter(DataGetter):
 		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
 		withholded = []
 		
-		projectclause = self.getProjectClause()
+		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
 		SELECT ce.[CollectionEventID], ce.[RowGUID]
@@ -180,10 +180,9 @@ class CollectionEventGetter(DataGetter):
 		ON ce.RowGUID = g_temp.[rowguid_to_get]
 		LEFT JOIN [CollectionSpecimen] cs 
 		ON cs.[CollectionEventID] = ce.[CollectionEventID]
-		LEFT JOIN [CollectionProject] cp
-		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		{1}
+		WHERE ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)
@@ -198,10 +197,9 @@ class CollectionEventGetter(DataGetter):
 		ON ce.RowGUID = g_temp.[rowguid_to_get]
 		LEFT JOIN [CollectionSpecimen] cs 
 		ON cs.[CollectionEventID] = ce.[CollectionEventID]
-		LEFT JOIN [CollectionProject] cp
-		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		{1}
+		WHERE ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)
@@ -227,10 +225,9 @@ class CollectionEventGetter(DataGetter):
 		ON ce.RowGUID = g_temp.[rowguid_to_get]
 		LEFT JOIN [CollectionSpecimen] cs 
 		ON cs.[CollectionEventID] = ce.[CollectionEventID]
-		LEFT JOIN [CollectionProject] cp
-		ON cs.[CollectionSpecimenID] = cp.[CollectionSpecimenID]
-		WHERE ce.[DataWithholdingReasonDate] IS NOT NULL AND ce.[DataWithholdingReasonDate] != '' {1}
-		;""".format(self.get_temptable, projectclause)
+		{1}
+		WHERE ce.[DataWithholdingReasonDate] IS NOT NULL AND ce.[DataWithholdingReasonDate] != '' {2}
+		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
 		self.cur.execute(query, self.users_project_ids)

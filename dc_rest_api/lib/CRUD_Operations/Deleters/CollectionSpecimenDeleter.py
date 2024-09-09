@@ -75,7 +75,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		
 		self.createDeleteTempTable()
 		self.fillDeleteTempTable()
-		pudb.set_trace()
+		
 		self.checkRowGUIDsUniqueness('CollectionSpecimen')
 		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
 		self.deleteChildSpecimenParts()

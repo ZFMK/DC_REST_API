@@ -55,11 +55,9 @@ class ProjectsViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
 		
 		referenced_json.flatten2ListsOfDicts()
-		pudb.set_trace()
 		
 		if 'Projects' in self.request_params.json_body:
 			projects = self.request_params.json_body['Projects']
@@ -70,7 +68,6 @@ class ProjectsViews():
 			self.messages.append('Error: no "Projects" array in json data')
 		
 		referenced_json.insertFlattenedSubdicts()
-		pudb.set_trace()
 		
 		p_data = json.loads(json.dumps(self.request_params.json_body['Projects'], default = str))
 		
