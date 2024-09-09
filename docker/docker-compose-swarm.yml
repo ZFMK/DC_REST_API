@@ -1,0 +1,51 @@
+version: '3.4'
+services:
+  db:
+    image: mysql:8
+    volumes:
+      - ./dc_rest_api/mysql_custom.cnf:/etc/mysql/conf.d/custom.cnf
+    env_file:
+      - ./compose.env
+    ports:
+     - "63310:3306"
+    networks:
+      - dc_rest_api_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role==worker
+          - node.hostname == ganesh
+      restart_policy:
+        condition: any
+
+  dc_rest_api:
+    image: docker.leibniz-lib.de:5000/dc_rest_api
+    ports:
+      - "6561:6561"
+    networks:
+      - dc_rest_api_net
+    env_file:
+      - ./compose.env
+    depends_on:
+      - db
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role==worker
+          - node.hostname==ganesh
+      restart_policy:
+        condition: any
+
+networks:
+  dc_rest_api_net:
+    driver: overlay
+
+
+
+
+    
+    

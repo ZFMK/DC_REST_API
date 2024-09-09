@@ -1,0 +1,10 @@
+
+[mysqld]
+
+innodb_flush_log_at_trx_commit = 0
+
+disable_log_bin
+range_optimizer_max_mem_size = 0
+
+innodb_buffer_pool_size = 16G
+innodb_log_file_size = 2G
