@@ -22,6 +22,8 @@ class ConfigSetter():
 		'DC_DB_DATABASE': None,
 		'DC_DB_PORT': None,
 		'DC_DB_DRIVER': None,
+		'DC_DB_UID': None,
+		'DC_DB_PASSWORD': None,
 		'DC_DB_COLLATION': None,
 		'DC_DB_TRUSTED_CONNECTION': None,
 		'DC_DB_ENCRYPT': None,
