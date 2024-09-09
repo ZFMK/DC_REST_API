@@ -12,7 +12,7 @@ class ConfigSetter():
 		'ACCNR_PREFIX': None,
 		'MYSQL_HOST': None,
 		'MYSQL_CHARSET': None,
-		'MYSQL_USERNAME': None,
+		'MYSQL_USER': None,
 		'MYSQL_PASSWORD': None,
 		'MYSQL_ROOT_PASSWORD': None,
 		'MYSQL_DATABASE': None,

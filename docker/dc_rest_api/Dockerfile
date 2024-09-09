@@ -28,7 +28,7 @@ RUN git clone -b main --single-branch https://github.com/ZFMK/DC_REST_API.git dc
 ADD set_config.py ./dc_rest_api/set_config.py
 
 
-# ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini config.ini && pserve production.ini
+ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini config.ini && pserve production.ini
 
 CMD /usr/bin/bash
 
