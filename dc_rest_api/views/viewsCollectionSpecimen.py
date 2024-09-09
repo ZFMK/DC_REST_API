@@ -12,17 +12,19 @@ from dc_rest_api.lib.Authentication.UserLogin import UserLogin
 from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
-from dc_rest_api.lib.CRUD_Operations.CollectionSpecimenInserter import CollectionSpecimenInserter
 
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenInserter import CollectionSpecimenInserter
+
+from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenGetter import CollectionSpecimenGetter
 
 import pudb
 import json
 
 
-class CollectionSpecimenViews():
+class CollectionSpecimensViews():
 
 	def __init__(self, request):
-		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -42,7 +44,7 @@ class CollectionSpecimenViews():
 		self.users_project_ids = [project[0] for project in self.users_projects]
 
 
-	@view_config(route_name='specimen', accept='application/json', renderer="json", request_method = "POST")
+	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
@@ -53,44 +55,32 @@ class CollectionSpecimenViews():
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return jsonresponse
 		
-		# TODO: move this into extra method and shorten the way to get self.dc_db
-		try:
-			security = SecurityPolicy()
-			token = security.get_token_from_request(self.request)
-			dbsession = DBSession()
-			username, password = dbsession.get_credentials_from_session(token)
-			dc_config = dbsession.get_mssql_connectionparams_by_token(token)
-			if dc_config is None:
-				self.messages.append('There is no valid database connection for your session, try to login again')
-				return jsonresponse
-			dc_config['username'] = username
-			dc_config['password'] = password
-			self.dc_db = MSSQLConnector(config = dc_config)
-		except:
-			self.messages.append('Can not connect to DiversityCollection server. Please contact server administrator')
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		pudb.set_trace()
 		referenced_json = ReferencedJSON(self.request_params.json_body)
-		
-		#referenced_json.extractSubdicts()
-		referenced_json.insertSubdicts()
+		referenced_json.flatten2Dicts()
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
-			
-			self.payload = self.request_params.json_body['CollectionSpecimens']
-			cs_inserter = CollectionSpecimenInserter(self.dc_db, users_roles = self.roles)
-			cs_inserter.setSpecimenDicts(self.payload)
-			cs_inserter.insertSpecimenData()
+			try:
+				cs_inserter = CollectionSpecimenInserter(self.dc_db, self.uid, users_roles = self.roles)
+				cs_inserter.insertSpecimenData(self.request_params.json_body)
+			except:
+				self.messages.extend(cs_inserter.messages)
+				pudb.set_trace()
 		
 		else:
 			self.messages.append('Error: no "CollectionSpecimens" array in json data')
 		
-		cs_data = json.loads(json.dumps(self.payload, default = str))
+		referenced_json.insertFlattenedSubdicts()
+		
+		cs_data = json.loads(json.dumps(self.request_params.json_body['CollectionSpecimens'], default = str))
 		
 		jsonresponse = {
-			'title': 'DC REST API Create Resources',
-			#'aggregations': aggregations,
+			'title': 'DC REST API CREATE CollectionSpecimens',
 			'messages': self.messages,
 			'CollectionSpecimens': cs_data
 		}
@@ -98,4 +88,83 @@ class CollectionSpecimenViews():
 		return jsonresponse
 
 
+	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")
+	def deleteSpecimensJSON(self):
+		jsonresponse = {
+			'title': 'API for requests on DiversityCollection database, delete CollectionSpecimens',
+			'messages': self.messages
+		}
+		
+		if not self.uid:
+			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
+			return jsonresponse
+		
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
+			return jsonresponse
+		
+		specimen_deleter = CollectionSpecimenDeleter(self.dc_db, self.users_project_ids)
+		
+		deleted = []
+		if 'CollectionSpecimenIDs' in self.request_params.json_body:
+			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
+			specimen_deleter.deleteByPrimaryKeys(specimen_ids)
+			deleted = specimen_ids
+		
+		elif 'RowGUIDs' in self.request_params.json_body:
+			rowguids = self.request_params.json_body['RowGUIDs']
+			specimen_deleter.deleteByRowGUIDs(rowguids)
+			deleted = rowguids
+			pass
+		
+		jsonresponse = {
+			'title': 'DC REST API DELETE CollectionSpecimens',
+			'messages': self.messages,
+			'deleted': deleted,
+			#'CollectionSpecimens': cs_data
+		}
+		
+		return jsonresponse
 
+
+	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "GET")
+	def getSpecimensJSON(self):
+		
+		jsonresponse = {
+			'title': 'API for requests on DiversityCollection database, get CollectionSpecimens',
+			'messages': self.messages
+		}
+		
+		if not self.uid:
+			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
+			return jsonresponse
+		
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
+			return jsonresponse
+		
+		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids)
+		
+		specimens = []
+		
+		if 'CollectionSpecimenIDs' in self.request_params.json_body:
+			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
+			specimens = specimen_getter.getByPrimaryKeys(specimen_ids)
+		
+		elif 'RowGUIDs' in self.request_params.json_body:
+			rowguids = self.request_params.json_body['RowGUIDs']
+			specimens = specimen_getter.getByRowGUIDs(rowguids)
+		
+		specimens = json.loads(json.dumps(specimens, default = str))
+		
+		jsonresponse = {
+			'title': 'DC REST API GET CollectionSpecimens',
+			'messages': self.messages,
+			'CollectionSpecimens': specimens
+		}
+		
+		return jsonresponse

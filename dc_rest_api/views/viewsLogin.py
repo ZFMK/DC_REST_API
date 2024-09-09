@@ -65,7 +65,6 @@ class LoginViews(object):
 	
 	@view_config(route_name='logout')
 	def logout_view(self):
-		#pudb.set_trace()
 		logout_url = self.request.route_url('logout')
 		referrer = self.request.url
 		if referrer == logout_url:
@@ -81,8 +80,6 @@ class LoginViews(object):
 
 	@view_config(route_name='login', accept='application/json', renderer='json')
 	def login_view_json(self):
-		
-		#pudb.set_trace()
 		
 		self.userlogin = UserLogin(self.request)
 		self.messages = []

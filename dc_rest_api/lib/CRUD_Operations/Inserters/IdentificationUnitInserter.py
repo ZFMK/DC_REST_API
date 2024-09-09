@@ -4,9 +4,9 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 
-from dc_rest_api.lib.CRUD_Operations.IdentificationInserter import IdentificationInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationInserter import IdentificationInserter
 
 
 class IdentificationUnitInserter():
@@ -19,8 +19,8 @@ class IdentificationUnitInserter():
 		self.temptable = '#iu_temptable'
 		
 		self.schema = [
-			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'entry_num', 'None allowed': False},
+			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'IdentificationUnitID'},
 			{'colname': 'LastIdentificationCache', 'default': 'unknown', 'None allowed': False},
 			{'colname': 'LifeStage'},
@@ -103,7 +103,7 @@ class IdentificationUnitInserter():
 		PRIMARY KEY ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
-		INDEX [RowGUID_idx] ([RowGUID]),
+		INDEX [RowGUID_idx] ([RowGUID])
 		)
 		;""".format(self.temptable, self.collation)
 		querylog.info(query)

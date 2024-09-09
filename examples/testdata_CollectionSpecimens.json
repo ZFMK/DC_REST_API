@@ -9,7 +9,7 @@
 			"Project": "Project 2 for Unittests",
 			"ProjectURI": "https://localhost/Projects/02"
 		}
-	]
+	],
 	"CollectionEvents": [
 		{
 			"@id": "_:ce1",
@@ -26,7 +26,7 @@
 			"HabitatDescription": "aus verpilzten Rinden einer liegenden Buche gesiebt",
 			"CollectingMethod": "Gesiebe",
 			"Notes": null,
-			"Country": "Germany",
+			"CountryCache": "Germany",
 			"State": "Nordrhein-Westfalen",
 			"State_District": null,
 			"County": "Münsterland",
@@ -259,7 +259,7 @@
 				},
 				{
 					"@id": "_:p2"
-				},
+				}
 			]
 		},
 		{
@@ -299,7 +299,7 @@
 				"HabitatDescription": "aus verpilzten Rinden einer liegenden Buche gesiebt",
 				"CollectingMethod": "Gesiebe",
 				"Notes": null,
-				"Country": "Germany",
+				"CountryCache": "Germany",
 				"State": "Nordrhein-Westfalen",
 				"State_District": null,
 				"County": "Münsterland",
@@ -346,6 +346,11 @@
 						}
 					]
 				}
+			],
+			"Projects": [
+				{
+					"@id": "_:p2"
+				}
 			]
 			"Projects": [
 				{
@@ -365,7 +370,9 @@
 			"CollectionAgents": [
 				{
 					"CollectorsName": "Testuser Collector2",
-					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest",
+					"CollectorsNumber": "FieldNumber 1 for Unittest",
+					"Notes": "test the Notes"
 				},
 				{
 					"CollectorsName": "Testuser Collector4",
@@ -373,7 +380,9 @@
 				},
 				{
 					"CollectorsName": "Testuser Collector1",
-					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest"
+					"DataWithholdingReason": "DataWithholdingReason Agent: Dataset for UnitTest",
+					"CollectorsNumber": "FieldNumber 2 for Unittest",
+					"Notes": "test the Notes 2"
 				}
 			],
 			"CollectionEvent": {
@@ -390,7 +399,7 @@
 				"HabitatDescription": "aus verpilzten Rinden einer liegenden Buche gesiebt",
 				"CollectingMethod": "Gesiebe",
 				"Notes": null,
-				"Country": "Germany",
+				"CountryCache": "Germany",
 				"State": "Nordrhein-Westfalen",
 				"State_District": null,
 				"County": "Münsterland",

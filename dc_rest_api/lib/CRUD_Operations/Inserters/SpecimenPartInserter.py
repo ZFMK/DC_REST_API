@@ -4,15 +4,9 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
-from dc_rest_api.lib.CRUD_Operations.CollectionInserter import CollectionInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 
-
-"""
-It appears to be impossible to update any IdentificationUnits as they do not have any identifying property or character. So the IdentificationUnits 
-need to be updated by deleteing the existing and inserting the new ones?!
-Therefore, here is no code to get and updating the existing IdentificationUnits. But this just moves the problem of outside the code here. Is that better?
-"""
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
 
 
 class SpecimenPartInserter():
@@ -24,11 +18,11 @@ class SpecimenPartInserter():
 		
 		self.temptable = '#csp_temptable'
 		
-		
 		self.schema = [
 			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'SpecimenPartID'},
+			{'colname': 'CollectionID'},
 			{'colname': 'AccessionNumber'},
 			{'colname': 'PartSublabel'},
 			{'colname': 'PreparationMethod'},
@@ -62,6 +56,7 @@ class SpecimenPartInserter():
 		self.__updateCSPTempTable()
 		self.__updateCSPDicts()
 		
+		'''
 		collections = []
 		
 		for csp_dict in self.csp_dicts:
@@ -73,6 +68,7 @@ class SpecimenPartInserter():
 		c_inserter = CollectionInserter(self.dc_db)
 		c_inserter.setCollectionDicts(collections)
 		c_inserter.insertCollectionData()
+		'''
 		
 		return
 
@@ -157,32 +153,6 @@ class SpecimenPartInserter():
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
-		
-		# TODO: how to deal with Collections that do not exist in database?
-		'''
-		query = """
-		SELECT [dataset_num], [entry_num], [AccessionNumber], [CollectionName]
-		FROM [{0}] csp_temp
-		WHERE CollectionID IS NULL
-		;""".format(self.temptable)
-		
-		querylog.debug(query)
-		self.cur.execute(query)
-		rows = self.cur.fetchall()
-		if len(rows) > 0:
-			#raise FailedDataImportError()
-			self.failed_specimenparts = []
-			for row in rows:
-				part_dict = {
-					'Message': 'Failed SpecimenPart import: CollectionName can not be found in database!',
-					'CollectionName': row[3],
-					'Dataset': row[0],
-					'Specimenpart number': row[1],
-					'Part AccessionNumber': row[2],
-				}
-				self.failed_specimenparts.append(part_dict)
-				raise ValueError()
-		'''
 		
 		return
 

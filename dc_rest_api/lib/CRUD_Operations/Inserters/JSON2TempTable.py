@@ -21,6 +21,18 @@ class JSON2TempTable():
 		self.schema = schema
 
 
+	def copy_to_list_of_dicts(self, json_dicts):
+		dict_list = []
+		if isinstance(json_dicts, dict):
+			for key in json_dicts:
+				dict_list.append(json_dicts[key])
+			return dict_list
+		elif isinstance(json_dicts, list) or isinstance(json_dicts, tuple):
+			return json_dicts
+		else:
+			raise TypeError('json_dicts must be a dict or array')
+
+
 	def set_datadicts(self, json_dicts = []):
 		'''
 		the set_datadicts method is used by the child objects to compare the data with the data schemes given in each child object
@@ -30,7 +42,11 @@ class JSON2TempTable():
 		
 		self.datadicts = []
 		
-		for json_dict in json_dicts:
+		dict_list = self.copy_to_list_of_dicts(json_dicts)
+		
+		for json_dict in dict_list:
+			
+			#for json_dict in json_dicts:
 			#try:
 			values_not_none = 0
 			for entry in self.schema:
@@ -52,11 +68,12 @@ class JSON2TempTable():
 					# just let the json_dict entry as it is
 					pass
 				
-				if entry['colname'] != 'entry_num' and json_dict[entry['colname']] is not None:
+				if entry['colname'] != 'entry_num' and entry['colname'] != '@id' and json_dict[entry['colname']] is not None:
 					values_not_none += 1
 			
 			# check that at least one value in json_dict entries is not None
 			if values_not_none < 1:
+				#pudb.set_trace()
 				raise ValueError('Can not insert data, all fields are empty')
 			
 			self.datadicts.append(json_dict)

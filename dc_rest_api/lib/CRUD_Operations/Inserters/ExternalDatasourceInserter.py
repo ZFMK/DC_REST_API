@@ -7,7 +7,7 @@ config.read('./dc_importer/config.ini')
 import logging, logging.config
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 
 
 class ExternalDatasourceInserter():
@@ -20,13 +20,14 @@ class ExternalDatasourceInserter():
 		self.users_roles = users_roles
 		self.messages = []
 		
-		self.temptable = '#datasource_temptable'
-		self.unique_ed_temptable = '#unique_ed_temptable'
+		self.temptable = 'datasource_temptable'
+		self.unique_ed_temptable = 'unique_ed_temptable'
 		
 		self.schema = [
-			{'colname': 'entry_num', 'None allowed': False},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'ExternalDatasourceID'},
+			{'colname': '@id', 'None allowed': False},
+			#{'colname': 'CollectionSpecimenID'},
+			# do not add ExternalDatasourceID as it should be set by comparison
+			#{'colname': 'ExternalDatasourceID'},
 			{'colname': 'ExternalDatasourceName', 'None allowed': False},
 			{'colname': 'ExternalDatasourceVersion'},
 			{'colname': 'ExternalDatasourceURI'},
@@ -36,9 +37,11 @@ class ExternalDatasourceInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
+		self.messages = []
 
 
-	def insertExternalDatasourceData(self):
+	def insertExternalDatasourceData(self, json_dicts = []):
+		self.ed_dicts = json_dicts
 		
 		self.__createTempTable()
 		
@@ -53,25 +56,15 @@ class ExternalDatasourceInserter():
 				self.__insertNewDatasources()
 			else:
 				self.messages.append('You do not have the rights to insert external datasources')
+				raise ValueError()
 		
-		self.__setExternalDatasourceIDsInCollectionSpecimen()
+		#self.__setExternalDatasourceIDsInCollectionSpecimen()
 		
 		#if 'Administrator' in self.users_roles or 'DataManager' in self.users_roles:
 		#	self.__deleteUnconnectedExternalDatasources()
 		
 		self.__updateEDDicts()
 		
-		return
-
-
-	def setExternalDatasourceDicts(self, json_dicts = []):
-		self.ed_dicts = []
-		ed_count = 1
-		
-		for ed_dict in json_dicts:
-			ed_dict['entry_num'] = ed_count
-			ed_count += 1
-			self.ed_dicts.append(ed_dict)
 		return
 
 
@@ -86,7 +79,7 @@ class ExternalDatasourceInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[entry_num] INT NOT NULL,
+		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[ExternalDatasourceID] INT DEFAULT NULL,
 		[ExternalDatasourceName] VARCHAR(255) COLLATE {1} NOT NULL,
@@ -96,7 +89,7 @@ class ExternalDatasourceInserter():
 		[InternalNotes] VARCHAR(1500) COLLATE {1},
 		[ExternalAttribute_NameID] VARCHAR(255) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER,
-		PRIMARY KEY ([entry_num]),
+		PRIMARY KEY ([@id]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [ExternalDatasourceID_idx] ([ExternalDatasourceID]),
 		INDEX [ExternalDatasourceName_idx] ([ExternalDatasourceName]),
@@ -195,7 +188,7 @@ class ExternalDatasourceInserter():
 
 	def __getNumberOfUnmatchedDatasources(self):
 		query = """
-		SELECT COUNT([entry_num])
+		SELECT COUNT([@id])
 		FROM [{0}] ed_temp
 		WHERE ed_temp.[ExternalDatasourceID] IS NULL
 		;""".format(self.temptable)
@@ -254,6 +247,7 @@ class ExternalDatasourceInserter():
 		return
 
 
+	'''
 	def __setExternalDatasourceIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
@@ -268,6 +262,7 @@ class ExternalDatasourceInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __deleteUnconnectedExternalDatasources(self):
@@ -286,17 +281,17 @@ class ExternalDatasourceInserter():
 
 	def __updateEDDicts(self):
 		ed_ids = self.getIDsForEDDicts()
-		for ed_dict in self.ed_dicts:
-			entry_num = ed_dict['entry_num']
-			ed_dict['ExternalDatasourceID'] = ed_ids[entry_num]['ExternalDatasourceID']
-			ed_dict['RowGUID'] = ed_ids[entry_num]['RowGUID']
-			ed_dict['CollectionSpecimenID'] = ed_ids[entry_num]['CollectionSpecimenID']
+		for dict_id in self.ed_dicts:
+			ed_dict = self.ed_dicts[dict_id]
+			ed_dict['ExternalDatasourceID'] = ed_ids[dict_id]['ExternalDatasourceID']
+			ed_dict['RowGUID'] = ed_ids[dict_id]['RowGUID']
+			ed_dict['CollectionSpecimenID'] = ed_ids[dict_id]['CollectionSpecimenID']
 		return
 
 
 	def getIDsForEDDicts(self):
 		query = """
-		SELECT ed_temp.[entry_num], ed.[ExternalDatasourceID], ed.[RowGUID], ed_temp.[CollectionSpecimenID]
+		SELECT ed_temp.[@id], ed.[ExternalDatasourceID], ed.[RowGUID], ed_temp.[CollectionSpecimenID]
 		FROM [CollectionExternalDatasource] ed
 		INNER JOIN [{0}] ed_temp
 		ON ed_temp.[RowGUID] = ed.[RowGUID] 

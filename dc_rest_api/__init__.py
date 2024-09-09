@@ -28,7 +28,9 @@ def main(global_config, **settings):
 	config.add_route('logout', '/logout')
 	
 	#config.add_route('specimen', '/specimen/{id}')
-	config.add_route('specimen', '/specimen')
+	config.add_route('specimens', '/specimens')
+	
+	config.add_route('projects', '/projects')
 	
 	config.add_route('help', '/help')
 	

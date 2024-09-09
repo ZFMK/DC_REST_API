@@ -4,13 +4,13 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.CollectionMatcher import CollectionMatcher
 
 
 
 class CollectionInserter():
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, users_roles = []):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
@@ -19,12 +19,15 @@ class CollectionInserter():
 		self.temptable = '#collection_temptable'
 		self.unique_collections_temptable = '#unique_c_temptable'
 		
+		self.users_roles = users_roles
+		
 		
 		self.schema = [
-			{'colname': 'entry_num', 'None allowed': False},
-			{'colname': 'CollectionID'},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'SpecimenPartID'},
+			{'colname': '@id', 'None allowed': False},
+			# do not add CollectionID as it should be set by comparison
+			#{'colname': 'CollectionID'},
+			#{'colname': 'CollectionSpecimenID'},
+			#{'colname': 'SpecimenPartID'},
 			{'colname': 'CollectionName', 'default': 'No collection', 'None allowed': False},
 			{'colname': 'CollectionAcronym'},
 			{'colname': 'AdministrativeContactName'},
@@ -42,9 +45,12 @@ class CollectionInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
+		self.messages = []
 
 
-	def insertCollectionData(self):
+	def insertCollectionData(self, json_dicts = []):
+		
+		self.c_dicts = json_dicts
 		
 		self.__createCollectionTempTable()
 		
@@ -58,20 +64,10 @@ class CollectionInserter():
 		
 		self.createNewCollections()
 		
-		self.__insertCollectionIDsInCollectionSpecimen()
-		self.__insertCollectionIDsInSpecimenPart()
+		#self.__insertCollectionIDsInCollectionSpecimen()
+		#self.__insertCollectionIDsInSpecimenPart()
 		
 		self.__updateCollectionDicts()
-		return
-
-
-	def setCollectionDicts(self, json_dicts = []):
-		self.c_dicts = []
-		c_count = 1
-		for c_dict in json_dicts:
-			c_dict['entry_num'] = c_count
-			c_count += 1
-			self.c_dicts.append(c_dict)
 		return
 
 
@@ -86,7 +82,7 @@ class CollectionInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[entry_num] INT NOT NULL,
+		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionID] INT,
 		[CollectionSpecimenID] INT,
 		[SpecimenPartID] INT,
@@ -108,8 +104,7 @@ class CollectionInserter():
 		[Type] NVARCHAR(50) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER,
 		[collection_sha] VARCHAR(64) COLLATE {1},
-		PRIMARY KEY ([entry_num]),
-		INDEX [entry_num_idx] ([entry_num]),
+		PRIMARY KEY ([@id]),
 		INDEX [CollectionID_idx] (CollectionID),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
@@ -295,7 +290,8 @@ class CollectionInserter():
 	def __updateCollectionIDsInTempTable(self):
 		query = """
 		UPDATE c_temp
-		SET c_temp.CollectionID = c.CollectionID
+		SET c_temp.[CollectionID] = c.[CollectionID],
+		c_temp.[RowGUID] = c.[RowGUID]
 		FROM [{0}] c_temp
 		INNER JOIN [{1}] ue_temp
 		ON c_temp.[collection_sha] = ue_temp.[collection_sha]
@@ -309,6 +305,7 @@ class CollectionInserter():
 		return
 
 
+	'''
 	def __insertCollectionIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
@@ -323,8 +320,10 @@ class CollectionInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
+	'''
 	def __insertCollectionIDsInSpecimenPart(self):
 		query = """
 		UPDATE csp
@@ -339,21 +338,22 @@ class CollectionInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __updateCollectionDicts(self):
 		c_ids = self.getIDsForCollectionDicts()
-		for c_dict in self.c_dicts:
-			entry_num = c_dict['entry_num']
-			c_dict['CollectionID'] = c_ids[entry_num]['CollectionID']
-			c_dict['RowGUID'] = c_ids[entry_num]['RowGUID']
+		for dict_id in self.c_dicts:
+			c_dict = self.c_dicts[dict_id]
+			c_dict['CollectionID'] = c_ids[dict_id]['CollectionID']
+			c_dict['RowGUID'] = c_ids[dict_id]['RowGUID']
 		return
 
 
 	def getIDsForCollectionDicts(self):
 		query = """
 		SELECT 
-			c_temp.[entry_num],
+			c_temp.[@id],
 			c.[CollectionID],
 			c.[RowGUID]
 		FROM [Collection] c
@@ -373,7 +373,6 @@ class CollectionInserter():
 		
 		return c_ids
 
-################################################
 
 
 
@@ -386,34 +385,7 @@ class CollectionInserter():
 
 
 
-	'''
-	def __setExistingCollections(self):
-		query = """
-		UPDATE c_temp
-		SET c_temp.[CollectionID] = eds.[CollectionID],
-		c_temp.[RowGUID] = eds.[RowGUID]
-		FROM [{0}] c_temp
-		INNER JOIN Collection c
-		ON (
-				c_temp.[CollectionName] = c.[CollectionName]
-				AND ((c_temp.[CollectionAcronym] = c.[CollectionAcronym]) OR (c_temp.[CollectionAcronym] ICollectionAcronymS NULL AND c.[CollectionAcronym] IS NULL))
-				AND ((c_temp.[AdministrativeContactName] = c.[AdministrativeContactName]) OR (c_temp.[AdministrativeContactName] IS NULL AND c.[AdministrativeContactName] IS NULL))
-				AND ((c_temp.[AdministrativeContactAgentURI] = c.[AdministrativeContactAgentURI]) OR (c_temp.[AdministrativeContactAgentURI] IS NULL AND c.[AdministrativeContactAgentURI] IS NULL))
-				AND ((c_temp.[Description_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', c_temp[Description]), 2)) OR (c_temp.[Description] IS NULL AND c.[Description] IS NULL))
-				AND ((c_temp.[Location] = c.[Location]) OR (c_temp.[Location] IS NULL AND c.[Location] IS NULL))
-				AND ((c_temp.[CollectionOwner] = c.[CollectionOwner]) OR (c_temp.[CollectionOwner] IS NULL AND c.[CollectionOwner] IS NULL))
-				AND ((c_temp.[Type] = c.[Type]) OR (c_temp.[Type] IS NULL AND c.[Type] IS NULL))
-			)
-		WHERE c_temp.[CollectionID] IS NULL
-		;
-		""".format(self.temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		return
-	'''
+
 
 
 

@@ -4,7 +4,7 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.CollectionEventMatcher import CollectionEventMatcher
 
 
@@ -19,9 +19,10 @@ class CollectionEventInserter():
 		self.unique_events_temptable = '#unique_events_temptable'
 		
 		self.schema = [
-			{'colname': 'entry_num', 'None allowed': False},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'CollectionEventID'},
+			{'colname': '@id', 'None allowed': False},
+			#{'colname': 'CollectionSpecimenID'},
+			# do not add CollectionEventID as it should be set by comparison
+			#{'colname': 'CollectionEventID'},
 			{'colname': 'CollectorsEventNumber'},
 			{'colname': 'CollectionDate'},
 			{'colname': 'CollectionDay'},
@@ -44,11 +45,10 @@ class CollectionEventInserter():
 			{'colname': 'ReferenceURI'},
 			# {'colname': 'ReferenceDetails'},
 			{'colname': 'Notes'},
-			{'colname': 'Country'},
+			{'colname': 'CountryCache'},
 			#################
 			{'colname': 'State'},
 			{'colname': 'StateDistrict'},
-			{'colname': 'County'},
 			{'colname': 'Municipality'},
 			{'colname': 'StreetHouseNumber'},
 			#################
@@ -77,7 +77,9 @@ class CollectionEventInserter():
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
 
 
-	def insertCollectionEventData(self):
+	def insertCollectionEventData(self, json_dicts = []):
+		self.ce_dicts = json_dicts
+		
 		self.__createEventTempTable()
 		
 		self.json2temp.set_datadicts(self.ce_dicts)
@@ -91,22 +93,11 @@ class CollectionEventInserter():
 		
 		self.createNewEvents()
 		
-		self.__insertEventIDsInCollectionSpecimen()
+		#self.__insertEventIDsInCollectionSpecimen()
 		#self.__deleteUnconnectedEvents()
 		
 		self.__updateCEDicts()
 		return
-
-
-	def setCollectionEventDicts(self, json_dicts = []):
-		self.ce_dicts = []
-		ce_count = 1
-		for ce_dict in json_dicts:
-			ce_dict['entry_num'] = ce_count
-			ce_count += 1
-			self.ce_dicts.append(ce_dict)
-		return
-
 
 
 	def __createEventTempTable(self):
@@ -120,7 +111,7 @@ class CollectionEventInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[entry_num] INT NOT NULL,
+		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionSpecimenID] INT,
 		[CollectionEventID] INT DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER,
@@ -149,7 +140,7 @@ class CollectionEventInserter():
 		[CollectingMethod_sha] VARCHAR(64),
 		[Notes] VARCHAR(MAX) COLLATE {1},
 		 -- 
-		[Country] VARCHAR(255) COLLATE {1},
+		[CountryCache] VARCHAR(255) COLLATE {1},
 		[State] VARCHAR(255) COLLATE {1},
 		[StateDistrict] VARCHAR(255) COLLATE {1},
 		[County] VARCHAR(255) COLLATE {1},
@@ -179,7 +170,7 @@ class CollectionEventInserter():
 		 -- 
 		[event_sha] VARCHAR(64),
 		 -- 
-		PRIMARY KEY ([entry_num]),
+		PRIMARY KEY ([@id]),
 		INDEX [event_sha_idx] ([event_sha]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [CollectionEventID_idx] ([CollectionEventID]),
@@ -262,7 +253,7 @@ class CollectionEventInserter():
 			[ReferenceURI],
 			 -- e.[ReferenceDetails],
 			[CollectingMethod_sha],
-			[Country],
+			[CountryCache],
 			 -- 
 			[Altitude],
 			[Altitude_Accuracy],
@@ -280,7 +271,10 @@ class CollectionEventInserter():
 			[Height_min_m],
 			[Height_max_m],
 			[Height_Accuracy_m],
-			[Height_RecordingMethod_m]
+			[Height_RecordingMethod_m],
+			 -- 
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)), 2)
 		FROM [{0}] ce_temp
 		;""".format(self.temptable)
@@ -363,6 +357,10 @@ class CollectionEventInserter():
 			[Height_max_m] VARCHAR(255) COLLATE {1},
 			[Height_Accuracy_m] VARCHAR(50) COLLATE {1},
 			[Height_RecordingMethod_m] VARCHAR(500) COLLATE {1},
+			 -- 
+			[DataWithholdingReason] NVARCHAR(255) COLLATE {1},
+			[DataWithholdingReasonDate] NVARCHAR(50) COLLATE {1},
+			 -- 
 			INDEX [event_sha_idx] ([event_sha]),
 			INDEX [RowGUID_idx] ([RowGUID])
 		)
@@ -414,7 +412,10 @@ class CollectionEventInserter():
 			[Height_min_m],
 			[Height_max_m],
 			[Height_Accuracy_m],
-			[Height_RecordingMethod_m]
+			[Height_RecordingMethod_m],
+			 -- 
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)
 		SELECT DISTINCT
 			ce_temp.[CollectorsEventNumber],
@@ -437,7 +438,7 @@ class CollectionEventInserter():
 			 -- ce_temp.[ReferenceDetails],
 			ce_temp.[CollectingMethod],
 			ce_temp.[Notes],
-			ce_temp.[Country],
+			ce_temp.[CountryCache],
 			 -- 
 			ce_temp.[event_sha],
 			 -- 
@@ -457,7 +458,10 @@ class CollectionEventInserter():
 			ce_temp.[Height_min_m],
 			ce_temp.[Height_max_m],
 			ce_temp.[Height_Accuracy_m],
-			ce_temp.[Height_RecordingMethod_m]
+			ce_temp.[Height_RecordingMethod_m],
+			 -- 
+			ce_temp.[DataWithholdingReason],
+			ce_temp.[DataWithholdingReasonDate]
 		FROM [{1}] ce_temp
 		WHERE ce_temp.[CollectionEventID] IS NULL
 		;""".format(self.unique_events_temptable, self.temptable)
@@ -494,7 +498,9 @@ class CollectionEventInserter():
 			[CollectingMethod],
 			[Notes],
 			[CountryCache],
-			[RowGUID]
+			[RowGUID],
+			[DataWithholdingReason],
+			[DataWithholdingReasonDate]
 		)
 		SELECT DISTINCT -- the uniqueness is set by ue_temp.[RowGUID] which was set before in __setUniqueEventsTemptable when the CollectionEvent data is the same but Localisations differ
 			ue_temp.[CollectorsEventNumber],
@@ -518,7 +524,9 @@ class CollectionEventInserter():
 			ue_temp.[CollectingMethod],
 			ue_temp.[Notes],
 			ue_temp.[CountryCache],
-			ue_temp.[RowGUID]
+			ue_temp.[RowGUID],
+			ue_temp.[DataWithholdingReason],
+			ue_temp.[DataWithholdingReasonDate]
 		FROM [{0}] ue_temp
 		;""".format(self.unique_events_temptable)
 		querylog.info(query)
@@ -674,7 +682,7 @@ class CollectionEventInserter():
 		)
 		SELECT 
 			ce_temp.[CollectionEventID],
-			CONCAT_WS(', ', ce_temp.[Country], ce_temp.[State], ce_temp.[StateDistrict], ce_temp.[County], ce_temp.[Municipality], ce_temp.[StreetHouseNumber]),
+			CONCAT_WS(', ', ce_temp.[CountryCache], ce_temp.[State], ce_temp.[StateDistrict], ce_temp.[County], ce_temp.[Municipality], ce_temp.[StreetHouseNumber]),
 			ls.[LocalisationSystemID]
 		FROM [{0}] ce_temp
 		INNER JOIN [LocalisationSystem] ls
@@ -688,6 +696,7 @@ class CollectionEventInserter():
 	'''
 
 
+	'''
 	def __insertEventIDsInCollectionSpecimen(self):
 		query = """
 		UPDATE cs
@@ -702,21 +711,22 @@ class CollectionEventInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __updateCEDicts(self):
 		ce_ids = self.getIDsForCEDicts()
-		for ce_dict in self.ce_dicts:
-			entry_num = ce_dict['entry_num']
-			ce_dict['CollectionEventID'] = ce_ids[entry_num]['CollectionEventID']
-			ce_dict['RowGUID'] = ce_ids[entry_num]['RowGUID']
-			ce_dict['CollectionSpecimenID'] = ce_ids[entry_num]['CollectionSpecimenID']
+		for dict_id in self.ce_dicts:
+			ce_dict = self.ce_dicts[dict_id]
+			ce_dict['CollectionEventID'] = ce_ids[dict_id]['CollectionEventID']
+			ce_dict['RowGUID'] = ce_ids[dict_id]['RowGUID']
+			ce_dict['CollectionSpecimenID'] = ce_ids[dict_id]['CollectionSpecimenID']
 		return
 
 
 	def getIDsForCEDicts(self):
 		query = """
-		SELECT ce_temp.[entry_num], ce.CollectionEventID, ce.[RowGUID], ce_temp.[CollectionSpecimenID]
+		SELECT ce_temp.[@id], ce.CollectionEventID, ce.[RowGUID], ce_temp.[CollectionSpecimenID]
 		FROM [CollectionEvent] ce
 		INNER JOIN [{0}] ce_temp
 		ON ce_temp.[RowGUID] = ce.[RowGUID] 

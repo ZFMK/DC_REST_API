@@ -4,7 +4,7 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 
 
 class IdentificationInserter():
@@ -29,7 +29,7 @@ class IdentificationInserter():
 			{'colname': 'IdentificationMonth'},
 			{'colname': 'IdentificationYear'},
 			{'colname': 'IdentificationDateSupplement'},
-			{'colname': 'ResponsibleName', 'None allowed': False, 'Minimal string length': 1},
+			{'colname': 'ResponsibleName'},
 			{'colname': 'ResponsibleAgentURI'},
 			{'colname': 'IdentificationCategory'},
 			{'colname': 'IdentificationQualifier'},

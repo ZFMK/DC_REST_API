@@ -4,37 +4,44 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from dc_rest_api.lib.CRUD_Operations.JSON2TempTable import JSON2TempTable
+from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.ProjectMatcher import ProjectMatcher
 
 
 class ProjectInserter():
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, user_id, users_roles = []):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = '#project_temptable'
-		self.unique_projects_temptable = '#unique_p_temptable'
+		self.user_id = user_id
+		self.users_roles = users_roles
+		
+		self.temptable = 'project_temptable'
+		self.unique_projects_temptable = 'unique_p_temptable'
 		
 		# set a minimum ProjectID for new projects to insert
 		self.min_project_id = 271176
 		
 		self.schema = [
-			{'colname': 'entry_num', 'None allowed': False},
-			{'colname': 'CollectionSpecimenID'},
-			{'colname': 'ProjectID'},
+			{'colname': '@id', 'None allowed': False},
+			# do not add ProjectID as it should be set by comparison
+			#{'colname': 'ProjectID'},
+			#{'colname': 'CollectionSpecimenID'},
 			{'colname': 'Project', 'None allowed': False},
 			{'colname': 'ProjectURI'},
-			#{'colname': 'StableIdentifierBase'},
-			#{'colname': 'StableIdentifierTypeID'}
+			{'colname': 'StableIdentifierBase'},
+			{'colname': 'StableIdentifierTypeID'}
 		]
 		
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
+		self.messages = []
 
 
-	def insertProjectData(self):
+	def insertProjectData(self, json_dicts = []):
+		
+		self.project_dicts = json_dicts
 		
 		self.__createProjectTempTable()
 		
@@ -52,21 +59,28 @@ class ProjectInserter():
 				self.createNewProjects()
 			else:
 				self.messages.append('You do not have the rights to insert new projects')
+				raise ValueError()
 		
 		self.__updateProjectDicts()
 		
 		return
 
 
-	def setProjectDicts(self, json_dicts = []):
-		self.project_dicts = []
-		p_count = 1
-		for project_dict in json_dicts:
-			project_dict['entry_num'] = p_count
-			p_count += 1
-			self.project_dicts.append(project_dict)
-		return
-
+	def __getNumberOfUnmatchedProjects(self):
+		query = """
+		SELECT COUNT([@id])
+		FROM [{0}] p_temp
+		WHERE p_temp.[ProjectID] IS NULL
+		;""".format(self.temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		row = self.cur.fetchone()
+		if row is not None:
+			num = int(row[0])
+			return num
+		else:
+			return 0
 
 
 	def __createProjectTempTable(self):
@@ -80,20 +94,21 @@ class ProjectInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[entry_num] INT NOT NULL,
+		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[ProjectID] INT DEFAULT NULL,
 		[Project] NVARCHAR(50) COLLATE {1} NOT NULL,
 		[ProjectURI] VARCHAR(255) COLLATE {1},
-		 -- [StableIdentifierBase] VARCHAR(500) COLLATE {1},
-		 -- [StableIdentifierTypeID] INT,
+		[StableIdentifierBase] VARCHAR(500) COLLATE {1},
+		[StableIdentifierTypeID] INT,
 		[RowGUID] UNIQUEIDENTIFIER,
 		[project_sha] VARCHAR(64) COLLATE {1},
-		PRIMARY KEY ([entry_num]),
+		PRIMARY KEY ([@id]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [ProjectID_idx] ([ProjectID]),
 		INDEX [Project_idx] ([Project]),
-		 -- INDEX [StableIdentifierBase_idx] ([StableIdentifierBase])
+		INDEX [StableIdentifierBase_idx] ([StableIdentifierBase]),
+		INDEX [StableIdentifierTypeID_idx] ([StableIdentifierTypeID]),
 		INDEX [project_sha_idx] ([project_sha])
 		)
 		;""".format(self.temptable, self.collation)
@@ -109,8 +124,9 @@ class ProjectInserter():
 		UPDATE p_temp
 		SET [project_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[Project],
-			[ProjectURI]
-			 -- , [StableIdentifierBase]
+			[ProjectURI],
+			[StableIdentifierBase],
+			[StableIdentifierTypeID]
 		)), 2)
 		FROM [{0}] p_temp
 		;""".format(self.temptable)
@@ -123,7 +139,8 @@ class ProjectInserter():
 	def __updateProjectIDsInTempTable(self):
 		query = """
 		UPDATE p_temp
-		SET p_temp.ProjectID = pp.ProjectID
+		SET p_temp.ProjectID = pp.ProjectID,
+			p_temp.[RowGUID] = pp.[RowGUID]
 		FROM [{0}] p_temp
 		INNER JOIN [{1}] ue_temp
 		ON p_temp.[project_sha] = ue_temp.[project_sha]
@@ -139,11 +156,12 @@ class ProjectInserter():
 
 	def createNewProjects(self):
 		# insert only one version of each project when the same project occurres multiple times in json data
-		self.__setUniqueProjectssTempTable()
+		self.__setUniqueProjectsTempTable()
 		self.__insertNewProjects()
 		self.__updateProjectIDsInTempTable()
 		
-		self.__insertCollectionProjects()
+		#self.__insertCollectionProjects()
+		self.__insertProjectUser()
 		return
 
 
@@ -161,17 +179,18 @@ class ProjectInserter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-			[Project] NVARCHAR(50) COLLATE {1} NOT NULL,
+			[ProjectID] INT,
+			[Project] NVARCHAR(50) COLLATE {1},
 			[ProjectURI] VARCHAR(255) COLLATE {1},
-			 -- [StableIdentifierBase] VARCHAR(500) COLLATE {1},
-			 -- [StableIdentifierTypeID] INT,
+			[StableIdentifierBase] VARCHAR(500) COLLATE {1},
+			[StableIdentifierTypeID] INT,
 			[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 			 -- 
 			[project_sha] VARCHAR(64) COLLATE {1},
 			INDEX [project_sha_idx] ([project_sha]),
 			INDEX [RowGUID_idx] ([RowGUID])
 		)
-		;""".format(self.unique_collections_temptable, self.collation)
+		;""".format(self.unique_projects_temptable, self.collation)
 		
 		querylog.info(query)
 		self.cur.execute(query)
@@ -195,13 +214,13 @@ class ProjectInserter():
 		UPDATE ue_temp
 		SET 
 			[Project] = p_temp.[Project],
-			[ProjectURI] = p_temp.[ProjectURI]
-			 -- ,[StableIdentifierBase] = p_temp.[StableIdentifierBase],
-			 -- ,[StableIdentifierTypeID] = p_temp.[StableIdentifierTypeID]
+			[ProjectURI] = p_temp.[ProjectURI],
+			[StableIdentifierBase] = p_temp.[StableIdentifierBase],
+			[StableIdentifierTypeID] = p_temp.[StableIdentifierTypeID]
 		FROM [{0}] ue_temp
 		INNER JOIN [{1}] p_temp
 		ON ue_temp.[project_sha] = p_temp.[project_sha]
-		;""".format(self.unique_collections_temptable, self.temptable)
+		;""".format(self.unique_projects_temptable, self.temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
@@ -215,18 +234,33 @@ class ProjectInserter():
 		INSERT INTO [ProjectProxy] (
 			[ProjectID],
 			[Project],
-			 -- [StableIdentifierBase],
-			 -- [StableIdentifierTypeID],
+			[ProjectURI],
+			[StableIdentifierBase],
+			[StableIdentifierTypeID],
 			[RowGUID]
 		)
 		SELECT
-			ue_temp.[ProjectID],
+			ROW_NUMBER() OVER(ORDER BY [RowGUID]) + pp.max_p_id AS [ProjectID], 
 			ue_temp.[Project],
+			ue_temp.[ProjectURI],
 			ue_temp.[StableIdentifierBase],
 			ue_temp.[StableIdentifierTypeID],
 			ue_temp.[RowGUID]
-		FROM [{0}] ue_temp
-		;""".format(self.unique_projects_temptable)
+		FROM [{0}] ue_temp, (
+			SELECT 
+			CASE WHEN MAX(ProjectID) > {1} THEN MAX(ProjectID)
+			ELSE {1}
+			END as max_p_id
+			FROM ProjectProxy pp
+		) pp
+		GROUP BY 
+			ue_temp.[Project],
+			ue_temp.[ProjectURI],
+			ue_temp.[StableIdentifierBase], 
+			ue_temp.[StableIdentifierTypeID], 
+			ue_temp.[RowGUID],
+			pp.[max_p_id]
+		;""".format(self.unique_projects_temptable, int(self.min_project_id))
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -268,17 +302,69 @@ class ProjectInserter():
 
 	def __updateProjectDicts(self):
 		p_ids = self.getIDsForProjectDicts()
-		for p_dict in self.project_dicts:
-			entry_num = p_dict['entry_num']
-			p_dict['ProjectID'] = p_ids[entry_num]['ProjectID']
-			p_dict['RowGUID'] = p_ids[entry_num]['RowGUID']
+		for dict_id in self.project_dicts:
+			p_dict = self.project_dicts[dict_id]
+			p_dict['ProjectID'] = p_ids[dict_id]['ProjectID']
+			p_dict['RowGUID'] = p_ids[dict_id]['RowGUID']
 		return
 
 
-	def getIDsForCollectionDicts(self):
+	def __insertProjectUser(self):
+		query = """
+		INSERT INTO [ProjectUser] (
+			[LoginName],
+			[ProjectID]
+		)
+		SELECT ?, ue_temp.[ProjectID]
+		FROM [{0}] ue_temp
+		 -- GROUP BY ue_temp.[ProjectID]
+		;""".format(self.unique_projects_temptable)
+		querylog.info(query)
+		self.cur.execute(query, [self.user_id])
+		self.con.commit()
+		return
+
+
+	def insertCollectionProjects(self, specimens_list):
+		ids_list = []
+		
+		for specimen_dict in specimens_list:
+			if 'CollectionSpecimenID' in specimen_dict and 'ProjectID' in specimen_dict and len(specimen_dict['ProjectID']) > 0:
+				ids = [[specimen_dict['CollectionSpecimenID'], p_id] for p_id in specimen_dict['ProjectID']]
+				ids_list.extend(ids)
+		
+		
+		pagesize = 1000
+		
+		while len(ids_list) > 0:
+			values = []
+			cachedlist = ids_list[:pagesize]
+			del ids_list[:pagesize]
+			
+			placeholderstring = ', '.join(['(?, ?)' for _ in cachedlist])
+			
+			for valuelist in cachedlist:
+				values.extend(valuelist)
+				
+			query = """
+			INSERT INTO [CollectionProject] (
+				[CollectionSpecimenID], [ProjectID]
+			)
+			VALUES {0}
+			;""".format(placeholderstring)
+			
+			querylog.info(query)
+			#querylog.info(values)
+			self.cur.execute(query, values)
+			self.con.commit()
+		
+		return
+
+
+	def getIDsForProjectDicts(self):
 		query = """
 		SELECT 
-			p_temp.[entry_num],
+			p_temp.[@id],
 			pp.[ProjectID],
 			pp.[RowGUID]
 		FROM [ProjectProxy] pp
@@ -296,7 +382,7 @@ class ProjectInserter():
 			p_ids[row[0]]['ProjectID'] = row[1]
 			p_ids[row[0]]['RowGUID'] = row[2]
 		
-		return c_ids
+		return p_ids
 
 
 
@@ -305,7 +391,7 @@ class ProjectInserter():
 
 ########################################
 
-
+	'''
 	def __setExistingProjects(self):
 		query = """
 		UPDATE p_temp
@@ -320,6 +406,7 @@ class ProjectInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 
