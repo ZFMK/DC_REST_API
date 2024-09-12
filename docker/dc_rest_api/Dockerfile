@@ -35,4 +35,6 @@ ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini confi
 
 CMD /usr/bin/bash
 
+# CMD tail -f /dev/null
+
 EXPOSE $PYRAMID_PORT
