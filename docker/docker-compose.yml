@@ -10,6 +10,7 @@ services:
     ports:
      - "63312:3306"
   dc_rest_api:
+    build: ./dc_rest_api
     image: docker.leibniz-lib.de:5000/dc_rest_api
     env_file:
       - ./compose.env
