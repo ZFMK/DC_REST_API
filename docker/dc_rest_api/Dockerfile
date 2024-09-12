@@ -31,7 +31,7 @@ FROM build_app AS run_app
 ADD set_config.py ./dc_rest_api/set_config.py
 
 
-ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini config.ini && pserve production.ini
+ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini config.ini && python3 ./set_config.py production.ini.template production.ini && pserve production.ini
 
 CMD /usr/bin/bash
 

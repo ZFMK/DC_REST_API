@@ -1,6 +1,6 @@
 version: '3.4'
 services:
-  dc_api_session_db:
+  db:
     image: mysql:8
     volumes:
       - ./dc_rest_api/mysql_custom.cnf:/etc/mysql/conf.d/custom.cnf
@@ -16,7 +16,7 @@ services:
     ports:
       - "6561:6561"
     depends_on:
-      - dc_api_session_db
+      - db
 
 
 

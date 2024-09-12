@@ -35,6 +35,9 @@ class ConfigSetter():
 		'SMTP_PASSWORD': None,
 		'SMTP_PORT': None,
 		'DEVELOPERS_MAIL': None,
+		'PYRAMID_PORT': None,
+		'URL_SCHEME': None,
+		'URL_PREFIX': None
 		}
 	
 	
