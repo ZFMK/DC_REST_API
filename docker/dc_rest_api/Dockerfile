@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 AS build0
 
 WORKDIR /usr/src/app
 
@@ -18,12 +18,15 @@ RUN apt-get install -y \
   language-pack-de-base
 
 
+FROM build0 AS build_app
+
 # the portal
 RUN git clone -b main --single-branch https://github.com/ZFMK/DC_REST_API.git dc_rest_api && \
   cd dc_rest_api && \
   pip3 install -r requirements.txt && \
   python3 setup.py develop
 
+FROM build_app AS run_app
 
 ADD set_config.py ./dc_rest_api/set_config.py
 
