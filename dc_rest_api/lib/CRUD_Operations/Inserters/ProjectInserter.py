@@ -18,8 +18,8 @@ class ProjectInserter():
 		self.user_id = user_id
 		self.users_roles = users_roles
 		
-		self.temptable = 'project_temptable'
-		self.unique_projects_temptable = 'unique_p_temptable'
+		self.temptable = '#project_temptable'
+		self.unique_projects_temptable = '#unique_p_temptable'
 		
 		# set a minimum ProjectID for new projects to insert
 		self.min_project_id = 271176

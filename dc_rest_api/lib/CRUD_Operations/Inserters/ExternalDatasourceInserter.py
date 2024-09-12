@@ -20,8 +20,8 @@ class ExternalDatasourceInserter():
 		self.users_roles = users_roles
 		self.messages = []
 		
-		self.temptable = 'datasource_temptable'
-		self.unique_ed_temptable = 'unique_ed_temptable'
+		self.temptable = '#datasource_temptable'
+		self.unique_ed_temptable = '#unique_ed_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
