@@ -9,6 +9,11 @@ services:
       - ./compose.env
     ports:
      - "63312:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   dc_rest_api:
     build: ./dc_rest_api
     image: docker.leibniz-lib.de:5000/dc_rest_api
@@ -17,7 +22,8 @@ services:
     ports:
       - "6561:6561"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 
 

@@ -6,6 +6,11 @@ services:
       - /var/data/dc_rest_api/mysql_custom.cnf:/etc/mysql/conf.d/custom.cnf
     env_file:
       - ./compose.env
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - dc_rest_api_net
     deploy:
@@ -27,7 +32,8 @@ services:
     env_file:
       - ./compose.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     deploy:
       mode: replicated
       replicas: 1
