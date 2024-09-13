@@ -32,8 +32,8 @@ services:
     env_file:
       - ./compose.env
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+      #  condition: service_healthy
     deploy:
       mode: replicated
       replicas: 1
