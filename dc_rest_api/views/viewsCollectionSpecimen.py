@@ -29,6 +29,7 @@ class CollectionSpecimensViews():
 		self.request_params = RequestParams(self.request)
 		
 		self.messages = []
+		self.messages.extend(self.request_params.messages)
 		
 		self.userlogin = UserLogin(self.request)
 		self.credentials = self.request_params.credentials

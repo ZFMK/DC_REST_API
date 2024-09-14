@@ -6,7 +6,7 @@ import re
 class RequestParams():
 	def __init__(self, request):
 		self.request = request
-		
+		self.messages = []
 		self.json_body = {}
 		
 		self.read_request_params()
@@ -32,8 +32,15 @@ class RequestParams():
 						self.params_dict[key].extend(self.json_body[key])
 					else:
 						self.params_dict[key].append(self.json_body[key])
-		except:
-			raise ValueError('Can not parse json data')
+		except ValueError as e:
+			pudb.set_trace()
+			
+			if hasattr(e, 'lineno') and hasattr(e, 'colno') and hasattr(e, 'pos') and hasattr(e, 'msg'):
+				self.messages.append('Can not parse json data: line: {0}, column: {1}, position: {2}: {3}'.format(e.lineno, e.colno, e.pos, e.msg))
+			
+			else:
+				self.messages.append('Valid json data missing')
+			
 		return
 
 

@@ -26,6 +26,7 @@ class IndependentTablesInsert():
 		
 		self.uid = uid
 		self.users_roles = users_roles
+		self.messages = []
 
 
 	def insertIndependentTables(self):

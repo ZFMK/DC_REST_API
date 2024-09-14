@@ -18,6 +18,8 @@ class ProjectInserter():
 		self.user_id = user_id
 		self.users_roles = users_roles
 		
+		self.messages = []
+		
 		self.temptable = '#project_temptable'
 		self.unique_projects_temptable = '#unique_p_temptable'
 		
@@ -36,7 +38,6 @@ class ProjectInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(self.dc_db, self.schema)
-		self.messages = []
 
 
 	def insertProjectData(self, json_dicts = []):
