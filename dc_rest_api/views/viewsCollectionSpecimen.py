@@ -48,23 +48,27 @@ class CollectionSpecimensViews():
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
 		
-		jsonresponse = {
+		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
 		}
 		
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
-			return jsonresponse
+			return self.jsonresponse
 		
 		security = SecurityPolicy()
 		self.dc_db = security.get_mssql_connector(self.request)
 		if self.dc_db is None:
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
-			return jsonresponse
+			return self.jsonresponse
 		
-		referenced_json = ReferencedJSON(self.request_params.json_body)
-		referenced_json.flatten2Dicts()
+		try:
+			referenced_json = ReferencedJSON(self.request_params.json_body)
+			referenced_json.flatten2Dicts()
+		except:
+			self.messages.extend(referenced_json.messages)
+			return self.jsonresponse
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
@@ -72,22 +76,15 @@ class CollectionSpecimensViews():
 				cs_inserter.insertSpecimenData(self.request_params.json_body)
 			except:
 				self.messages.extend(cs_inserter.messages)
-				pudb.set_trace()
+			
+			referenced_json.insertFlattenedSubdicts()
+			cs_data = json.loads(json.dumps(self.request_params.json_body['CollectionSpecimens'], default = str))
+			self.jsonresponse['CollectionSpecimens'] = cs_data
 		
 		else:
 			self.messages.append('Error: no "CollectionSpecimens" array in json data')
 		
-		referenced_json.insertFlattenedSubdicts()
-		
-		cs_data = json.loads(json.dumps(self.request_params.json_body['CollectionSpecimens'], default = str))
-		
-		jsonresponse = {
-			'title': 'DC REST API CREATE CollectionSpecimens',
-			'messages': self.messages,
-			'CollectionSpecimens': cs_data
-		}
-		
-		return jsonresponse
+		return self.jsonresponse
 
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")

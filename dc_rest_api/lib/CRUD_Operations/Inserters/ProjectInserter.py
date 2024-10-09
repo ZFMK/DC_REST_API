@@ -28,6 +28,7 @@ class ProjectInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
+			{'colname': 'DatabaseURN'},
 			# do not add ProjectID as it should be set by comparison
 			#{'colname': 'ProjectID'},
 			#{'colname': 'CollectionSpecimenID'},
@@ -98,11 +99,12 @@ class ProjectInserter():
 		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
 		[CollectionSpecimenID] INT DEFAULT NULL,
 		[ProjectID] INT DEFAULT NULL,
+		[RowGUID] UNIQUEIDENTIFIER,
+		[DatabaseURN] NVARCHAR(500) COLLATE {1},
 		[Project] NVARCHAR(50) COLLATE {1} NOT NULL,
 		[ProjectURI] VARCHAR(255) COLLATE {1},
 		[StableIdentifierBase] VARCHAR(500) COLLATE {1},
 		[StableIdentifierTypeID] INT,
-		[RowGUID] UNIQUEIDENTIFIER,
 		[project_sha] VARCHAR(64) COLLATE {1},
 		PRIMARY KEY ([@id]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),

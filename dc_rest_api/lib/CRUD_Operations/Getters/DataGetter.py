@@ -26,12 +26,11 @@ class DataGetter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-			[row_num] INT IDENTITY,
 			[rowguid_to_get] uniqueidentifier,
-			PRIMARY KEY ([row_num]),
+			[DatabaseURN] NVARCHAR(500) COLLATE {1},
 			INDEX [rowguid_to_get_idx] ([rowguid_to_get])
 		) 
-		;""".format(self.get_temptable)
+		;""".format(self.get_temptable, self.collation)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
@@ -51,6 +50,17 @@ class DataGetter():
 			querylog.info(query)
 			self.cur.execute(query, cached_guids)
 			self.con.commit()
+		
+		return
+
+	def setDatabaseURN(self):
+		query = """
+		UPDATE [{0}]
+		SET [DatabaseURN] = ?
+		;""".format(self.get_temptable)
+		querylog.info(query)
+		self.cur.execute(query, [self.dc_db.db_URN])
+		self.con.commit()
 		
 		return
 

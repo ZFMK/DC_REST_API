@@ -82,13 +82,13 @@ class CollectionEventGetter(DataGetter):
 
 
 	def getData(self):
-		
+		self.setDatabaseURN()
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
-		g_temp.[row_num],
 		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
 		ce.[CollectionEventID],
 		ce.[CollectorsEventNumber],
 		IIF(g_temp.[WithholdDate] IS NULL, ce.[CollectionDate], NULL) AS [CollectionDate],

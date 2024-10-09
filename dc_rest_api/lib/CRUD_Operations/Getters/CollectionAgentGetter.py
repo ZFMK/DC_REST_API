@@ -90,12 +90,13 @@ class CollectionAgentGetter(DataGetter):
 
 
 	def getData(self):
+		self.setDatabaseURN()
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
-		g_temp.[row_num],
 		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
 		ca.[CollectionSpecimenID],
 		ca.[CollectorsName],
 		ca.[CollectorsSequence],

@@ -98,12 +98,13 @@ class CollectionSpecimenGetter(DataGetter):
 
 
 	def getData(self):
+		self.setDatabaseURN()
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT 
-		g_temp.[row_num],
 		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
 		cs.[CollectionSpecimenID],
 		cs.[CollectionEventID],
 		cs.[ExternalDatasourceID],
@@ -372,6 +373,9 @@ class CollectionSpecimenGetter(DataGetter):
 		
 		querylog.info(query)
 		self.cur.execute(query)
+		self.con.commit()
+		
+		self.setDatabaseURN()
 		
 		ce_getter.getData()
 		ce_getter.list2dict()

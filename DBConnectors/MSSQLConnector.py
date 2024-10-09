@@ -39,20 +39,26 @@ class MSSQLConnector():
 			self.connectionstring = mssqlparams.getConnectionString()
 			
 			self.databasename = database
+			self.server = server
 			self.collation = config.get('collation', 'Latin1_General_CI_AS')
 			
 		elif connectionstring is not None:
 			self.connectionstring = connectionstring
 			# read the database name from connectionstring and assign it to attribute self.databasename
-			matchobj = re.search('Database\=([^;]+)', connectionstring, re.I)
-			if matchobj is not None:
-				self.databasename = matchobj.groups()[0]
+			db_match = re.search('Database\=([^;]+)', connectionstring, re.I)
+			server_match = re.search('Server\=([^;]+)', connectionstring, re.I)
+			#dsn_match = re.search('DSN\=([^;]+)', connectionstring, re.I)
+			if db_match is not None and server_match is not None:
+				self.databasename = db_match.groups()[0]
+				self.server = server_match.groups()[0]
 				self.collation = config.get('collation', 'Latin1_General_CI_AS')
 			else:
-				raise Exception ('No database name given')
+				raise Exception ('Server address or database name not given')
 			
 		else:
 			raise Exception ('No database connection parameters given')
+		
+		self.db_URN = self.get_db_URN()
 		
 		self.con = None
 		self.cur = None
@@ -88,6 +94,19 @@ class MSSQLConnector():
 	def getConnection(self):
 		return self.con
 
+
+	def get_db_URN(self):
+		db_urn = 'URN:'
+		accr_pattern = re.compile(r'(\w{3,})\.diversityworkbench\.\w{2,}$', re.I)
+		accr_match = re.search(accr_pattern, self.server)
+		if accr_match:
+			db_urn += '{0}:'.format(accr_match.groups()[0])
+		else:
+			db_urn += '{0}/'.format(self.server)
+		
+		db_accr = self.databasename.replace('Diversity', '').replace('TaxonNames_', 'TN:').replace('Collection_', 'DC:').replace('Project_', 'P:').replace('Agent_', 'A:')
+		db_urn += '{0}'.format(db_accr)
+		return db_urn
 
 class MSSQLConnectionParams():
 	def __init__(self, 

@@ -33,7 +33,6 @@ class RequestParams():
 					else:
 						self.params_dict[key].append(self.json_body[key])
 		except ValueError as e:
-			pudb.set_trace()
 			
 			if hasattr(e, 'lineno') and hasattr(e, 'colno') and hasattr(e, 'pos') and hasattr(e, 'msg'):
 				self.messages.append('Can not parse json data: line: {0}, column: {1}, position: {2}: {3}'.format(e.lineno, e.colno, e.pos, e.msg))

@@ -91,13 +91,13 @@ class IdentificationGetter(DataGetter):
 		return identifications
 
 
-
 	def getData(self):
+		self.setDatabaseURN()
 		
 		query = """
 		SELECT
-		g_temp.[row_num],
 		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
 		i.[CollectionSpecimenID],
 		i.[IdentificationUnitID],
 		i.[IdentificationSequence],

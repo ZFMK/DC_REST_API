@@ -14,7 +14,8 @@ class ReferencedJSON():
 	def __init__(self, json_dicts):
 		
 		self.json_dicts = json_dicts
-		
+		self.messages = []
+
 		self.references = {
 			"Projects": "Projects", 
 			"Collection": "Collections",
@@ -48,6 +49,12 @@ class ReferencedJSON():
 			if key in self.json_dicts:
 				del self.json_dicts[key]
 
+	def __checkReferencedElementsAvailable(self, key):
+		if self.references[key] not in self.json_dicts:
+			self.messages.append('List of {0} is referenced in json file but not available in file'.format(self.references[key]))
+			raise ValueError
+
+
 
 	def __insertSubdicts(self, subdicts):
 		for subdict in subdicts:
@@ -58,6 +65,7 @@ class ReferencedJSON():
 					if key in self.references:
 						if isinstance(subdict[key], dict):
 							if '@id' in subdict[key] and len(subdict[key]) == 1:
+								self.__checkReferencedElementsAvailable(key)
 								for element in self.json_dicts[self.references[key]]:
 									if element['@id'] == subdict[key]['@id']:
 										subdict[key] = dict(element)
@@ -68,6 +76,7 @@ class ReferencedJSON():
 							for refdict in subdict[key]:
 								reference_solved = False
 								if '@id' in refdict and len(refdict) == 1:
+									self.__checkReferencedElementsAvailable(key)
 									for element in self.json_dicts[self.references[key]]:
 										if element['@id'] == refdict['@id']:
 											referenced_elements.append(dict(element))

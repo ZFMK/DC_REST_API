@@ -83,11 +83,12 @@ class CollectionProjectGetter(DataGetter):
 
 
 	def getData(self):
+		self.setDatabaseURN()
 		
 		query = """
 		SELECT
-		cp_temp.[row_num],
 		cp_temp.[rowguid_to_get] AS [RowGUID],
+		cp_temp.[DatabaseURN],
 		cp.[CollectionSpecimenID],
 		pp.[ProjectID],
 		pp.[Project],

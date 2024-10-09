@@ -23,6 +23,7 @@ class CollectionEventInserter():
 			#{'colname': 'CollectionSpecimenID'},
 			# do not add CollectionEventID as it should be set by comparison
 			#{'colname': 'CollectionEventID'},
+			{'colname': 'DatabaseURN'},
 			{'colname': 'CollectorsEventNumber'},
 			{'colname': 'CollectionDate'},
 			{'colname': 'CollectionDay'},
@@ -115,6 +116,7 @@ class CollectionEventInserter():
 		[CollectionSpecimenID] INT,
 		[CollectionEventID] INT DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER,
+		[DatabaseURN] NVARCHAR(500) COLLATE {1},
 		[CollectorsEventNumber] VARCHAR(50) COLLATE {1},
 		[CollectionDate] DATETIME,
 		[CollectionDay] TINYINT,

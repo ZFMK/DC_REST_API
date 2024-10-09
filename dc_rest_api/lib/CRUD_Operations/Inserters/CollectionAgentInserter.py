@@ -20,6 +20,7 @@ class CollectionAgentInserter():
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'CollectorsName', 'None allowed': False},
 			{'colname': 'CollectorsSequence'},
+			{'colname': 'DatabaseURN'},
 			{'colname': 'CollectorsNumber'},
 			{'colname': 'Notes'},
 			{'colname': 'DataWithholdingReason'}
@@ -71,6 +72,7 @@ class CollectionAgentInserter():
 		[CollectorsName] VARCHAR(255) COLLATE {1} NOT NULL,
 		[CollectorsSequence] DATETIME2 DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+		[DatabaseURN] NVARCHAR(500) COLLATE {1},
 		[CollectorsNumber] NVARCHAR(50) COLLATE {1},
 		[Notes] NVARCHAR(MAX) COLLATE {1},
 		[DataWithholdingReason] VARCHAR(255) COLLATE {1},

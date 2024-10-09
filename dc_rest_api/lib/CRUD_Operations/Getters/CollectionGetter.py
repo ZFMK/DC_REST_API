@@ -80,11 +80,12 @@ class CollectionGetter(DataGetter):
 
 
 	def getData(self):
+		self.setDatabaseURN()
 		
 		query = """
 		SELECT
-		g_temp.[row_num],
 		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
 		c.[CollectionID],
 		c.[CollectionName],
 		c.[CollectionAcronym],
