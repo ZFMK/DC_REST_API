@@ -44,7 +44,7 @@ class DataGetter():
 			placeholders = ['(?)' for _ in cached_guids]
 			
 			query = """
-			INSERT INTO [{0}]
+			INSERT INTO [{0}] ([rowguid_to_get])
 			VALUES {1}
 			""".format(self.get_temptable, ', '.join(placeholders))
 			querylog.info(query)
