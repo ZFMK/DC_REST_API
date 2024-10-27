@@ -45,8 +45,8 @@ class MSSQLConnector():
 		elif connectionstring is not None:
 			self.connectionstring = connectionstring
 			# read the database name from connectionstring and assign it to attribute self.databasename
-			db_match = re.search('Database\=([^;]+)', connectionstring, re.I)
-			server_match = re.search('Server\=([^;]+)', connectionstring, re.I)
+			db_match = re.search(r'Database=([^;]+)', connectionstring, re.I)
+			server_match = re.search(r'Server=([^;]+)', connectionstring, re.I)
 			#dsn_match = re.search('DSN\=([^;]+)', connectionstring, re.I)
 			if db_match is not None and server_match is not None:
 				self.databasename = db_match.groups()[0]

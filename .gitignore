@@ -7,6 +7,7 @@ production.ini
 *.env
 **/.idea
 venv/
+.venv/
 out.json
 examples/intern
 *.*~
