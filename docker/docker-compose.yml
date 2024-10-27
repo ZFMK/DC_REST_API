@@ -20,7 +20,7 @@ services:
     env_file:
       - ./compose.env
     ports:
-      - "6561:6561"
+      - "${PYRAMID_PORT}:${PYRAMID_PORT}"
     depends_on:
       db:
         condition: service_healthy

@@ -26,7 +26,7 @@ services:
   dc_rest_api:
     image: docker.leibniz-lib.de:5000/dc_rest_api
     ports:
-      - "6561:6561"
+      - "${PYRAMID_PORT}:${PYRAMID_PORT}"
     networks:
       - dc_rest_api_net
     env_file:
