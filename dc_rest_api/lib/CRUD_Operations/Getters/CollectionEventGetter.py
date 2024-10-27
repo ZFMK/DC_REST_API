@@ -181,7 +181,9 @@ class CollectionEventGetter(DataGetter):
 		LEFT JOIN [CollectionSpecimen] cs 
 		ON cs.[CollectionEventID] = ce.[CollectionEventID]
 		{1}
-		WHERE ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '' {2}
+		WHERE (ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '')
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
@@ -198,7 +200,9 @@ class CollectionEventGetter(DataGetter):
 		LEFT JOIN [CollectionSpecimen] cs 
 		ON cs.[CollectionEventID] = ce.[CollectionEventID]
 		{1}
-		WHERE ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '' {2}
+		WHERE (ce.[DataWithholdingReason] IS NOT NULL AND ce.[DataWithholdingReason] != '')
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)

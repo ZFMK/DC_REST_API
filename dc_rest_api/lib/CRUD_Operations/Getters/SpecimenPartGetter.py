@@ -158,7 +158,9 @@ class SpecimenPartGetter(DataGetter):
 		ON csp.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [CollectionSpecimen] cs ON csp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
-		WHERE csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '' {2}
+		WHERE (csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '') 
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
@@ -174,7 +176,9 @@ class SpecimenPartGetter(DataGetter):
 		ON csp.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [CollectionSpecimen] cs ON csp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
-		WHERE csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '' {2}
+		WHERE (csp.[DataWithholdingReason] IS NOT NULL AND csp.[DataWithholdingReason] != '') 
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)

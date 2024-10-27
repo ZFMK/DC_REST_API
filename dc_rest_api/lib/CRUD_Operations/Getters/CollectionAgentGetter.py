@@ -148,7 +148,9 @@ class CollectionAgentGetter(DataGetter):
 		ON ca.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [CollectionSpecimen] cs ON ca.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
-		WHERE ca.[DataWithholdingReason] IS NOT NULL AND ca.[DataWithholdingReason] != '' {2}
+		WHERE (ca.[DataWithholdingReason] IS NOT NULL AND ca.[DataWithholdingReason] != '')
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
@@ -164,7 +166,9 @@ class CollectionAgentGetter(DataGetter):
 		ON ca.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [CollectionSpecimen] cs ON ca.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
-		WHERE ca.[DataWithholdingReason] IS NOT NULL AND ca.[DataWithholdingReason] != '' {2}
+		WHERE (ca.[DataWithholdingReason] IS NOT NULL AND ca.[DataWithholdingReason] != '')
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)

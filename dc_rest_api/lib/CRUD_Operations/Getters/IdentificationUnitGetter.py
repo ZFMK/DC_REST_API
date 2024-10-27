@@ -160,7 +160,9 @@ class IdentificationUnitGetter(DataGetter):
 		ON iu.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [CollectionSpecimen] cs ON iu.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
-		WHERE iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '' {2}
+		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '') 
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
@@ -176,7 +178,9 @@ class IdentificationUnitGetter(DataGetter):
 		ON iu.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [CollectionSpecimen] cs ON iu.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
-		WHERE iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '' {2}
+		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '') 
+		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
+		{2}
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
