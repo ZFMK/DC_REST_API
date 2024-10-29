@@ -25,7 +25,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.fieldname = fieldname
 		
 		self.users_project_ids = users_project_ids
-		self.get_temptable = '#get_iua_temptable'
+		self.get_temptable = '#get_iuam_temptable'
 		
 		amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
 		self.amp_filter_temptable = amp_filters.amp_filter_temptable
@@ -34,39 +34,41 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 
 
-	def getByPrimaryKeys(self, iua_ids):
+	def getByPrimaryKeys(self, iuam_ids):
 		# does this make sense here when the number of IDs is rapidly increasing with every sub table of IdentificationUnitAnalysis?
 		
 		self.createGetTempTable()
 		
 		batchsize = 400
-		while len(iua_ids) > 0:
-			cached_ids = iua_ids[:batchsize]
-			del iua_ids[:batchsize]
-			placeholders = ['(?, ?, ?, ?, ?)' for _ in cached_ids]
+		while len(iuam_ids) > 0:
+			cached_ids = iuam_ids[:batchsize]
+			del iuam_ids[:batchsize]
+			placeholders = ['(?, ?, ?, ?, ?, ?)' for _ in cached_ids]
 			values = []
 			for ids_list in cached_ids:
 				values.extend(ids_list)
 			
 			query = """
-			DROP TABLE IF EXISTS [#iua_pks_to_get_temptable]
+			DROP TABLE IF EXISTS [#iuam_pks_to_get_temptable]
 			"""
 			querylog.info(query)
 			self.cur.execute(query)
 			self.con.commit()
 		
 			query = """
-			CREATE TABLE [#iua_pks_to_get_temptable] (
+			CREATE TABLE [#iuam_pks_to_get_temptable] (
 				[CollectionSpecimenID] INT NOT NULL,
 				[IdentificationUnitID] INT NOT NULL,
-				[SpecimenPartID] INT DEFAULT NULL,
 				[AnalysisID] INT NOT NULL,
-				[AnalysisNumber] NVARCHAR(50) NOT NULL COLLATE {0}
+				[AnalysisNumber] NVARCHAR(50) NOT NULL COLLATE {0},
+				[MethodID] INT NOT NULL,
+				[MethodMarker] NVARCHAR(50) NOT NULL COLLATE {0},
 				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
-				INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
 				INDEX [AnalysisID_idx] ([AnalysisID]),
-				INDEX [AnalysisNumber_idx] ([AnalysisNumber])
+				INDEX [AnalysisNumber_idx] ([AnalysisNumber]),
+				INDEX [MethodID_idx] ([MethodID]),
+				INDEX [MethodMarker_idx] ([MethodMarker])
 			)
 			;""".format(self.collation)
 			querylog.info(query)
@@ -74,12 +76,13 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 			self.con.commit()
 			
 			query = """
-			INSERT INTO [#iua_pks_to_get_temptable] (
+			INSERT INTO [#iuam_pks_to_get_temptable] (
 			[CollectionSpecimenID],
 			[IdentificationUnitID],
-			[SpecimenPartID],
 			[AnalysisID],
-			[AnalysisNumber]
+			[AnalysisNumber],
+			[MethodID],
+			[MethodMarker]
 			)
 			VALUES {0}
 			""".format(', '.join(placeholders))
@@ -93,10 +96,11 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 			INNER JOIN [#iua_pks_to_get_temptable] pks
 			ON pks.[CollectionSpecimenID] = iua.[CollectionSpecimenID]
 			AND pks.[IdentificationUnitID] = iua.[IdentificationUnitID]
-			AND (pks.[SpecimenPartID] = iua.[SpecimenPartID] OR pks.[SpecimenPartID] IS NULL AND iua.[SpecimenPartID] IS NULL)
 			AND pks.[AnalysisID] = iua.[AnalysisID]
-			AND pks.[AnalysisNumber] = iua.[AnalysisNumber]
-			;""".format(self.get_temptable)
+			AND pks.[AnalysisNumber] = iua.[AnalysisNumber] COLLATE {1}
+			AND pks.[MethodID] = iuamp.[MethodID]
+			AND pks.[MethodMarker] = iuamp.[MethodMarker] COLLATE {1}
+			;""".format(self.get_temptable, self.collation)
 			querylog.info(query)
 			self.cur.execute(query)
 			self.con.commit()
@@ -104,9 +108,9 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		
 		
 		
-		identificationunitanalyses = self.getData()
+		iuams = self.getData()
 		
-		return identificationunitanalyses
+		return iuams
 
 
 	def getByRowGUIDs(self, row_guids = []):
@@ -118,47 +122,53 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		
 		
 		
-		identificationunitanalyses = self.getData()
+		iuams = self.getData()
 		
-		return identificationunitanalyses
+		return iuams
 
 
 
-	def create_analyses_temptable(self):
+	def create_iuam_temptable(self):
 		query = """
-		DROP TABLE IF EXISTS [#temp_analysis_ids]
+		DROP TABLE IF EXISTS [#temp_iuam_ids]
 		;"""
 		self.cur.execute(query)
 		self.con.commit()
 		
 		query = """
-		CREATE TABLE [#temp_analysis_ids] (
-			[analysis_pk] INT IDENTITY PRIMARY KEY,
+		CREATE TABLE [#temp_iuam_ids] (
+			[method_pk] INT IDENTITY PRIMARY KEY,
 			[RowGUID] uniqueidentifier,
 			[CollectionSpecimenID] INT NOT NULL,
 			[IdentificationUnitID] INT NOT NULL,
 			[SpecimenPartID] INT NOT NULL,
 			[AnalysisID] INT NOT NULL,
 			[AnalysisNumber] NVARCHAR(50) NOT NULL COLLATE {0},
+			[MethodID] INT NOT NULL,
+			[MethodMarker] NVARCHAR(50) NOT NULL COLLATE {0},
 			INDEX [idx_RowGUID] ([RowGUID]),
 			INDEX [idx_CollectionSpecimenID] ([CollectionSpecimenID]),
 			INDEX [idx_IdentificationUnitID] ([IdentificationUnitID]),
 			INDEX [idx_SpecimenPartID] ([SpecimenPartID]),
 			INDEX [idx_AnalysisID] ([AnalysisID]),
-			INDEX [idx_AnalysisNumber] ([AnalysisNumber])
+			INDEX [idx_AnalysisNumber] ([AnalysisNumber]),
+			INDEX [MethodID_idx] ([MethodID]),
+			INDEX [MethodMarker_idx] ([MethodMarker])
 		)
 		;""".format(self.collation)
 		self.cur.execute(query)
 		self.con.commit()
 		
 		query = """
-		INSERT INTO [#temp_analysis_ids] (
+		INSERT INTO [#temp_iuam_ids] (
 			[RowGUID],
 			[CollectionSpecimenID],
 			[IdentificationUnitID],
 			[SpecimenPartID],
 			[AnalysisID],
-			[AnalysisNumber]
+			[AnalysisNumber],
+			[MethodID],
+			[MethodMarker]
 		)
 		SELECT 
 		DISTINCT
@@ -169,8 +179,8 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		iua.[AnalysisID],
 		iua.[AnalysisNumber]
 		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-			ON (g_temp.[rowguid_to_get] = iua.[RowGUID])
+		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
+			ON (g_temp.[rowguid_to_get] = iuam.[RowGUID])
 		INNER JOIN [{1}] amp_filter
 		ON amp_filter.AnalysisID = iua.AnalysisID
 		;""".format(self.get_temptable, self.amp_filter_temptable)
