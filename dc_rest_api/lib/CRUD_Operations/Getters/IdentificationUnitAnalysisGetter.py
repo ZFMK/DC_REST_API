@@ -147,6 +147,8 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 	servers capacity
 	The filtering is configured in AnalysisMethodParameterFilterIDs. AnalysisMethodParameterFilterIDs also generates a temporary table with the IDs that is used here
 	to join against the Method and Parameter tables.
+	Analyses, Methods and Parameters are requested separately because otherwise with a big join data like AnalysisResult are selected in multiple rows
+	and thus cause a large overhead of data transfer
 	"""
 	
 	def __init__(self, dc_db, fieldname, users_project_ids = []):
@@ -384,7 +386,11 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		DISTINCT
 		a_temp.analysis_pk,
 		a_temp.[RowGUID],
-		iua.AnalysisNumber,
+		a_temp.CollectionSpecimenID,
+		a_temp.IdentificationUnitID,
+		a_temp.SpecimenPartID,
+		a_temp.[AnalysisID],
+		a_temp.AnalysisNumber,
 		iua.Notes AS AnalysisInstanceNotes,
 		iua.ExternalAnalysisURI,
 		iua.ResponsibleName,
@@ -398,10 +404,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		FROM [#temp_analysis_ids] a_temp
 		INNER JOIN [IdentificationUnitAnalysis] iua
 		ON (
-			a_temp.CollectionSpecimenID = iua.CollectionSpecimenID 
-			AND a_temp.IdentificationUnitID = iua.IdentificationUnitID
-			AND a_temp.AnalysisID = iua.AnalysisID
-			AND a_temp.AnalysisNumber = iua.AnalysisNumber COLLATE DATABASE_DEFAULT
+			a_temp.[RowGUID] = iua.[RowGUID]
 		)
 		INNER JOIN [Analysis] a
 		ON iua.AnalysisID = a.AnalysisID
@@ -419,28 +422,97 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		
 		self.analyses_dict = {}
 		
-		analyses = []
+		self.analyses = []
 		for row in rows:
-			analyses.append(dict(zip(columns, row)))
+			self.analyses.append(dict(zip(columns, row)))
 		
-		for analysis in analyses:
-			analysis_pk = analysis['analysis_pk']
-			rowguid = analysis['RowGUID']
+		for analysis in self.analyses:
+			specimen_id = analysis['CollectionSpecimenID']
+			iu_id = analysis['IdentificationUnitID']
+			#part_id = analysis['SpecimenPartID']
 			
-			self.analyses_dict[analysis_pk] = {}
+			if specimen_id not in self.analyses_dict:
+				self.analyses_dict[specimen_id] = {}
 			
+			self.analyses_dict[specimen_id][iu_id] = analysis
+			
+			'''
 			for key in analysis:
-				if key not in ['RowGUID', 'analysis_pk']:
-					self.analyses_dict[analysis_pk][key] = analysis[key]
-			
-			if idshash not in self.keys_dict:
-				self.keys_dict[idshash] = {}
-			self.keys_dict[idshash][analysis_pk] = {}
+				if key not in ['CollectionSpecimenID']:
+					self.analyses_dict['CollectionSpecimenID'][key] = analysis[key]
+			'''
 		
 		return
 
 
-
+	def set_methods(self):
+		query = """
+		SELECT 
+		DISTINCT
+		m_temp.method_pk,
+		m_temp.analysis_pk,
+		m_temp.[idshash] AS [_id],
+		iuam.AnalysisID,
+		iuam.AnalysisNumber,
+		iuam.MethodID,
+		iuam.MethodMarker,
+		m.DisplayText AS MethodDisplay,
+		m.Description AS MethodDescription,
+		m.Notes AS MethodTypeNotes
+		FROM [#temp_method_ids] m_temp
+		INNER JOIN [#temp_analysis_ids] a_temp
+		ON a_temp.analysis_pk = m_temp.analysis_pk
+		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
+		ON (
+			a_temp.CollectionSpecimenID = iuam.CollectionSpecimenID 
+			AND m_temp.IdentificationUnitID = iuam.IdentificationUnitID
+			AND m_temp.AnalysisID = iuam.AnalysisID
+			AND m_temp.AnalysisNumber = iuam.AnalysisNumber COLLATE DATABASE_DEFAULT
+			AND m_temp.MethodID = iuam.MethodID
+			AND m_temp.MethodMarker = iuam.MethodMarker COLLATE DATABASE_DEFAULT
+		)
+		INNER JOIN [MethodForAnalysis] mfa
+		ON (
+			iuam.MethodID = mfa.MethodID
+			AND iuam.AnalysisID = mfa.AnalysisID
+		)
+		INNER JOIN [Method] m
+		ON mfa.MethodID = m.MethodID
+		ORDER BY m_temp.[idshash], iuam.AnalysisID, iuam.AnalysisNumber, iuam.MethodID, iuam.MethodMarker
+		;"""
+		
+		log_query.info(query)
+		
+		self.cur.execute(query)
+		columns = [column[0] for column in self.cur.description]
+		
+		rows = self.cur.fetchall()
+		
+		self.methods_dict = {}
+		
+		methods = []
+		for row in rows:
+			methods.append(dict(zip(columns, row)))
+		
+		for method in methods:
+			idshash = method['_id']
+			analysis_pk = method['analysis_pk']
+			method_pk = method['method_pk']
+			
+			self.methods_dict[method_pk] = {}
+			
+			self.methods_dict[method_pk]['MethodDisplay'] = method['MethodDisplay']
+			self.methods_dict[method_pk]['MethodDescription'] = method['MethodDescription']
+			
+			'''
+			for key in method:
+				if key not in ('_id', 'method_pk', 'analysis_pk', 'AnalysisID', 'AnalysisNumber'):
+					self.methods_dict[method_pk][key] = method[key]
+			'''
+			
+			self.keys_dict[idshash][analysis_pk][method_pk] = {}
+			
+		return
 
 
 
