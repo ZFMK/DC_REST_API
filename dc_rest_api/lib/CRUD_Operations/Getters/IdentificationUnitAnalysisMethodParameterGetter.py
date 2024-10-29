@@ -199,6 +199,69 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		self.con.commit()
 
 
+	def set_parameters(self):
+		query = """
+		SELECT 
+		DISTINCT
+		ROW_NUMBER() OVER(ORDER BY a_temp.[idshash], a_temp.[analysis_pk],m_temp.[method_pk], iuamp.ParameterID) AS parameter_pk,
+		iuamp.[RowGUID],
+		iuamp.ParameterID,
+		iuamp.[Value] AS ParameterValue,
+		p.DisplayText AS ParameterDisplay -- ,
+		 -- p.Description AS ParameterDescription,
+		 -- p.Notes AS ParameterNotes
+		FROM [#temp_iuamp_ids] p_temp
+		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
+		ON (
+			p_temp.[RowGUID] = iuamp.[RowGUID]
+		)
+		INNER JOIN [#temp_amp_filter] amp_filter
+		ON (
+			amp_filter.AnalysisID = iuamp.AnalysisID
+			AND amp_filter.MethodID = iuamp.MethodID
+			AND amp_filter.ParameterID = iuamp.ParameterID
+		)
+		INNER JOIN [Parameter] p
+		ON (
+			p.MethodID = iuamp.MethodID
+			AND p.ParameterID = iuamp.ParameterID
+		)
+		;"""
+		
+		log_query.info(query)
+		
+		self.cur.execute(query)
+		columns = [column[0] for column in self.cur.description]
+		
+		rows = self.cur.fetchall()
+		
+		self.parameters_dict = {}
+		
+		parameters = []
+		for row in rows:
+			parameters.append(dict(zip(columns, row)))
+		
+		for parameter in parameters:
+			idshash = parameter['_id']
+			parameter_pk = parameter['parameter_pk']
+			method_pk = parameter['method_pk']
+			analysis_pk = parameter['analysis_pk']
+			
+			self.parameters_dict[parameter_pk] = []
+			
+			# use only the name and the value of each parameter
+			# it is easier to put them into self.iuanalyses_dict later when they are provided as list
+			self.parameters_dict[parameter_pk] = [parameter['ParameterDisplay'], parameter['ParameterValue']]
+			
+			'''
+			for key in parameter:
+				if key not in ('_id', 'method_pk', 'analysis_pk', 'parameter_pk', 'AnalysisID', 'AnalysisNumber', 'MethodID', 'MethodMarker'):
+					self.parameters_dict[parameter_pk][key] = parameter[key]
+			'''
+			
+			self.keys_dict[idshash][analysis_pk][method_pk][parameter_pk] = {}
+			
+		return
 
 
 
@@ -287,13 +350,13 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT iua.[RowGUID]
+		SELECT iuamp.[RowGUID]
 		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON iua.RowGUID = g_temp.[rowguid_to_get]
+		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
+		ON iuamp.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [IdentificationUnit] iu
-		ON iu.[CollectionSpecimenID] = iua.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iua.[IdentificationUnitID]
-		INNER JOIN [CollectionSpecimen] cs ON iua.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		ON iu.[CollectionSpecimenID] = iuamp.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iuamp.[IdentificationUnitID]
+		INNER JOIN [CollectionSpecimen] cs ON iuamp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
 		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '')
 		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
@@ -309,10 +372,10 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		query = """
 		DELETE g_temp
 		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON iua.RowGUID = g_temp.[rowguid_to_get]
+		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
+		ON iuamp.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [IdentificationUnit] iu
-		ON iu.[CollectionSpecimenID] = iua.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iua.[IdentificationUnitID]
+		ON iu.[CollectionSpecimenID] = iuamp.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iuamp.[IdentificationUnitID]
 		INNER JOIN [CollectionSpecimen] cs ON iua.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
 		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '')
