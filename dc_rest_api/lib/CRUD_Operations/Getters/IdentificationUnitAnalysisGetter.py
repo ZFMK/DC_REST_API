@@ -8,6 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
+from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodGetter import IdentificationUnitAnalysisMethodGetter
+
 
 class IdentificationUnitAnalysisGetter(DataGetter):
 	"""
@@ -19,7 +21,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = []):
+	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
 		DataGetter.__init__(self, dc_db)
 		
 		self.fieldname = fieldname
@@ -27,15 +29,24 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_iua_temptable'
 		
-		amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
-		self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		self.amp_filter_temptable = amp_filter_temptable
+		if self.amp_filter_temptable is None:
+			amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
+			self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		
+		# there is no withhold in any of the iua tables, but in CollectionSpecimen and IdentificationUnit
+		# so it must be checked if the data are allowed when only the subtables of IdentificationUnit are requested
+		# the withhold_set_before flag shows whether the withhold has been checked in a parent class or not
+		
+		self.withhold_set_before = withhold_set_before
 		
 		self.withholded = []
 
 
 
 	def getByPrimaryKeys(self, iua_ids):
-		# does this make sense here when the number of IDs is rapidly increasing with every sub table of IdentificationUnitAnalysis?
+		# does this make sense here when the number of IDs is rapidly increasing with every 
+		# sub table of IdentificationUnitAnalysis?
 		
 		self.createGetTempTable()
 		
@@ -101,9 +112,6 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		
-		
-		
 		identificationunitanalyses = self.getData()
 		
 		return identificationunitanalyses
@@ -115,81 +123,27 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.createGetTempTable()
 		self.fillGetTempTable()
 		
-		
-		
-		
 		identificationunitanalyses = self.getData()
 		
 		return identificationunitanalyses
 
 
 
-	def create_analyses_temptable(self):
-		query = """
-		DROP TABLE IF EXISTS [#temp_analysis_ids]
-		;"""
-		self.cur.execute(query)
-		self.con.commit()
+	def getData(self):
+		self.setDatabaseURN()
+		if self.withhold_set_before is not True:
+			self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		CREATE TABLE [#temp_analysis_ids] (
-			[analysis_pk] INT IDENTITY PRIMARY KEY,
-			[RowGUID] uniqueidentifier,
-			[CollectionSpecimenID] INT NOT NULL,
-			[IdentificationUnitID] INT NOT NULL,
-			[SpecimenPartID] INT NOT NULL,
-			[AnalysisID] INT NOT NULL,
-			[AnalysisNumber] NVARCHAR(50) NOT NULL COLLATE {0},
-			INDEX [idx_RowGUID] ([RowGUID]),
-			INDEX [idx_CollectionSpecimenID] ([CollectionSpecimenID]),
-			INDEX [idx_IdentificationUnitID] ([IdentificationUnitID]),
-			INDEX [idx_SpecimenPartID] ([SpecimenPartID]),
-			INDEX [idx_AnalysisID] ([AnalysisID]),
-			INDEX [idx_AnalysisNumber] ([AnalysisNumber])
-		)
-		;""".format(self.collation)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		INSERT INTO [#temp_analysis_ids] (
-			[RowGUID],
-			[CollectionSpecimenID],
-			[IdentificationUnitID],
-			[SpecimenPartID],
-			[AnalysisID],
-			[AnalysisNumber]
-		)
 		SELECT 
 		DISTINCT
-		iua.[RowGUID],
-		iua.[CollectionSpecimenID],
-		iua.[IdentificationUnitID],
-		iua.[SpecimenPartID],
+		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
+		iua.CollectionSpecimenID,
+		iua.IdentificationUnitID,
+		iua.SpecimenPartID,
 		iua.[AnalysisID],
-		iua.[AnalysisNumber]
-		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-			ON (g_temp.[rowguid_to_get] = iua.[RowGUID])
-		INNER JOIN [{1}] amp_filter
-		ON amp_filter.AnalysisID = iua.AnalysisID
-		;""".format(self.get_temptable, self.amp_filter_temptable)
-		
-		self.cur.execute(query)
-		self.con.commit()
-
-
-	def set_analyses(self):
-		query = """
-		SELECT 
-		DISTINCT
-		a_temp.analysis_pk,
-		a_temp.[RowGUID],
-		a_temp.CollectionSpecimenID,
-		a_temp.IdentificationUnitID,
-		a_temp.SpecimenPartID,
-		a_temp.[AnalysisID],
-		a_temp.AnalysisNumber,
+		iua.AnalysisNumber,
 		iua.Notes AS AnalysisInstanceNotes,
 		iua.ExternalAnalysisURI,
 		iua.ResponsibleName,
@@ -200,131 +154,48 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		a.Description AS AnalysisDescription,
 		a.MeasurementUnit,
 		a.Notes AS AnalysisTypeNotes
-		FROM [#temp_analysis_ids] a_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON (
-			a_temp.[RowGUID] = iua.[RowGUID]
-		)
-		INNER JOIN [Analysis] a
-		ON iua.AnalysisID = a.AnalysisID
-		ORDER BY a_temp.analysis_pk, a_temp.[idshash], iua.AnalysisID, iua.AnalysisNumber
-		;"""
-		
-		log_query.debug(query)
-		
-		self.cur.execute(query)
-		columns = [column[0] for column in self.cur.description]
-		
-		rows = self.cur.fetchall()
-		
-		self.keys_dict = {}
-		
-		self.analyses_dict = {}
-		
-		analyses = []
-		for row in rows:
-			analyses.append(dict(zip(columns, row)))
-		
-		for analysis in analyses:
-			specimen_id = analysis['CollectionSpecimenID']
-			iu_id = analysis['IdentificationUnitID']
-			# should Displaytext be used here instead of AnalysisID?
-			analysis_id = analysis['AnalysisID']
-			analysis_number = analysis['AnalysisNumber']
-			#part_id = analysis['SpecimenPartID']
-			
-			if specimen_id not in self.analyses_dict:
-				self.analyses_dict[specimen_id] = {}
-			if iu_id not in self.analyses_dict[specimen_id]:
-				self.analyses_dict[specimen_id][iu_id] = {}
-			if analysis_id not in self.analyses_dict[specimen_id][iu_id]:
-				self.analyses_dict[specimen_id][iu_id][analysis_id] = {}
-			if analysis_number not in self.analyses_dict[specimen_id][iu_id][analysis_id]:
-				self.analyses_dict[specimen_id][iu_id][analysis_id][analysis_number] = {}
-			
-			self.analyses_dict[specimen_id][iu_id][analysis_id][analysis_number] = analysis
-			
-			
-			'''
-			for key in analysis:
-				if key not in ['CollectionSpecimenID']:
-					self.analyses_dict['CollectionSpecimenID'][key] = analysis[key]
-			'''
-		
-		return
-
-
-	def getData(self):
-		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
-		
-		self.create_analyses_temptable()
-		self.create_methods_temptable()
-		
-		
-
-
-
-
-
-
-
-
-
-
-	def 
-		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
-		
-		query = """
-		SELECT
-		g_temp.[rowguid_to_get] AS [RowGUID],
-		g_temp.[DatabaseURN],
-		iua.[CollectionSpecimenID],
-		iua.[IdentificationUnitID],
-		iua.[SpecimenPartID],
-		iua.[AnalysisID],
-		iua.[AnalysisNumber],
-		iua.[RowGUID],
-		
-		iua.[AnalysisResult],
-		iua.[ExternalAnalysisURI],
-		iua.[ResponsibleName],
-		iua.[AnalysisDate],
-		iua.[Notes],
-		
-		
-		
-		
 		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON iua.[RowGUID] = g_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
+			ON g_temp.[rowguid_to_get] = iua.[RowGUID]
+		INNER JOIN [Analysis] a
+			ON iua.AnalysisID = a.AnalysisID
+		INNER JOIN [{1}] amp_filter
+			ON amp_filter.AnalysisID = iua.AnalysisID
+		ORDER BY iua.CollectionSpecimenID, iua.IdentificationUnitID, iua.AnalysisID, iua.AnalysisNumber
+		;""".format(self.get_temptable, self.amp_filter_temptable)
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.iu_rows = self.cur.fetchall()
+		self.iua_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		self.setChildIdentifications()
+		self.setChildMethods()
 		
-		return self.iu_list
+		return self.iua_list
 
 
 	def rows2list(self):
-		self.iu_list = []
-		for row in self.iu_rows:
-			self.iu_list.append(dict(zip(self.columns, row)))
+		self.iua_list = []
+		for row in self.iua_rows:
+			self.iua_list.append(dict(zip(self.columns, row)))
 		return
 
 
 	def list2dict(self):
-		self.iu_dict = {}
-		for element in self.iu_list:
-			if element['CollectionSpecimenID'] not in self.iu_dict:
-				self.iu_dict[element['CollectionSpecimenID']] = {}
-				
-			self.iu_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = element 
+		self.iua_dict = {}
+		for element in self.iua_list:
+			
+			if element['CollectionSpecimenID'] not in self.iua_dict:
+				self.iua_dict[element['CollectionSpecimenID']] = {}
+			if element['IdentificationUnitID'] not in self.iua_dict[element['CollectionSpecimenID']]:
+				self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+			# None can be used as key
+			if element['SpecimenPartID'] not in self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
+				self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = {}
+			if element['AnalysisID'] not in self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']]:
+				self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']][element['AnalysisID']] = {}
+			
+			self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']][element['AnalysisID']][element['AnalysisNumber']] = element 
 		
 		return
 
@@ -378,34 +249,43 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		return withholded
 
 
-	def setChildIdentifications(self):
+	def setChildMethods(self):
 		
-		i_getter = IdentificationGetter(self.dc_db, self.users_project_ids)
-		i_getter.createGetTempTable()
+		iuam_getter = IdentificationUnitAnalysisMethodGetter(self.dc_db, self.fieldname, self.users_project_ids, self.amp_filter_temptable)
+		iuam_getter.createGetTempTable()
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT i.[RowGUID]
-		FROM [IdentificationUnit] iu
-		INNER JOIN [Identification] i
-		ON iu.[CollectionSpecimenID] = i.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = i.[IdentificationUnitID]
-		INNER JOIN [{1}] rg_temp
-		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(i_getter.get_temptable, self.get_temptable)
+		SELECT iuam.[RowGUID]
+		FROM [IdentificationUnitAnalysis] iua
+		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
+		ON iua.[CollectionSpecimenID] = iuam.[CollectionSpecimenID] AND iua.[IdentificationUnitID] = iuam.[IdentificationUnitID]
+		AND iua.[AnalysisID] = iuam.[AnalysisID] AND iua.[AnalysisNumber] = iuam.[AnalysisNumber]
+		INNER JOIN [{1}] amp_filter
+			ON amp_filter.AnalysisID = iuam.AnalysisID AND amp_filter.MethodID = iuam.MethodID
+		INNER JOIN [{2}] rg_temp
+		ON iua.[RowGUID] = rg_temp.[rowguid_to_get]
+		;""".format(iuam_getter.get_temptable, self.amp_filter_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
 		
-		i_getter.getData()
-		i_getter.list2dict()
+		iuam_getter.getData()
+		iuam_getter.list2dict()
 		
-		for iu in self.iu_list:
-			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
-				if 'Identifications' not in iu:
-					iu['Identifications'] = []
-				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
+		for iua in self.iua_list:
+			if (iua['CollectionSpecimenID'] in iuam_getter.iuam_dict 
+			and iua['IdentificationUnitID'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']] 
+			and iua['AnalysisID'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']]
+			and iua['AnalysisNumber'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']]):
+				if 'Methods' not in iua:
+					iua['Methods'] = {}
+				
+				for method_id in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]:
+					iua['Methods'][method_id] = []
+					for iuam_id in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id]:
+						iua['Methods'][method_id].append(iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id])
 		
 		return
 

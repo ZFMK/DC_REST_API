@@ -8,8 +8,10 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
+#from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodParameterGetter import IdentificationUnitAnalysisMethodParameterGetter
 
-class IdentificationUnitAnalysisGetter(DataGetter):
+
+class IdentificationUnitAnalysisMethodGetter(DataGetter):
 	"""
 	IdentificationUnitAnalysisGetter needs to filter the IDs of the wanted methods and parameters, otherwise the mass of data belonging to an analysis might overwelm the 
 	servers capacity
@@ -19,7 +21,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = []):
+	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
 		DataGetter.__init__(self, dc_db)
 		
 		self.fieldname = fieldname
@@ -27,11 +29,14 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_iuam_temptable'
 		
-		amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
-		self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		self.amp_filter_temptable = amp_filter_temptable
+		if self.amp_filter_temptable is None:
+			amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
+			self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		
+		self.withhold_set_before = withhold_set_before
 		
 		self.withholded = []
-
 
 
 	def getByPrimaryKeys(self, iuam_ids):
@@ -105,9 +110,6 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		
-		
-		
 		iuams = self.getData()
 		
 		return iuams
@@ -119,223 +121,81 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.createGetTempTable()
 		self.fillGetTempTable()
 		
-		
-		
-		
 		iuams = self.getData()
 		
 		return iuams
 
 
-	def create_iuam_temptable(self):
-		query = """
-		DROP TABLE IF EXISTS [#temp_iuam_ids]
-		;"""
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		CREATE TABLE [#temp_iuam_ids] (
-			[method_pk] INT IDENTITY PRIMARY KEY,
-			[RowGUID] uniqueidentifier,
-			[CollectionSpecimenID] INT NOT NULL,
-			[IdentificationUnitID] INT NOT NULL,
-			[AnalysisID] INT NOT NULL,
-			[AnalysisNumber] NVARCHAR(50) NOT NULL COLLATE {0},
-			[MethodID] INT NOT NULL,
-			[MethodMarker] NVARCHAR(50) NOT NULL COLLATE {0},
-			INDEX [idx_RowGUID] ([RowGUID]),
-			INDEX [idx_CollectionSpecimenID] ([CollectionSpecimenID]),
-			INDEX [idx_IdentificationUnitID] ([IdentificationUnitID]),
-			INDEX [idx_AnalysisID] ([AnalysisID]),
-			INDEX [idx_AnalysisNumber] ([AnalysisNumber]),
-			INDEX [MethodID_idx] ([MethodID]),
-			INDEX [MethodMarker_idx] ([MethodMarker])
-		)
-		;""".format(self.collation)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		INSERT INTO [#temp_iuam_ids] (
-			[RowGUID],
-			[CollectionSpecimenID],
-			[IdentificationUnitID],
-			[AnalysisID],
-			[AnalysisNumber],
-			[MethodID],
-			[MethodMarker]
-		)
-		SELECT 
-		DISTINCT
-		iuam.[RowGUID],
-		iuam.[CollectionSpecimenID],
-		iuam.[IdentificationUnitID],
-		iuam.[AnalysisID],
-		iuam.[AnalysisNumber],
-		iuam.[MethodID],
-		iuam.[MethodMarker]
-		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
-			ON (g_temp.[rowguid_to_get] = iuam.[RowGUID])
-		INNER JOIN [{1}] amp_filter
-		ON amp_filter.AnalysisID = iuam.AnalysisID AND amp.MethodID = iuam.MethodID
-		;""".format(self.get_temptable, self.amp_filter_temptable)
-		
-		self.cur.execute(query)
-		self.con.commit()
-
-
-	def set_methods(self):
-		query = """
-		SELECT 
-		DISTINCT
-		m_temp.method_pk,
-		iuam.[CollectionSpecimenID],
-		iuam.[IdentificationUnitID],
-		iuam.AnalysisID,
-		iuam.AnalysisNumber,
-		iuam.MethodID,
-		iuam.MethodMarker,
-		m.DisplayText AS MethodDisplay,
-		m.Description AS MethodDescription,
-		m.Notes AS MethodTypeNotes
-		FROM [#temp_iuam_ids] m_temp
-		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
-		ON (
-			m_temp.[RowGUID] = iuam.[RowGUID]
-		)
-		INNER JOIN [MethodForAnalysis] mfa
-		ON (
-			iuam.MethodID = mfa.MethodID
-			AND iuam.AnalysisID = mfa.AnalysisID
-		)
-		INNER JOIN [Method] m
-		ON mfa.MethodID = m.MethodID
-		ORDER BY m_temp.analysis_pk, m_temp.method_pk, iuam.AnalysisID, iuam.AnalysisNumber, iuam.MethodID, iuam.MethodMarker
-		;"""
-		
-		log_query.info(query)
-		
-		self.cur.execute(query)
-		columns = [column[0] for column in self.cur.description]
-		
-		rows = self.cur.fetchall()
-		
-		methods = []
-		for row in rows:
-			methods.append(dict(zip(columns, row)))
-		
-		self.methods_dict = {}
-		
-		for method in methods:
-			method_id = method['MethodID']
-			method_marker = method['MethodMarker']
-			
-			if method_id not in self.analyses_dict[specimen_id][iu_id][analysis_id][analysis_number]:
-				self.analyses_dict[specimen_id][iu_id][analysis_id][analysis_number] = {}
-			
-			
-			idshash = method['_id']
-			analysis_pk = method['analysis_pk']
-			method_pk = method['method_pk']
-			
-			self.methods_dict[method_pk] = {}
-			
-			self.methods_dict[method_pk]['MethodDisplay'] = method['MethodDisplay']
-			self.methods_dict[method_pk]['MethodDescription'] = method['MethodDescription']
-			
-			'''
-			for key in method:
-				if key not in ('_id', 'method_pk', 'analysis_pk', 'AnalysisID', 'AnalysisNumber'):
-					self.methods_dict[method_pk][key] = method[key]
-			'''
-			
-			self.keys_dict[idshash][analysis_pk][method_pk] = {}
-			
-		return
-
-
-
 	def getData(self):
 		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
-		
-		self.create_analyses_temptable()
-		self.create_methods_temptable()
-		
-		
-
-
-
-
-
-
-
-
-
-
-	def 
-		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
+		if self.withhold_set_before is not True:
+			self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
-		iua.[CollectionSpecimenID],
-		iua.[IdentificationUnitID],
-		iua.[SpecimenPartID],
-		iua.[AnalysisID],
-		iua.[AnalysisNumber],
-		iua.[RowGUID],
-		
-		iua.[AnalysisResult],
-		iua.[ExternalAnalysisURI],
-		iua.[ResponsibleName],
-		iua.[AnalysisDate],
-		iua.[Notes],
-		
-		
-		
-		
+		iuam.[CollectionSpecimenID],
+		iuam.[IdentificationUnitID],
+		iuam.[AnalysisID],
+		iuam.[AnalysisNumber],
+		iuam.MethodID,
+		iuam.MethodMarker,
+		m.DisplayText AS MethodDisplay,
+		m.Description AS MethodDescription,
+		m.Notes AS MethodTypeNotes
 		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON iua.[RowGUID] = g_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
+		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
+			ON g_temp.[rowguid_to_get] = iuam.[RowGUID]
+		INNER JOIN [MethodForAnalysis] mfa
+			ON iuam.MethodID = mfa.MethodID AND iuam.AnalysisID = mfa.AnalysisID
+		INNER JOIN [Method] m
+			ON mfa.MethodID = m.MethodID
+		INNER JOIN [{1}] amp_filter
+			ON amp_filter.AnalysisID = iuam.AnalysisID AND amp_filter.MethodID = iuam.MethodID
+		;""".format(self.get_temptable, self.amp_filter_temptable)
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.iu_rows = self.cur.fetchall()
+		self.iuam_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		self.setChildIdentifications()
+		#self.setChildParameters()
 		
-		return self.iu_list
+		return self.iuam_list
 
 
 	def rows2list(self):
-		self.iu_list = []
-		for row in self.iu_rows:
-			self.iu_list.append(dict(zip(self.columns, row)))
+		self.iuam_list = []
+		for row in self.iuam_rows:
+			self.iuam_list.append(dict(zip(self.columns, row)))
 		return
 
 
 	def list2dict(self):
-		self.iu_dict = {}
-		for element in self.iu_list:
-			if element['CollectionSpecimenID'] not in self.iu_dict:
-				self.iu_dict[element['CollectionSpecimenID']] = {}
+		self.iuam_dict = {}
+		for element in self.iuam_list:
+			if element['CollectionSpecimenID'] not in self.iuam_dict:
+				self.iuam_dict[element['CollectionSpecimenID']] = {}
+			if element['IdentificationUnitID'] not in self.iuam_dict[element['CollectionSpecimenID']]:
+				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+			if element['AnalysisID'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
+				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']] = {}
+			if element['AnalysisNumber'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']]:
+				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
+			if element['MethodID'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
+				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
+			if element['MethodMarker'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
+				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
 				
-			self.iu_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = element 
+			self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = element 
 		
 		return
 
 
 	def filterAllowedRowGUIDs(self):
 		# this methods checks if the connected Specimen is in one of the users projects or if the Withholding column is empty
-		
-		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
+		# the withholded list keeps the IDs and RowGUIDs of the withholded rows
 		withholded = []
 		
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
@@ -367,7 +227,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		ON iuam.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [IdentificationUnit] iu
 		ON iu.[CollectionSpecimenID] = iuam.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iuam.[IdentificationUnitID]
-		INNER JOIN [CollectionSpecimen] cs ON iua.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		INNER JOIN [CollectionSpecimen] cs ON iuam.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
 		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '')
 		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')

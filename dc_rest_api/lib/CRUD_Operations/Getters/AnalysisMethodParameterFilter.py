@@ -79,15 +79,15 @@ class AnalysisMethodParameterFilter():
 	def set_amp_filter_lists(self):
 		self.amp_lists = []
 		
-		for analysis_id in self.amp_ids:
-			if len(self.amp_ids[analysis_id]) <= 0:
+		for analysis_id in self.amp_filter_ids:
+			if len(self.amp_filter_ids[analysis_id]) <= 0:
 				self.amp_lists.append((analysis_id, None, None))
 			else:
-				for method_id in self.amp_ids[analysis_id]:
-					if len(self.amp_ids[analysis_id][method_id]) <= 0:
+				for method_id in self.amp_filter_ids[analysis_id]:
+					if len(self.amp_filter_ids[analysis_id][method_id]) <= 0:
 						self.amp_lists.append((analysis_id, method_id, None))
 					else:
-						for parameter_id in self.amp_ids[analysis_id][method_id]:
+						for parameter_id in self.amp_filter_ids[analysis_id][method_id]:
 							self.amp_lists.append((analysis_id, method_id, parameter_id))
 		return
 

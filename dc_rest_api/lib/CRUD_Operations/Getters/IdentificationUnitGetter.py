@@ -6,7 +6,7 @@ querylog = logging.getLogger('query')
 
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
-#from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter import IdentificationUnitAnalysisGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter import IdentificationUnitAnalysisGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationGetter import IdentificationGetter
 
 class IdentificationUnitGetter(DataGetter):
@@ -123,6 +123,7 @@ class IdentificationUnitGetter(DataGetter):
 		self.rows2list()
 		
 		self.setChildIdentifications()
+		self.setChildIUAnalyses()
 		
 		return self.iu_list
 
@@ -188,6 +189,42 @@ class IdentificationUnitGetter(DataGetter):
 		self.con.commit()
 		
 		return withholded
+
+
+	def setChildIUAnalyses(self):
+		#pudb.set_trace()
+		for fieldname in ['Barcodes', 'FOGS', 'MAM_Measurements']:
+			
+			iua_getter = IdentificationUnitAnalysisGetter(self.dc_db, fieldname, self.users_project_ids, withhold_set_before = True)
+			iua_getter.createGetTempTable()
+			
+			query = """
+			INSERT INTO [{0}] ([rowguid_to_get])
+			SELECT iua.[RowGUID]
+			FROM [IdentificationUnit] iu
+			INNER JOIN [IdentificationUnitAnalysis] iua
+			ON iu.[CollectionSpecimenID] = iua.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iua.[IdentificationUnitID]
+			INNER JOIN [{1}] rg_temp
+			ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
+			;""".format(iua_getter.get_temptable, self.get_temptable)
+			
+			querylog.info(query)
+			self.cur.execute(query)
+			self.con.commit()
+			
+			iua_getter.getData()
+			iua_getter.list2dict()
+			
+			for iu in self.iu_list:
+				if iu['CollectionSpecimenID'] in iua_getter.iua_dict and iu['IdentificationUnitID'] in iua_getter.iua_dict[iu['CollectionSpecimenID']]:
+					if 'IdentificationUnitAnalyses' not in iu:
+						iu['IdentificationUnitAnalyses'] = {}
+					if fieldname not in iu['IdentificationUnitAnalyses']:
+						iu['IdentificationUnitAnalyses'][fieldname] = []
+					for iua_id in iua_getter.iua_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+						iu['IdentificationUnitAnalyses'][fieldname].append(iua_getter.iua_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id])
+		
+		return
 
 
 	def setChildIdentifications(self):
