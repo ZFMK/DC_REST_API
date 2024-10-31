@@ -251,7 +251,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 	def setChildMethods(self):
 		
-		iuam_getter = IdentificationUnitAnalysisMethodGetter(self.dc_db, self.fieldname, self.users_project_ids, self.amp_filter_temptable)
+		iuam_getter = IdentificationUnitAnalysisMethodGetter(self.dc_db, self.fieldname, self.users_project_ids, self.amp_filter_temptable, withhold_set_before = True)
 		iuam_getter.createGetTempTable()
 		
 		query = """

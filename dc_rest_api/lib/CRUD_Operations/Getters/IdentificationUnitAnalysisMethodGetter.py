@@ -133,6 +133,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		
 		query = """
 		SELECT
+		DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		iuam.[CollectionSpecimenID],
