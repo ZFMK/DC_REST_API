@@ -8,18 +8,23 @@ querylog = logging.getLogger('query')
 
 class DataGetter():
 	def __init__(self, dc_db):
-		
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
-		self.cur = self.dc_db.getCursor()
+		# get a new cursor to allow for threaded tasks on the same connection
+		self.cur = self.con.cursor()
 		self.collation = self.dc_db.collation
 
 
 	def createGetTempTable(self):
+		querylog.warning('#########################')
+		querylog.warning(self.cur)
+		
+		
 		query = """
 		DROP TABLE IF EXISTS [{0}]
 		;""".format(self.get_temptable)
 		querylog.info(query)
+		querylog.warning(self.cur)
 		self.cur.execute(query)
 		self.con.commit()
 		
@@ -32,6 +37,7 @@ class DataGetter():
 		) 
 		;""".format(self.get_temptable, self.collation)
 		querylog.info(query)
+		querylog.warning(self.cur)
 		self.cur.execute(query)
 		self.con.commit()
 
@@ -52,6 +58,7 @@ class DataGetter():
 			self.con.commit()
 		
 		return
+
 
 	def setDatabaseURN(self):
 		query = """

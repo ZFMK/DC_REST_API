@@ -15,7 +15,8 @@ class AnalysisMethodParameterFilter():
 	def __init__(self, dc_db, fieldname):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
-		self.cur = self.dc_db.getCursor()
+		# get a new cursor to allow for threaded tasks on the same connection
+		self.cur = self.con.cursor()
 		self.collation = self.dc_db.collation
 		
 		self.fieldname = fieldname

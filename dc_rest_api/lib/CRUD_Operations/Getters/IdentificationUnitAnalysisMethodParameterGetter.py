@@ -201,8 +201,7 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 
 	def set_parameters(self):
 		query = """
-		SELECT 
-		DISTINCT
+		SELECT DISTINCT
 		ROW_NUMBER() OVER(ORDER BY a_temp.[idshash], a_temp.[analysis_pk],m_temp.[method_pk], iuamp.ParameterID) AS parameter_pk,
 		iuamp.[RowGUID],
 		iuamp.ParameterID,

@@ -86,7 +86,7 @@ class CollectionProjectGetter(DataGetter):
 		self.setDatabaseURN()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		cp_temp.[rowguid_to_get] AS [RowGUID],
 		cp_temp.[DatabaseURN],
 		cp.[CollectionSpecimenID],

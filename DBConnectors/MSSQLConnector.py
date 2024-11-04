@@ -11,7 +11,7 @@ log_query = logging.getLogger('query')
 
 
 class MSSQLConnector():
-	def __init__(self, connectionstring = None, config = None, autocommit=False):
+	def __init__(self, connectionstring = None, config = None, autocommit=True):
 		if config is not None:
 			server = config.get('server', None)
 			dsn = config.get('dsn', None)
@@ -90,6 +90,9 @@ class MSSQLConnector():
 	
 	def getCursor(self):
 		return self.cur
+	
+	def getNewCursor(self):
+		return self.con.cursor()
 	
 	def getConnection(self):
 		return self.con

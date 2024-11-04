@@ -4,6 +4,7 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
+from threading import Thread, Lock
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
@@ -128,15 +129,35 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		return identificationunitanalyses
 
 
-
 	def getData(self):
+		#pudb.set_trace()
+		
+		#self.getAnalysisData()
+		#self.setChildMethods()
+		self.lock = Lock()
+		
+		iua_getter_thread = Thread(target = self.getAnalysisData)
+		iuam_getter_thread = Thread(target = self.setChildMethods)
+		
+		iua_getter_thread.start()
+		iuam_getter_thread.start()
+		
+		iua_getter_thread.join()
+		iuam_getter_thread.join()
+		
+		
+		self.insertMethodDicts()
+		return self.iua_list
+
+
+	def getAnalysisData(self):
+		self.lock.acquire()
 		self.setDatabaseURN()
 		if self.withhold_set_before is not True:
 			self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT 
-		DISTINCT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		iua.CollectionSpecimenID,
@@ -164,21 +185,15 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		ORDER BY iua.CollectionSpecimenID, iua.IdentificationUnitID, iua.AnalysisID, iua.AnalysisNumber
 		;""".format(self.get_temptable, self.amp_filter_temptable)
 		self.cur.execute(query)
-		self.columns = [column[0] for column in self.cur.description]
 		
-		self.iua_rows = self.cur.fetchall()
-		self.rows2list()
-		
-		self.setChildMethods()
-		
-		return self.iua_list
-
-
-	def rows2list(self):
+		columns = [column[0] for column in self.cur.description]
+		rows = self.cur.fetchall()
 		self.iua_list = []
-		for row in self.iua_rows:
-			self.iua_list.append(dict(zip(self.columns, row)))
+		for row in rows:
+			self.iua_list.append(dict(zip(columns, row)))
+		self.lock.release()
 		return
+
 
 
 	def list2dict(self):
@@ -250,9 +265,13 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 
 	def setChildMethods(self):
-		
+		#pudb.set_trace()
+		self.lock.acquire()
 		iuam_getter = IdentificationUnitAnalysisMethodGetter(self.dc_db, self.fieldname, self.users_project_ids, self.amp_filter_temptable, withhold_set_before = True)
 		iuam_getter.createGetTempTable()
+		
+		# use the cursor of iuam_getter to prevent conflicts in multithreading
+		cur = iuam_getter.cur
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
@@ -268,24 +287,30 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		;""".format(iuam_getter.get_temptable, self.amp_filter_temptable, self.get_temptable)
 		
 		querylog.info(query)
-		self.cur.execute(query)
+		cur.execute(query)
 		self.con.commit()
 		
 		iuam_getter.getData()
 		iuam_getter.list2dict()
 		
+		self.iuam_dict = iuam_getter.iuam_dict
+		self.lock.release()
+		return
+
+
+	def insertMethodDicts(self):
 		for iua in self.iua_list:
-			if (iua['CollectionSpecimenID'] in iuam_getter.iuam_dict 
-			and iua['IdentificationUnitID'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']] 
-			and iua['AnalysisID'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']]
-			and iua['AnalysisNumber'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']]):
+			if (iua['CollectionSpecimenID'] in self.iuam_dict 
+			and iua['IdentificationUnitID'] in self.iuam_dict[iua['CollectionSpecimenID']] 
+			and iua['AnalysisID'] in self.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']]
+			and iua['AnalysisNumber'] in self.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']]):
 				if 'Methods' not in iua:
 					iua['Methods'] = {}
 				
-				for method_id in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]:
+				for method_id in self.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]:
 					iua['Methods'][method_id] = []
-					for iuam_id in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id]:
-						iua['Methods'][method_id].append(iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id])
+					for iuam_id in self.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id]:
+						iua['Methods'][method_id].append(self.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id])
 		
 		return
 

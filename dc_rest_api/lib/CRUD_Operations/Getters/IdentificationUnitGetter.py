@@ -95,7 +95,7 @@ class IdentificationUnitGetter(DataGetter):
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		iu.[CollectionSpecimenID],
