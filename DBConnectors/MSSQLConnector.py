@@ -91,9 +91,6 @@ class MSSQLConnector():
 	def getCursor(self):
 		return self.cur
 	
-	def getNewCursor(self):
-		return self.con.cursor()
-	
 	def getConnection(self):
 		return self.con
 
@@ -110,6 +107,7 @@ class MSSQLConnector():
 		db_accr = self.databasename.replace('Diversity', '').replace('TaxonNames_', 'TN:').replace('Collection_', 'DC:').replace('Project_', 'P:').replace('Agent_', 'A:')
 		db_urn += '{0}'.format(db_accr)
 		return db_urn
+
 
 class MSSQLConnectionParams():
 	def __init__(self, 

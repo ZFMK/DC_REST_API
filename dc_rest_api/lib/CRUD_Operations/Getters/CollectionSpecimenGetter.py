@@ -25,6 +25,11 @@ class CollectionSpecimenGetter(DataGetter):
 		self.specimens = {}
 
 
+	def setDCConfig(self, dc_config):
+		self.dc_config = dc_config
+		return
+
+
 	def getByPrimaryKeys(self, specimen_ids):
 		self.createGetTempTable()
 		
@@ -234,6 +239,7 @@ class CollectionSpecimenGetter(DataGetter):
 	def setIdentificationUnits(self):
 		
 		iu_getter = IdentificationUnitGetter(self.dc_db, self.users_project_ids)
+		iu_getter.setDCConfig(self.dc_config)
 		iu_getter.createGetTempTable()
 		
 		query = """

@@ -19,6 +19,10 @@ class IdentificationUnitGetter(DataGetter):
 		self.get_temptable = '#get_iu_temptable'
 
 
+	def setDCConfig(self, dc_config):
+		self.dc_config = dc_config
+		return
+
 
 	def getByPrimaryKeys(self, cs_iu_ids):
 		self.createGetTempTable()
@@ -192,14 +196,16 @@ class IdentificationUnitGetter(DataGetter):
 
 
 	def setChildIUAnalyses(self):
-		#pudb.set_trace()
+		pudb.set_trace()
 		for fieldname in ['Barcodes', 'FOGS', 'MAM_Measurements']:
 			
 			iua_getter = IdentificationUnitAnalysisGetter(self.dc_db, fieldname, self.users_project_ids, withhold_set_before = True)
-			iua_getter.createGetTempTable()
+			iua_getter.setDCConfig(self.dc_config)
+			iua_getter.setNewDCConnection()
+			
+			
 			
 			query = """
-			INSERT INTO [{0}] ([rowguid_to_get])
 			SELECT iua.[RowGUID]
 			FROM [IdentificationUnit] iu
 			INNER JOIN [IdentificationUnitAnalysis] iua
@@ -210,9 +216,11 @@ class IdentificationUnitGetter(DataGetter):
 			
 			querylog.info(query)
 			self.cur.execute(query)
-			self.con.commit()
 			
-			iua_getter.getData()
+			rows = self.cur.fetchall()
+			row_guids = [row[0] for row in rows]
+			
+			iua_getter.getByRowGUIDs(row_guids)
 			iua_getter.list2dict()
 			
 			for iu in self.iu_list:

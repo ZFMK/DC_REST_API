@@ -8,6 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
+
 #from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodParameterGetter import IdentificationUnitAnalysisMethodParameterGetter
 
 
@@ -30,13 +32,26 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		self.get_temptable = '#get_iuam_temptable'
 		
 		self.amp_filter_temptable = amp_filter_temptable
-		if self.amp_filter_temptable is None:
-			amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
-			self.amp_filter_temptable = amp_filters.amp_filter_temptable
 		
 		self.withhold_set_before = withhold_set_before
 		
 		self.withholded = []
+
+
+	def setDCConfig(self, dc_config):
+		self.dc_config = dc_config
+		return
+
+
+	def setNewDCConnection(self):
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		self.con = self.dc_db.getConnection()
+		self.cur = self.dc_db.getCursor()
+		if self.amp_filter_temptable is None:
+			amp_filters = AnalysisMethodParameterFilter(self.dc_db, self.fieldname)
+			self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		return
+
 
 
 	def getByPrimaryKeys(self, iuam_ids):

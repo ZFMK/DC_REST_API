@@ -11,6 +11,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter impor
 
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodGetter import IdentificationUnitAnalysisMethodGetter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
+
 
 class IdentificationUnitAnalysisGetter(DataGetter):
 	"""
@@ -31,9 +33,6 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.get_temptable = '#get_iua_temptable'
 		
 		self.amp_filter_temptable = amp_filter_temptable
-		if self.amp_filter_temptable is None:
-			amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
-			self.amp_filter_temptable = amp_filters.amp_filter_temptable
 		
 		# there is no withhold in any of the iua tables, but in CollectionSpecimen and IdentificationUnit
 		# so it must be checked if the data are allowed when only the subtables of IdentificationUnit are requested
@@ -43,6 +42,20 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		
 		self.withholded = []
 
+
+	def setDCConfig(self, dc_config):
+		self.dc_config = dc_config
+		return
+
+
+	def setNewDCConnection(self):
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		self.con = self.dc_db.getConnection()
+		self.cur = self.dc_db.getCursor()
+		if self.amp_filter_temptable is None:
+			amp_filters = AnalysisMethodParameterFilter(self.dc_db, self.fieldname)
+			self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		return
 
 
 	def getByPrimaryKeys(self, iua_ids):
@@ -151,7 +164,6 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 
 	def getAnalysisData(self):
-		self.lock.acquire()
 		self.setDatabaseURN()
 		if self.withhold_set_before is not True:
 			self.withholded = self.filterAllowedRowGUIDs()
@@ -191,7 +203,6 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.iua_list = []
 		for row in rows:
 			self.iua_list.append(dict(zip(columns, row)))
-		self.lock.release()
 		return
 
 
@@ -266,12 +277,34 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 	def setChildMethods(self):
 		#pudb.set_trace()
-		self.lock.acquire()
-		iuam_getter = IdentificationUnitAnalysisMethodGetter(self.dc_db, self.fieldname, self.users_project_ids, self.amp_filter_temptable, withhold_set_before = True)
-		iuam_getter.createGetTempTable()
+		#self.lock.acquire()
+		iuam_getter = IdentificationUnitAnalysisMethodGetter(self.dc_db, self.fieldname, self.users_project_ids, amp_filter_temptable = None, withhold_set_before = True)
+		iuam_getter.setDCConfig(self.dc_config)
+		iuam_getter.setNewDCConnection()
 		
-		# use the cursor of iuam_getter to prevent conflicts in multithreading
-		cur = iuam_getter.cur
+		query = """
+		SELECT iuam.[RowGUID]
+		FROM [IdentificationUnitAnalysis] iua
+		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
+		ON iua.[CollectionSpecimenID] = iuam.[CollectionSpecimenID] AND iua.[IdentificationUnitID] = iuam.[IdentificationUnitID]
+		AND iua.[AnalysisID] = iuam.[AnalysisID] AND iua.[AnalysisNumber] = iuam.[AnalysisNumber]
+		INNER JOIN [{0}] amp_filter
+			ON amp_filter.AnalysisID = iuam.AnalysisID AND amp_filter.MethodID = iuam.MethodID
+		INNER JOIN [{1}] rg_temp
+		ON iua.[RowGUID] = rg_temp.[rowguid_to_get]
+		;""".format(self.amp_filter_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		rows = self.cur.fetchall()
+		row_guids = [row[0] for row in rows]
+		
+		iuam_getter.getByRowGUIDs(row_guids)
+		iuam_getter.list2dict()
+		
+		'''
+		iuam_getter.createGetTempTable()
+		#self.lock.release()
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
@@ -287,14 +320,15 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		;""".format(iuam_getter.get_temptable, self.amp_filter_temptable, self.get_temptable)
 		
 		querylog.info(query)
-		cur.execute(query)
+		self.cur.execute(query)
 		self.con.commit()
+		
 		
 		iuam_getter.getData()
 		iuam_getter.list2dict()
+		'''
 		
 		self.iuam_dict = iuam_getter.iuam_dict
-		self.lock.release()
 		return
 
 
