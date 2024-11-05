@@ -205,7 +205,7 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT iuamp.[RowGUID]
+		SELECT DISTINCT iuamp.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
 		ON iuamp.RowGUID = g_temp.[rowguid_to_get]

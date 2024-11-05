@@ -95,7 +95,7 @@ class IdentificationGetter(DataGetter):
 		self.setDatabaseURN()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		i.[CollectionSpecimenID],

@@ -94,7 +94,7 @@ class CollectionAgentGetter(DataGetter):
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		ca.[CollectionSpecimenID],
@@ -142,7 +142,7 @@ class CollectionAgentGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT ca.[CollectionSpecimenID], ca.[CollectorsName], ca.[RowGUID]
+		SELECT DISTINCT ca.[CollectionSpecimenID], ca.[CollectorsName], ca.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionAgent] ca
 		ON ca.RowGUID = g_temp.[rowguid_to_get]

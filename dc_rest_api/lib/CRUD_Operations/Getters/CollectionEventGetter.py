@@ -86,7 +86,7 @@ class CollectionEventGetter(DataGetter):
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		ce.[CollectionEventID],
@@ -174,7 +174,7 @@ class CollectionEventGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT ce.[CollectionEventID], ce.[RowGUID]
+		SELECT DISTINCT ce.[CollectionEventID], ce.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionEvent] ce
 		ON ce.RowGUID = g_temp.[rowguid_to_get]

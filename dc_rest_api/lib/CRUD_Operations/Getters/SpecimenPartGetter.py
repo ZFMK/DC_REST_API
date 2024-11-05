@@ -93,7 +93,7 @@ class SpecimenPartGetter(DataGetter):
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		csp.[CollectionSpecimenID],
@@ -152,7 +152,7 @@ class SpecimenPartGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID], csp.[RowGUID]
+		SELECT DISTINCT csp.[CollectionSpecimenID], csp.[SpecimenPartID], csp.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON csp.RowGUID = g_temp.[rowguid_to_get]

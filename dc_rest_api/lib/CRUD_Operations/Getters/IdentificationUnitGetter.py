@@ -95,7 +95,7 @@ class IdentificationUnitGetter(DataGetter):
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		iu.[CollectionSpecimenID],
@@ -155,7 +155,7 @@ class IdentificationUnitGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT iu.[CollectionSpecimenID], iu.[IdentificationUnitID], iu.[RowGUID]
+		SELECT DISTINCT iu.[CollectionSpecimenID], iu.[IdentificationUnitID], iu.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnit] iu
 		ON iu.RowGUID = g_temp.[rowguid_to_get]
@@ -200,7 +200,7 @@ class IdentificationUnitGetter(DataGetter):
 			
 			query = """
 			INSERT INTO [{0}] ([rowguid_to_get])
-			SELECT iua.[RowGUID]
+			SELECT DISTINCT iua.[RowGUID]
 			FROM [IdentificationUnit] iu
 			INNER JOIN [IdentificationUnitAnalysis] iua
 			ON iu.[CollectionSpecimenID] = iua.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iua.[IdentificationUnitID]
@@ -234,7 +234,7 @@ class IdentificationUnitGetter(DataGetter):
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT i.[RowGUID]
+		SELECT DISTINCT i.[RowGUID]
 		FROM [IdentificationUnit] iu
 		INNER JOIN [Identification] i
 		ON iu.[CollectionSpecimenID] = i.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = i.[IdentificationUnitID]

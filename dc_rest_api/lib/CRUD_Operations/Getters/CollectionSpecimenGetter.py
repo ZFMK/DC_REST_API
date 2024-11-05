@@ -102,7 +102,7 @@ class CollectionSpecimenGetter(DataGetter):
 		self.withholded = self.filterAllowedRowGUIDs()
 		
 		query = """
-		SELECT 
+		SELECT DISTINCT
 		g_temp.[rowguid_to_get] AS [RowGUID],
 		g_temp.[DatabaseURN],
 		cs.[CollectionSpecimenID],
@@ -169,7 +169,7 @@ class CollectionSpecimenGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT cs.[CollectionSpecimenID], cs.[RowGUID]
+		SELECT DISTINCT cs.[CollectionSpecimenID], cs.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimen] cs
 		ON cs.RowGUID = g_temp.[rowguid_to_get]
@@ -207,7 +207,7 @@ class CollectionSpecimenGetter(DataGetter):
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT csp.[RowGUID]
+		SELECT DISTINCT csp.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
@@ -238,7 +238,7 @@ class CollectionSpecimenGetter(DataGetter):
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT iu.[RowGUID]
+		SELECT DISTINCT iu.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [IdentificationUnit] iu
 		ON cs.[CollectionSpecimenID] = iu.[CollectionSpecimenID]
@@ -269,7 +269,7 @@ class CollectionSpecimenGetter(DataGetter):
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT ca.[RowGUID]
+		SELECT DISTINCT ca.[RowGUID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionAgent] ca
 		ON cs.[CollectionSpecimenID] = ca.[CollectionSpecimenID]
