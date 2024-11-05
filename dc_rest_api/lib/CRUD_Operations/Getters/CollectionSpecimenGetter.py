@@ -211,7 +211,7 @@ class CollectionSpecimenGetter(DataGetter):
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
-		INNER JOIN [{0}] rg_temp
+		INNER JOIN [{1}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
 		;""".format(csp_getter.get_temptable, self.get_temptable)
 		
