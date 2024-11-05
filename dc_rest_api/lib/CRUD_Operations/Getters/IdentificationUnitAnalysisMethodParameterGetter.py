@@ -4,10 +4,12 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
+from threading import Thread, Lock
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
 
 class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 	"""
@@ -19,16 +21,23 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_config, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
+		self.dc_config = dc_config
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		
+		DataGetter.__init__(self, self.dc_db)
 		
 		self.fieldname = fieldname
 		
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_iuamp_temptable'
 		
-		amp_filters = AnalysisMethodParameterFilter(dc_db, self.fieldname)
-		self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		self.amp_filter_temptable = amp_filter_temptable
+		if self.amp_filter_temptable is None:
+			amp_filters = AnalysisMethodParameterFilter(self.dc_db, self.fieldname)
+			self.amp_filter_temptable = amp_filters.amp_filter_temptable
+		
+		self.withhold_set_before = withhold_set_before
 		
 		self.withholded = []
 
@@ -109,9 +118,6 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 			self.cur.execute(query)
 			self.con.commit()
 		
-		
-		
-		
 		iuamps = self.getData()
 		
 		return iuamps
@@ -122,9 +128,6 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		
 		self.createGetTempTable()
 		self.fillGetTempTable()
-		
-		
-		
 		
 		iuamps = self.getData()
 		

@@ -4,13 +4,19 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
+from threading import Thread, Lock
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
+
 class SpecimenPartGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_config, users_project_ids = []):
+		self.dc_config = dc_config
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		
+		DataGetter.__init__(self, self.dc_db)
 		
 		self.withholded = []
 		
@@ -87,8 +93,25 @@ class SpecimenPartGetter(DataGetter):
 		return specimenparts
 
 
-
 	def getData(self):
+		self.lock = Lock()
+		
+		csp_getter_thread = Thread(target = self.getCSPData)
+		c_getter_thread = Thread(target = self.getChildCollections)
+		
+		csp_getter_thread.start()
+		c_getter_thread.start()
+		
+		csp_getter_thread.join()
+		c_getter_thread.join()
+		
+		self.insertCDict()
+		return self.csp_list
+
+
+
+	def getCSPData(self):
+		self.lock.acquire()
 		self.setDatabaseURN()
 		self.withholded = self.filterAllowedRowGUIDs()
 		
@@ -116,22 +139,16 @@ class SpecimenPartGetter(DataGetter):
 		ON csp.[RowGUID] = g_temp.[rowguid_to_get]
 		;""".format(self.get_temptable)
 		self.cur.execute(query)
-		self.columns = [column[0] for column in self.cur.description]
+		columns = [column[0] for column in self.cur.description]
 		
-		self.csp_rows = self.cur.fetchall()
-		self.rows2list()
+		csp_rows = self.cur.fetchall()
+		self.lock.release()
 		
-		self.setChildCollections()
+		self.csp_list = []
+		for row in csp_rows:
+			self.csp_list.append(dict(zip(columns, row)))
 		
 		return self.csp_list
-
-
-	def rows2list(self):
-		self.csp_list = []
-		for row in self.csp_rows:
-			self.csp_list.append(dict(zip(self.columns, row)))
-		
-		return
 
 
 	def list2dict(self):
@@ -188,32 +205,39 @@ class SpecimenPartGetter(DataGetter):
 		return withholded
 
 
-	def setChildCollections(self):
-		
-		c_getter = CollectionGetter(self.dc_db)
-		c_getter.createGetTempTable()
+	def getChildCollections(self):
+		self.lock.acquire()
 		
 		query = """
-		INSERT INTO [{0}] ([rowguid_to_get])
 		SELECT DISTINCT c.[RowGUID]
 		FROM [CollectionSpecimenPart] csp
-		INNER JOIN [{1}] rg_temp
+		INNER JOIN [{0}] rg_temp
 		ON csp.[RowGUID] = rg_temp.[rowguid_to_get]
 		INNER JOIN [Collection] c
 		ON csp.[CollectionID] = c.[CollectionID]
 		WHERE csp.[CollectionID] IS NOT NULL
-		;""".format(c_getter.get_temptable, self.get_temptable)
+		;""".format(self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		self.con.commit()
 		
-		c_getter.getData()
+		rows = self.cur.fetchall()
+		self.lock.release()
+		
+		row_guids = [row[0] for row in rows]
+		
+		c_getter = CollectionGetter(self.dc_config)
+		c_getter.getByRowGUIDs(row_guids)
 		c_getter.list2dict()
+		self.c_dict = c_getter.c_dict
 		
+		return
+
+
+	def insertCDict(self):
 		for csp in self.csp_list:
-			if csp['CollectionID'] in c_getter.c_dict:
-				csp['Collection'] = c_getter.c_dict[csp['CollectionID']]
+			if csp['CollectionID'] in self.c_dict:
+				csp['Collection'] = self.c_dict[csp['CollectionID']]
 		
 		return
 

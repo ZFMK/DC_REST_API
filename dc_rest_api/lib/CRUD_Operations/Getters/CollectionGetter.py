@@ -7,9 +7,14 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
+
 class CollectionGetter(DataGetter):
-	def __init__(self, dc_db):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_config):
+		self.dc_config = dc_config
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		
+		DataGetter.__init__(self, self.dc_db)
 		
 		self.get_temptable = '#get_c_temptable'
 

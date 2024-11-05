@@ -130,7 +130,7 @@ class CollectionSpecimensViews():
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "GET")
 	def getSpecimensJSON(self):
-		pudb.set_trace()
+		#pudb.set_trace()
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database, get CollectionSpecimens',
 			'messages': self.messages
@@ -147,8 +147,7 @@ class CollectionSpecimensViews():
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return jsonresponse
 		
-		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids)
-		specimen_getter.setDCConfig(self.dc_config)
+		specimen_getter = CollectionSpecimenGetter(self.dc_config, self.users_project_ids)
 		
 		specimens = []
 		

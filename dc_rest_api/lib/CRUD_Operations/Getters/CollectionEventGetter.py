@@ -7,9 +7,14 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
+
 class CollectionEventGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_config, users_project_ids = []):
+		self.dc_config = dc_config
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		
+		DataGetter.__init__(self, self.dc_db)
 		
 		self.withholded = []
 		

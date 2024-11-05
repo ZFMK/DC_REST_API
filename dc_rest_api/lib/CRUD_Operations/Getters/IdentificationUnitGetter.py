@@ -4,24 +4,25 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
+from threading import Thread, Lock
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter import IdentificationUnitAnalysisGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationGetter import IdentificationGetter
 
+from DBConnectors.MSSQLConnector import MSSQLConnector
+
 class IdentificationUnitGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_config, users_project_ids = []):
+		self.dc_config = dc_config
+		self.dc_db = MSSQLConnector(config = self.dc_config)
+		
+		DataGetter.__init__(self, self.dc_db)
 		
 		self.withholded = []
 		
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_iu_temptable'
-
-
-	def setDCConfig(self, dc_config):
-		self.dc_config = dc_config
-		return
 
 
 	def getByPrimaryKeys(self, cs_iu_ids):
@@ -95,6 +96,28 @@ class IdentificationUnitGetter(DataGetter):
 
 
 	def getData(self):
+		self.lock = Lock()
+		
+		iu_getter_thread = Thread(target = self.getIUData)
+		i_getter_thread = Thread(target = self.getChildIdentifications)
+		iua_getter_thread = Thread(target = self.getChildIUAnalyses)
+		
+		iu_getter_thread.start()
+		i_getter_thread.start()
+		iua_getter_thread.start()
+		
+		iu_getter_thread.join()
+		i_getter_thread.join()
+		iua_getter_thread.join()
+		
+		self.insertIdentificationDict()
+		self.insertIUADict()
+		return self.iu_list
+
+
+
+	def getIUData(self):
+		self.lock.acquire()
 		self.setDatabaseURN()
 		self.withholded = self.filterAllowedRowGUIDs()
 		
@@ -121,22 +144,16 @@ class IdentificationUnitGetter(DataGetter):
 		ON iu.[RowGUID] = g_temp.[rowguid_to_get]
 		;""".format(self.get_temptable)
 		self.cur.execute(query)
-		self.columns = [column[0] for column in self.cur.description]
+		columns = [column[0] for column in self.cur.description]
 		
-		self.iu_rows = self.cur.fetchall()
-		self.rows2list()
+		iu_rows = self.cur.fetchall()
+		self.lock.release()
 		
-		self.setChildIdentifications()
-		self.setChildIUAnalyses()
+		self.iu_list = []
+		for row in iu_rows:
+			self.iu_list.append(dict(zip(columns, row)))
 		
 		return self.iu_list
-
-
-	def rows2list(self):
-		self.iu_list = []
-		for row in self.iu_rows:
-			self.iu_list.append(dict(zip(self.columns, row)))
-		return
 
 
 	def list2dict(self):
@@ -195,74 +212,86 @@ class IdentificationUnitGetter(DataGetter):
 		return withholded
 
 
-	def setChildIUAnalyses(self):
-		pudb.set_trace()
+	def getChildIUAnalyses(self):
+		self.iua_dict = {}
 		for fieldname in ['Barcodes', 'FOGS', 'MAM_Measurements']:
-			
-			iua_getter = IdentificationUnitAnalysisGetter(self.dc_db, fieldname, self.users_project_ids, withhold_set_before = True)
-			iua_getter.setDCConfig(self.dc_config)
-			iua_getter.setNewDCConnection()
-			
-			
+			self.lock.acquire()
 			
 			query = """
 			SELECT iua.[RowGUID]
 			FROM [IdentificationUnit] iu
 			INNER JOIN [IdentificationUnitAnalysis] iua
 			ON iu.[CollectionSpecimenID] = iua.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iua.[IdentificationUnitID]
-			INNER JOIN [{1}] rg_temp
+			INNER JOIN [{0}] rg_temp
 			ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-			;""".format(iua_getter.get_temptable, self.get_temptable)
+			;""".format(self.get_temptable)
 			
 			querylog.info(query)
 			self.cur.execute(query)
 			
 			rows = self.cur.fetchall()
-			row_guids = [row[0] for row in rows]
+			self.lock.release()
 			
+			row_guids = [row[0] for row in rows]
+			iua_getter = IdentificationUnitAnalysisGetter(self.dc_config, fieldname, self.users_project_ids, withhold_set_before = True)
 			iua_getter.getByRowGUIDs(row_guids)
 			iua_getter.list2dict()
 			
+			self.lock.acquire()
+			self.iua_dict[fieldname] = iua_getter.iua_dict
+			self.lock.release()
+		return
+
+
+	def insertIUADict(self):
+		for fieldname in self.iua_dict:
 			for iu in self.iu_list:
-				if iu['CollectionSpecimenID'] in iua_getter.iua_dict and iu['IdentificationUnitID'] in iua_getter.iua_dict[iu['CollectionSpecimenID']]:
+				if iu['CollectionSpecimenID'] in self.iua_dict[fieldname] and iu['IdentificationUnitID'] in self.iua_dict[fieldname][iu['CollectionSpecimenID']]:
 					if 'IdentificationUnitAnalyses' not in iu:
 						iu['IdentificationUnitAnalyses'] = {}
 					if fieldname not in iu['IdentificationUnitAnalyses']:
 						iu['IdentificationUnitAnalyses'][fieldname] = []
-					for iua_id in iua_getter.iua_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-						iu['IdentificationUnitAnalyses'][fieldname].append(iua_getter.iua_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id])
+					for iua_id in self.iua_dict[fieldname][iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+						iu['IdentificationUnitAnalyses'][fieldname].append(self.iua_dict[fieldname][iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id])
 		
 		return
 
 
-	def setChildIdentifications(self):
-		
-		i_getter = IdentificationGetter(self.dc_db, self.users_project_ids)
-		i_getter.createGetTempTable()
+	def getChildIdentifications(self):
+		self.lock.acquire()
 		
 		query = """
-		INSERT INTO [{0}] ([rowguid_to_get])
 		SELECT i.[RowGUID]
 		FROM [IdentificationUnit] iu
 		INNER JOIN [Identification] i
 		ON iu.[CollectionSpecimenID] = i.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = i.[IdentificationUnitID]
-		INNER JOIN [{1}] rg_temp
+		INNER JOIN [{0}] rg_temp
 		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(i_getter.get_temptable, self.get_temptable)
+		;""".format(self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
-		self.con.commit()
 		
-		i_getter.getData()
+		rows = self.cur.fetchall()
+		row_guids = [row[0] for row in rows]
+		self.lock.release()
+		
+		i_getter = IdentificationGetter(self.dc_config, self.users_project_ids)
+		i_getter.getByRowGUIDs(row_guids)
 		i_getter.list2dict()
 		
+		self.i_dict = i_getter.i_dict
+	
+		return
+
+
+	def insertIdentificationDict(self):
 		for iu in self.iu_list:
-			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
+			if iu['CollectionSpecimenID'] in self.i_dict and iu['IdentificationUnitID'] in self.i_dict[iu['CollectionSpecimenID']]:
 				if 'Identifications' not in iu:
 					iu['Identifications'] = []
-				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
+				for i_id in self.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+					iu['Identifications'].append(self.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
 		
 		return
 

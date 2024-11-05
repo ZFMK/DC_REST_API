@@ -10,8 +10,7 @@ class DataGetter():
 	def __init__(self, dc_db):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
-		# get a new cursor to allow for threaded tasks on the same connection
-		self.cur = self.con.cursor()
+		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 
 
