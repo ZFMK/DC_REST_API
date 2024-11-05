@@ -9,7 +9,7 @@ from threading import Thread, Lock
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
-#from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodParameterGetter import IdentificationUnitAnalysisMethodParameterGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodParameterGetter import IdentificationUnitAnalysisMethodParameterGetter
 
 from DBConnectors.MSSQLConnector import MSSQLConnector
 
@@ -136,15 +136,15 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		self.lock = Lock()
 		
 		iuam_getter_thread = Thread(target = self.getIUAMData)
-		#iuamp_getter_thread = Thread(target = self.getChildParameters)
+		iuamp_getter_thread = Thread(target = self.getChildParameters)
 		
 		iuam_getter_thread.start()
-		#iuamp_getter_thread.start()
+		iuamp_getter_thread.start()
 		
 		iuam_getter_thread.join()
-		#iuamp_getter_thread.join()
+		iuamp_getter_thread.join()
 		
-		#self.insertParameterDicts()
+		self.insertIUAMPDict()
 		
 		return self.iuam_list
 
@@ -205,8 +205,8 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
 			if element['MethodID'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
 				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
-			if element['MethodMarker'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
-				self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
+			#if element['MethodMarker'] not in self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
+			#	self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
 				
 			self.iuam_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = element 
 		
@@ -261,7 +261,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		return withholded
 
 
-	def setChildParameters(self):
+	def getChildParameters(self):
 		self.lock.acquire()
 		
 		query = """
@@ -284,6 +284,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		
 		row_guids = [row[0] for row in rows]
 		iuamp_getter = IdentificationUnitAnalysisMethodParameterGetter(self.dc_config, self.fieldname, self.users_project_ids)
+		iuamp_getter.getByRowGUIDs(row_guids)
 		iuamp_getter.list2dict()
 		self.iuamp_dict = iuamp_getter.iuamp_dict
 		
@@ -305,18 +306,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 					iuam['Parameters'].append(self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id])
 		
 		return
-		
-		
-		
-		
-		for iu in self.iu_list:
-			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
-				if 'Identifications' not in iu:
-					iu['Identifications'] = []
-				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
-		
-		return
+
 
 
 

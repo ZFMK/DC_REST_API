@@ -4,7 +4,7 @@ import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
-from threading import Thread, Lock
+#from threading import Thread, Lock
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
@@ -134,213 +134,71 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		return iuamps
 
 
-
-	def create_iuamp_temptable(self):
-		query = """
-		DROP TABLE IF EXISTS [#temp_iuamp_ids]
-		;"""
-		self.cur.execute(query)
-		self.con.commit()
+	def getData(self):
 		
-		query = """
-		CREATE TABLE [#temp_iuamp_ids] (
-			[parameter_pk] INT IDENTITY PRIMARY KEY,
-			[RowGUID] uniqueidentifier,
-			[CollectionSpecimenID] INT NOT NULL,
-			[IdentificationUnitID] INT NOT NULL,
-			[SpecimenPartID] INT NOT NULL,
-			[AnalysisID] INT NOT NULL,
-			[AnalysisNumber] NVARCHAR(50) NOT NULL COLLATE {0},
-			[MethodID] INT NOT NULL,
-			[MethodMarker] NVARCHAR(50) NOT NULL COLLATE {0},
-			[ParameterID] INT NOT NULL,
-			INDEX [idx_RowGUID] ([RowGUID]),
-			INDEX [idx_CollectionSpecimenID] ([CollectionSpecimenID]),
-			INDEX [idx_IdentificationUnitID] ([IdentificationUnitID]),
-			INDEX [idx_SpecimenPartID] ([SpecimenPartID]),
-			INDEX [idx_AnalysisID] ([AnalysisID]),
-			INDEX [idx_AnalysisNumber] ([AnalysisNumber]),
-			INDEX [MethodID_idx] ([MethodID]),
-			INDEX [MethodMarker_idx] ([MethodMarker]),
-			INDEX [ParameterID_idx] ([ParameterID])
-		)
-		;""".format(self.collation)
-		self.cur.execute(query)
-		self.con.commit()
+		self.setDatabaseURN()
+		if self.withhold_set_before is not True:
+			self.withholded = self.filterAllowedRowGUIDs()
 		
-		query = """
-		INSERT INTO [#temp_iuamp_ids] (
-			[RowGUID],
-			[CollectionSpecimenID],
-			[IdentificationUnitID],
-			[SpecimenPartID],
-			[AnalysisID],
-			[AnalysisNumber],
-			[MethodID],
-			[MethodMarker],
-			[ParameterID]
-		)
-		SELECT 
-		DISTINCT
-		iuamp.[RowGUID],
-		iuamp.[CollectionSpecimenID],
-		iuamp.[IdentificationUnitID],
-		iuamp.[SpecimenPartID],
-		iuamp.[AnalysisID],
-		iuamp.[AnalysisNumber],
-		iuamp.[MethodID],
-		iuamp.[MethodMarker],
-		iuamp.[ParameterID]
-		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
-			ON (g_temp.[rowguid_to_get] = iuamp.[RowGUID])
-		INNER JOIN [{1}] amp_filter
-		ON amp_filter.AnalysisID = iuamp.AnalysisID AND amp.MethodID = iuamp.MethodID AND amp.ParameterID = iuamp.ParameterID
-		;""".format(self.get_temptable, self.amp_filter_temptable)
-		
-		self.cur.execute(query)
-		self.con.commit()
-
-
-	def set_parameters(self):
 		query = """
 		SELECT DISTINCT
-		ROW_NUMBER() OVER(ORDER BY a_temp.[idshash], a_temp.[analysis_pk],m_temp.[method_pk], iuamp.ParameterID) AS parameter_pk,
-		iuamp.[RowGUID],
+		g_temp.[rowguid_to_get] AS [RowGUID],
+		g_temp.[DatabaseURN],
+		iuamp.[CollectionSpecimenID],
+		iuamp.[IdentificationUnitID],
+		iuamp.[AnalysisID],
+		iuamp.[AnalysisNumber],
+		iuamp.MethodID,
+		iuamp.MethodMarker,
 		iuamp.ParameterID,
 		iuamp.[Value] AS ParameterValue,
-		p.DisplayText AS ParameterDisplay -- ,
-		 -- p.Description AS ParameterDescription,
-		 -- p.Notes AS ParameterNotes
-		FROM [#temp_iuamp_ids] p_temp
+		p.DisplayText AS ParameterDisplay,
+		p.Description AS ParameterDescription,
+		p.Notes AS ParameterNotes
+		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
-		ON (
-			p_temp.[RowGUID] = iuamp.[RowGUID]
-		)
-		INNER JOIN [#temp_amp_filter] amp_filter
-		ON (
-			amp_filter.AnalysisID = iuamp.AnalysisID
+			ON g_temp.[rowguid_to_get] = iuamp.[RowGUID]
+		INNER JOIN [{1}] amp_filter
+		ON amp_filter.AnalysisID = iuamp.AnalysisID
 			AND amp_filter.MethodID = iuamp.MethodID
 			AND amp_filter.ParameterID = iuamp.ParameterID
-		)
 		INNER JOIN [Parameter] p
-		ON (
-			p.MethodID = iuamp.MethodID
-			AND p.ParameterID = iuamp.ParameterID
-		)
-		;"""
-		
-		log_query.info(query)
-		
+		ON p.MethodID = iuamp.MethodID AND p.ParameterID = iuamp.ParameterID
+		;""".format(self.get_temptable, self.amp_filter_temptable)
 		self.cur.execute(query)
 		columns = [column[0] for column in self.cur.description]
 		
-		rows = self.cur.fetchall()
+		iuamp_rows = self.cur.fetchall()
 		
-		self.parameters_dict = {}
+		self.iuamp_list = []
+		for row in iuamp_rows:
+			self.iuamp_list.append(dict(zip(columns, row)))
 		
-		parameters = []
-		for row in rows:
-			parameters.append(dict(zip(columns, row)))
-		
-		for parameter in parameters:
-			idshash = parameter['_id']
-			parameter_pk = parameter['parameter_pk']
-			method_pk = parameter['method_pk']
-			analysis_pk = parameter['analysis_pk']
-			
-			self.parameters_dict[parameter_pk] = []
-			
-			# use only the name and the value of each parameter
-			# it is easier to put them into self.iuanalyses_dict later when they are provided as list
-			self.parameters_dict[parameter_pk] = [parameter['ParameterDisplay'], parameter['ParameterValue']]
-			
-			'''
-			for key in parameter:
-				if key not in ('_id', 'method_pk', 'analysis_pk', 'parameter_pk', 'AnalysisID', 'AnalysisNumber', 'MethodID', 'MethodMarker'):
-					self.parameters_dict[parameter_pk][key] = parameter[key]
-			'''
-			
-			self.keys_dict[idshash][analysis_pk][method_pk][parameter_pk] = {}
-			
-		return
-
-
-
-
-	def getData(self):
-		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
-		
-		self.create_iuamp_temptable()
-		
-		
-		
-
-
-
-
-
-
-
-
-
-
-	def 
-		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
-		
-		query = """
-		SELECT
-		g_temp.[rowguid_to_get] AS [RowGUID],
-		g_temp.[DatabaseURN],
-		iua.[CollectionSpecimenID],
-		iua.[IdentificationUnitID],
-		iua.[SpecimenPartID],
-		iua.[AnalysisID],
-		iua.[AnalysisNumber],
-		iua.[RowGUID],
-		
-		iua.[AnalysisResult],
-		iua.[ExternalAnalysisURI],
-		iua.[ResponsibleName],
-		iua.[AnalysisDate],
-		iua.[Notes],
-		
-		
-		
-		
-		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON iua.[RowGUID] = g_temp.[rowguid_to_get]
-		;""".format(self.get_temptable)
-		self.cur.execute(query)
-		self.columns = [column[0] for column in self.cur.description]
-		
-		self.iu_rows = self.cur.fetchall()
-		self.rows2list()
-		
-		self.setChildIdentifications()
-		
-		return self.iu_list
-
-
-	def rows2list(self):
-		self.iu_list = []
-		for row in self.iu_rows:
-			self.iu_list.append(dict(zip(self.columns, row)))
-		return
+		return self.iuamp_list
 
 
 	def list2dict(self):
-		self.iu_dict = {}
-		for element in self.iu_list:
-			if element['CollectionSpecimenID'] not in self.iu_dict:
-				self.iu_dict[element['CollectionSpecimenID']] = {}
+		self.iuamp_dict = {}
+		for element in self.iuamp_list:
+			if element['CollectionSpecimenID'] not in self.iuamp_dict:
+				self.iuamp_dict[element['CollectionSpecimenID']] = {}
+			if element['IdentificationUnitID'] not in self.iuamp_dict[element['CollectionSpecimenID']]:
+				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+			if element['AnalysisID'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
+				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']] = {}
+			if element['AnalysisNumber'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']]:
+				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
+			if element['MethodID'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
+				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
+			if element['MethodMarker'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
+				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
+			#if element['MethodMarker'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['ParameterID']]:
+			#	self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = {}
 				
-			self.iu_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = element 
+			self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = element 
 		
 		return
+
 
 
 	def filterAllowedRowGUIDs(self):
@@ -378,7 +236,7 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		ON iuamp.RowGUID = g_temp.[rowguid_to_get]
 		INNER JOIN [IdentificationUnit] iu
 		ON iu.[CollectionSpecimenID] = iuamp.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iuamp.[IdentificationUnitID]
-		INNER JOIN [CollectionSpecimen] cs ON iua.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		INNER JOIN [CollectionSpecimen] cs ON iuamp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
 		{1}
 		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '')
 		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
@@ -390,38 +248,6 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		self.con.commit()
 		
 		return withholded
-
-
-	def setChildIdentifications(self):
-		
-		i_getter = IdentificationGetter(self.dc_db, self.users_project_ids)
-		i_getter.createGetTempTable()
-		
-		query = """
-		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT i.[RowGUID]
-		FROM [IdentificationUnit] iu
-		INNER JOIN [Identification] i
-		ON iu.[CollectionSpecimenID] = i.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = i.[IdentificationUnitID]
-		INNER JOIN [{1}] rg_temp
-		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(i_getter.get_temptable, self.get_temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		i_getter.getData()
-		i_getter.list2dict()
-		
-		for iu in self.iu_list:
-			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
-				if 'Identifications' not in iu:
-					iu['Identifications'] = []
-				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
-		
-		return
 
 
 
