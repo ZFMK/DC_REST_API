@@ -8,7 +8,7 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
-#from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodParameterGetter import IdentificationUnitAnalysisMethodParameterGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisMethodParameterGetter import IdentificationUnitAnalysisMethodParameterGetter
 
 
 class IdentificationUnitAnalysisMethodGetter(DataGetter):
@@ -161,7 +161,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		self.iuam_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		#self.setChildParameters()
+		self.setChildParameters()
 		
 		return self.iuam_list
 
@@ -202,7 +202,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
 		
 		query = """
-		SELECT iuam.[RowGUID]
+		SELECT DISTINCT iuam.[RowGUID]
 		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
 		ON iuam.RowGUID = g_temp.[rowguid_to_get]
@@ -242,34 +242,47 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		return withholded
 
 
-	def setChildIdentifications(self):
+	def setChildParameters(self):
 		
-		i_getter = IdentificationGetter(self.dc_db, self.users_project_ids)
-		i_getter.createGetTempTable()
+		iuamp_getter = IdentificationUnitAnalysisMethodParameterGetter(self.dc_db, self.fieldname, self.users_project_ids, self.amp_filter_temptable, withhold_set_before = True)
+		iuamp_getter.createGetTempTable()
 		
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT i.[RowGUID]
-		FROM [IdentificationUnit] iu
-		INNER JOIN [Identification] i
-		ON iu.[CollectionSpecimenID] = i.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = i.[IdentificationUnitID]
-		INNER JOIN [{1}] rg_temp
-		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(i_getter.get_temptable, self.get_temptable)
+		SELECT DISTINCT iuamp.[RowGUID]
+		FROM [IdentificationUnitAnalysisMethod] iuam
+		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
+		ON iuam.[CollectionSpecimenID] = iuamp.[CollectionSpecimenID] AND iuam.[IdentificationUnitID] = iuamp.[IdentificationUnitID]
+		AND iuam.[AnalysisID] = iuamp.[AnalysisID] AND iuam.[AnalysisNumber] = iuamp.[AnalysisNumber]
+		AND iuam.[MethodID] = iuamp.[MethodID] AND iuam.[MethodMarker] = iuamp.[MethodMarker]
+		INNER JOIN [{1}] amp_filter
+			ON amp_filter.AnalysisID = iuam.AnalysisID AND amp_filter.MethodID = iuam.MethodID
+		INNER JOIN [{2}] rg_temp
+		ON iuam.[RowGUID] = rg_temp.[rowguid_to_get]
+		;""".format(iuamp_getter.get_temptable, self.amp_filter_temptable, self.get_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
 		
-		i_getter.getData()
-		i_getter.list2dict()
+		iuamp_getter.getData()
+		iuamp_getter.list2dict()
 		
-		for iu in self.iu_list:
-			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
-				if 'Identifications' not in iu:
-					iu['Identifications'] = []
-				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
+		self.iuamp_dict = iuamp_getter.iuamp_dict
+		
+		for iuam in self.iuam_list:
+			if (iuam['CollectionSpecimenID'] in self.iuamp_dict 
+			and iuam['IdentificationUnitID'] in self.iuamp_dict[iuam['CollectionSpecimenID']] 
+			and iuam['AnalysisID'] in self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']]
+			and iuam['AnalysisNumber'] in self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']]
+			and iuam['MethodID'] in self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']]
+			and iuam['MethodMarker'] in self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']]):
+				if 'Parameters' not in iuam:
+					iuam['Parameters'] = []
+				
+				for parameter_id in self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']]:
+					iuam['Parameters'].append(self.iuamp_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id])
+
 		
 		return
 
