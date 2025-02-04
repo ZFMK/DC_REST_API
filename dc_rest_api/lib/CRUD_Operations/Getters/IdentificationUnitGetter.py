@@ -131,7 +131,11 @@ class IdentificationUnitGetter(DataGetter):
 	def rows2list(self):
 		self.iu_list = []
 		for row in self.iu_rows:
-			self.iu_list.append(dict(zip(self.columns, row)))
+			r_dict = {}
+			for i in range (len(self.columns)):
+				if row[i] is not None:
+					r_dict[self.columns[i]] = row[i]
+			self.iu_list.append(r_dict)
 		return
 
 

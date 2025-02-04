@@ -148,7 +148,11 @@ class CollectionSpecimenGetter(DataGetter):
 	def rows2list(self):
 		self.cs_list = []
 		for row in self.cs_rows:
-			self.cs_list.append(dict(zip(self.columns, row)))
+			r_dict = {}
+			for i in range (len(self.columns)):
+				if row[i] is not None:
+					r_dict[self.columns[i]] = row[i]
+			self.cs_list.append(r_dict)
 		return
 
 
