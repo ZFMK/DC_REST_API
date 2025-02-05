@@ -19,8 +19,8 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False, dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.fieldname = fieldname
 		
@@ -161,36 +161,33 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		ON p.MethodID = iuamp.MethodID AND p.ParameterID = iuamp.ParameterID
 		;""".format(self.get_temptable, self.amp_filter_temptable)
 		self.cur.execute(query)
-		columns = [column[0] for column in self.cur.description]
+		self.columns = [column[0] for column in self.cur.description]
 		
-		iuamp_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
+		self.rows2list()
 		
-		self.iuamp_list = []
-		for row in iuamp_rows:
-			self.iuamp_list.append(dict(zip(columns, row)))
-		
-		return self.iuamp_list
+		return self.results_list
 
 
 	def list2dict(self):
-		self.iuamp_dict = {}
-		for element in self.iuamp_list:
-			if element['CollectionSpecimenID'] not in self.iuamp_dict:
-				self.iuamp_dict[element['CollectionSpecimenID']] = {}
-			if element['IdentificationUnitID'] not in self.iuamp_dict[element['CollectionSpecimenID']]:
-				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
-			if element['AnalysisID'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
-				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']] = {}
-			if element['AnalysisNumber'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']]:
-				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
-			if element['MethodID'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
-				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
-			if element['MethodMarker'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
-				self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
-			#if element['MethodMarker'] not in self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['ParameterID']]:
-			#	self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
+			if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+			if element['AnalysisID'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']] = {}
+			if element['AnalysisNumber'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
+			if element['MethodID'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
+			if element['MethodMarker'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
+			#if element['MethodMarker'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['ParameterID']]:
+			#	self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = {}
 				
-			self.iuamp_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = element 
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = element 
 		
 		return
 

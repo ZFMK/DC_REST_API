@@ -10,8 +10,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter im
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationGetter import IdentificationGetter
 
 class IdentificationUnitGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.withholded = []
 		
@@ -119,33 +119,22 @@ class IdentificationUnitGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.iu_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
 		self.setChildIdentifications()
 		self.setChildIUAnalyses()
 		
-		return self.iu_list
-
-
-	def rows2list(self):
-		self.iu_list = []
-		for row in self.iu_rows:
-			r_dict = {}
-			for i in range (len(self.columns)):
-				if row[i] is not None:
-					r_dict[self.columns[i]] = row[i]
-			self.iu_list.append(r_dict)
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.iu_dict = {}
-		for element in self.iu_list:
-			if element['CollectionSpecimenID'] not in self.iu_dict:
-				self.iu_dict[element['CollectionSpecimenID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
 				
-			self.iu_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = element 
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = element 
 		
 		return
 
@@ -219,14 +208,14 @@ class IdentificationUnitGetter(DataGetter):
 			iua_getter.getData()
 			iua_getter.list2dict()
 			
-			for iu in self.iu_list:
-				if iu['CollectionSpecimenID'] in iua_getter.iua_dict and iu['IdentificationUnitID'] in iua_getter.iua_dict[iu['CollectionSpecimenID']]:
+			for iu in self.results_list:
+				if iu['CollectionSpecimenID'] in iua_getter.results_dict and iu['IdentificationUnitID'] in iua_getter.results_dict[iu['CollectionSpecimenID']]:
 					if 'IdentificationUnitAnalyses' not in iu:
 						iu['IdentificationUnitAnalyses'] = {}
 					if fieldname not in iu['IdentificationUnitAnalyses']:
 						iu['IdentificationUnitAnalyses'][fieldname] = []
-					for iua_id in iua_getter.iua_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-						iu['IdentificationUnitAnalyses'][fieldname].append(iua_getter.iua_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id])
+					for iua_id in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+						iu['IdentificationUnitAnalyses'][fieldname].append(iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id])
 		
 		return
 
@@ -253,12 +242,12 @@ class IdentificationUnitGetter(DataGetter):
 		i_getter.getData()
 		i_getter.list2dict()
 		
-		for iu in self.iu_list:
-			if iu['CollectionSpecimenID'] in i_getter.i_dict and iu['IdentificationUnitID'] in i_getter.i_dict[iu['CollectionSpecimenID']]:
+		for iu in self.results_list:
+			if iu['CollectionSpecimenID'] in i_getter.results_dict and iu['IdentificationUnitID'] in i_getter.results_dict[iu['CollectionSpecimenID']]:
 				if 'Identifications' not in iu:
 					iu['Identifications'] = []
-				for i_id in i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['Identifications'].append(i_getter.i_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
+				for i_id in i_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+					iu['Identifications'].append(i_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][i_id])
 		
 		return
 

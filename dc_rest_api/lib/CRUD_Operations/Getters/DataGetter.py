@@ -7,9 +7,10 @@ querylog = logging.getLogger('query')
 
 
 class DataGetter():
-	def __init__(self, dc_db):
+	def __init__(self, dc_db, dismiss_null_values = True):
 		
 		self.dc_db = dc_db
+		self.dismiss_null_values = dismiss_null_values
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
@@ -98,5 +99,30 @@ class DataGetter():
 			projectwhere = "{0} users_cs.ProjectID IS NULL".format(clause_connector)
 		
 		return projectjoin, projectwhere
-		
+
+
+	def rows2list(self):
+		if self.dismiss_null_values is True:
+			self.rows2listWithNulls()
+		else:
+			self.rows2listWithoutNulls()
+
+
+	def rows2listWithoutNulls(self):
+		self.results_list = []
+		for row in self.results_rows:
+			r_dict = {}
+			for i in range (len(self.columns)):
+				if row[i] is not None:
+					r_dict[self.columns[i]] = row[i]
+			self.results_list.append(r_dict)
+		return 
+
+
+	def rows2listWithNulls(self):
+		self.results_list = []
+		for row in self.results_rows:
+			self.results_list.append(dict(zip(self.columns, row)))
+		return
+
 

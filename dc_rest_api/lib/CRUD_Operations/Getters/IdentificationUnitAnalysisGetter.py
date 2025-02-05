@@ -21,8 +21,8 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False, dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.fieldname = fieldname
 		
@@ -165,36 +165,28 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.iua_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
 		self.setChildMethods()
 		
-		return self.iua_list
-
-
-	def rows2list(self):
-		self.iua_list = []
-		for row in self.iua_rows:
-			self.iua_list.append(dict(zip(self.columns, row)))
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.iua_dict = {}
-		for element in self.iua_list:
-			
-			if element['CollectionSpecimenID'] not in self.iua_dict:
-				self.iua_dict[element['CollectionSpecimenID']] = {}
-			if element['IdentificationUnitID'] not in self.iua_dict[element['CollectionSpecimenID']]:
-				self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
+			if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
 			# None can be used as key
-			if element['SpecimenPartID'] not in self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
-				self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = {}
-			if element['AnalysisID'] not in self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']]:
-				self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']][element['AnalysisID']] = {}
+			if element['SpecimenPartID'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = {}
+			if element['AnalysisID'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']][element['AnalysisID']] = {}
 			
-			self.iua_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']][element['AnalysisID']][element['AnalysisNumber']] = element 
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']][element['AnalysisID']][element['AnalysisNumber']] = element 
 		
 		return
 
@@ -273,18 +265,18 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		iuam_getter.getData()
 		iuam_getter.list2dict()
 		
-		for iua in self.iua_list:
-			if (iua['CollectionSpecimenID'] in iuam_getter.iuam_dict 
-			and iua['IdentificationUnitID'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']] 
-			and iua['AnalysisID'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']]
-			and iua['AnalysisNumber'] in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']]):
+		for iua in self.results_list:
+			if (iua['CollectionSpecimenID'] in iuam_getter.results_dict 
+			and iua['IdentificationUnitID'] in iuam_getter.results_dict[iua['CollectionSpecimenID']] 
+			and iua['AnalysisID'] in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']]
+			and iua['AnalysisNumber'] in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']]):
 				if 'Methods' not in iua:
 					iua['Methods'] = {}
 				
-				for method_id in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]:
+				for method_id in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]:
 					iua['Methods'][method_id] = []
-					for iuam_id in iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id]:
-						iua['Methods'][method_id].append(iuam_getter.iuam_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id])
+					for iuam_id in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id]:
+						iua['Methods'][method_id].append(iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id])
 		
 		return
 

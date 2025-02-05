@@ -8,8 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
 class CollectionGetter(DataGetter):
-	def __init__(self, dc_db):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.get_temptable = '#get_c_temptable'
 
@@ -107,27 +107,19 @@ class CollectionGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.c_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		return self.c_list
-
-
-	def rows2list(self):
-		self.c_list = []
-		for row in self.c_rows:
-			self.c_list.append(dict(zip(self.columns, row)))
-		
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.c_dict = {}
-		for element in self.c_list:
-			if element['CollectionID'] not in self.c_dict:
-				self.c_dict[element['CollectionID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionID'] not in self.results_dict:
+				self.results_dict[element['CollectionID']] = {}
 				
-			self.c_dict[element['CollectionID']] = element 
+			self.results_dict[element['CollectionID']] = element 
 
 
 

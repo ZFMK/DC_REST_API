@@ -9,8 +9,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
 
 class IdentificationGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values = True)
 		
 		self.withholded = []
 		
@@ -126,28 +126,21 @@ class IdentificationGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.i_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		return self.i_list
-
-
-	def rows2list(self):
-		self.i_list = []
-		for row in self.i_rows:
-			self.i_list.append(dict(zip(self.columns, row)))
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.i_dict = {}
-		for element in self.i_list:
-			if element['CollectionSpecimenID'] not in self.i_dict:
-				self.i_dict[element['CollectionSpecimenID']] = {}
-			if element['IdentificationUnitID'] not in self.i_dict[element['CollectionSpecimenID']]:
-				self.i_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
+			if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
 			
-			self.i_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['IdentificationSequence']] = element 
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['IdentificationSequence']] = element 
 		
 		return
 

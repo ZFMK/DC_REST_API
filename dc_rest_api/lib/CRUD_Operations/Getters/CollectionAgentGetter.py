@@ -8,8 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
 class CollectionAgentGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.withholded = []
 		
@@ -110,27 +110,19 @@ class CollectionAgentGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.ca_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		return self.ca_list
-
-
-	def rows2list(self):
-		self.ca_list = []
-		for row in self.ca_rows:
-			self.ca_list.append(dict(zip(self.columns, row)))
-		
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.ca_dict = {}
-		for element in self.ca_list:
-			if element['CollectionSpecimenID'] not in self.ca_dict:
-				self.ca_dict[element['CollectionSpecimenID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
 				
-			self.ca_dict[element['CollectionSpecimenID']][element['CollectorsName']] = element 
+			self.results_dict[element['CollectionSpecimenID']][element['CollectorsName']] = element 
 
 
 	def filterAllowedRowGUIDs(self):

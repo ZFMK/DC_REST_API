@@ -8,8 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
 class CollectionEventGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.withholded = []
 		
@@ -142,27 +142,19 @@ class CollectionEventGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.ce_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		return self.ce_list
-
-
-	def rows2list(self):
-		self.ce_list = []
-		for row in self.ce_rows:
-			self.ce_list.append(dict(zip(self.columns, row)))
-		
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.ce_dict = {}
-		for element in self.ce_list:
-			if element['CollectionEventID'] not in self.ce_dict:
-				self.ce_dict[element['CollectionEventID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionEventID'] not in self.results_dict:
+				self.results_dict[element['CollectionEventID']] = {}
 				
-			self.ce_dict[element['CollectionEventID']] = element 
+			self.results_dict[element['CollectionEventID']] = element 
 
 
 	def filterAllowedRowGUIDs(self):

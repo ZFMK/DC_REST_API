@@ -8,8 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
 class CollectionProjectGetter(DataGetter):
-	def __init__(self, dc_db):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.get_temptable = '#get_cp_temptable'
 
@@ -104,27 +104,19 @@ class CollectionProjectGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.cp_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		return self.cp_list
-
-
-	def rows2list(self):
-		self.cp_list = []
-		for row in self.cp_rows:
-			self.cp_list.append(dict(zip(self.columns, row)))
-		
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.cp_dict = {}
-		for element in self.cp_list:
-			if element['CollectionSpecimenID'] not in self.cp_dict:
-				self.cp_dict[element['CollectionSpecimenID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
 				
-			self.cp_dict[element['CollectionSpecimenID']][element['ProjectID']] = element
+			self.results_dict[element['CollectionSpecimenID']][element['ProjectID']] = element
 		
 		return
 

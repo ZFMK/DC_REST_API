@@ -15,8 +15,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.CollectionProjectGetter import Coll
 
 
 class CollectionSpecimenGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.withholded = []
 		self.users_project_ids = users_project_ids
@@ -137,28 +137,17 @@ class CollectionSpecimenGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.cs_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
 		self.setConnectedTableData()
 		
-		return self.cs_list
-
-
-	def rows2list(self):
-		self.cs_list = []
-		for row in self.cs_rows:
-			r_dict = {}
-			for i in range (len(self.columns)):
-				if row[i] is not None:
-					r_dict[self.columns[i]] = row[i]
-			self.cs_list.append(r_dict)
-		return
+		return self.results_list
 
 
 	def list2dict(self):
 		self.cs_dict = {}
-		for element in self.cs_list:
+		for element in self.results_list:
 			self.cs_dict[element['CollectionSpecimenID']] = element
 		return
 
@@ -226,11 +215,11 @@ class CollectionSpecimenGetter(DataGetter):
 		csp_getter.getData()
 		csp_getter.list2dict()
 		
-		for cs in self.cs_list:
-			if cs['CollectionSpecimenID'] in csp_getter.csp_dict:
+		for cs in self.results_list:
+			if cs['CollectionSpecimenID'] in csp_getter.results_dict:
 				cs['CollectionSpecimenParts'] = []
-				for csp_id in csp_getter.csp_dict[cs['CollectionSpecimenID']]:
-					cs['CollectionSpecimenParts'].append(csp_getter.csp_dict[cs['CollectionSpecimenID']][csp_id])
+				for csp_id in csp_getter.results_dict[cs['CollectionSpecimenID']]:
+					cs['CollectionSpecimenParts'].append(csp_getter.results_dict[cs['CollectionSpecimenID']][csp_id])
 		
 		return
 
@@ -257,11 +246,11 @@ class CollectionSpecimenGetter(DataGetter):
 		iu_getter.getData()
 		iu_getter.list2dict()
 		
-		for cs in self.cs_list:
-			if cs['CollectionSpecimenID'] in iu_getter.iu_dict:
+		for cs in self.results_list:
+			if cs['CollectionSpecimenID'] in iu_getter.results_dict:
 				cs['IdentificationUnits'] = []
-				for iu_id in iu_getter.iu_dict[cs['CollectionSpecimenID']]:
-					cs['IdentificationUnits'].append(iu_getter.iu_dict[cs['CollectionSpecimenID']][iu_id])
+				for iu_id in iu_getter.results_dict[cs['CollectionSpecimenID']]:
+					cs['IdentificationUnits'].append(iu_getter.results_dict[cs['CollectionSpecimenID']][iu_id])
 		
 		return
 
@@ -288,11 +277,11 @@ class CollectionSpecimenGetter(DataGetter):
 		ca_getter.getData()
 		ca_getter.list2dict()
 		
-		for cs in self.cs_list:
-			if cs['CollectionSpecimenID'] in ca_getter.ca_dict:
+		for cs in self.results_list:
+			if cs['CollectionSpecimenID'] in ca_getter.results_dict:
 				cs['CollectionAgents'] = []
-				for ca_id in ca_getter.ca_dict[cs['CollectionSpecimenID']]:
-					cs['CollectionAgents'].append(ca_getter.ca_dict[cs['CollectionSpecimenID']][ca_id])
+				for ca_id in ca_getter.results_dict[cs['CollectionSpecimenID']]:
+					cs['CollectionAgents'].append(ca_getter.results_dict[cs['CollectionSpecimenID']][ca_id])
 		
 		return
 
@@ -320,9 +309,9 @@ class CollectionSpecimenGetter(DataGetter):
 		c_getter.getData()
 		c_getter.list2dict()
 		
-		for cs in self.cs_list:
-			if 'CollectionID' in cs and cs['CollectionID'] in c_getter.c_dict:
-				cs['Collection'] = c_getter.c_dict[cs['CollectionID']]
+		for cs in self.results_list:
+			if 'CollectionID' in cs and cs['CollectionID'] in c_getter.results_dict:
+				cs['Collection'] = c_getter.results_dict[cs['CollectionID']]
 		
 		return
 
@@ -349,11 +338,11 @@ class CollectionSpecimenGetter(DataGetter):
 		cp_getter.getData()
 		cp_getter.list2dict()
 		
-		for cs in self.cs_list:
-			if cs['CollectionSpecimenID'] in cp_getter.cp_dict:
+		for cs in self.results_list:
+			if cs['CollectionSpecimenID'] in cp_getter.results_dict:
 				cs['Projects'] = []
-				for cp_id in cp_getter.cp_dict[cs['CollectionSpecimenID']]:
-					cs['Projects'].append(cp_getter.cp_dict[cs['CollectionSpecimenID']][cp_id])
+				for cp_id in cp_getter.results_dict[cs['CollectionSpecimenID']]:
+					cs['Projects'].append(cp_getter.results_dict[cs['CollectionSpecimenID']][cp_id])
 		
 		return
 
@@ -384,8 +373,8 @@ class CollectionSpecimenGetter(DataGetter):
 		ce_getter.getData()
 		ce_getter.list2dict()
 		
-		for cs in self.cs_list:
-			if 'CollectionEventID' and cs['CollectionEventID'] in ce_getter.ce_dict:
-				cs['CollectionEvent'] = ce_getter.ce_dict[cs['CollectionEventID']]
+		for cs in self.results_list:
+			if 'CollectionEventID' in cs and cs['CollectionEventID'] in ce_getter.results_dict:
+				cs['CollectionEvent'] = ce_getter.results_dict[cs['CollectionEventID']]
 		
 		return

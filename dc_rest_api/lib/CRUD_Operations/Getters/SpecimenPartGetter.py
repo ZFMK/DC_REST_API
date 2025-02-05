@@ -9,8 +9,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
 
 class SpecimenPartGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = []):
-		DataGetter.__init__(self, dc_db)
+	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
+		DataGetter.__init__(self, dc_db, dismiss_null_values)
 		
 		self.withholded = []
 		
@@ -118,29 +118,21 @@ class SpecimenPartGetter(DataGetter):
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
 		
-		self.csp_rows = self.cur.fetchall()
+		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
 		self.setChildCollections()
 		
-		return self.csp_list
-
-
-	def rows2list(self):
-		self.csp_list = []
-		for row in self.csp_rows:
-			self.csp_list.append(dict(zip(self.columns, row)))
-		
-		return
+		return self.results_list
 
 
 	def list2dict(self):
-		self.csp_dict = {}
-		for element in self.csp_list:
-			if element['CollectionSpecimenID'] not in self.csp_dict:
-				self.csp_dict[element['CollectionSpecimenID']] = {}
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
 				
-			self.csp_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element 
+			self.results_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element 
 
 
 	def filterAllowedRowGUIDs(self):
@@ -211,9 +203,9 @@ class SpecimenPartGetter(DataGetter):
 		c_getter.getData()
 		c_getter.list2dict()
 		
-		for csp in self.csp_list:
-			if csp['CollectionID'] in c_getter.c_dict:
-				csp['Collection'] = c_getter.c_dict[csp['CollectionID']]
+		for csp in self.results_list:
+			if csp['CollectionID'] in c_getter.results_dict:
+				csp['Collection'] = c_getter.results_dict[csp['CollectionID']]
 		
 		return
 
