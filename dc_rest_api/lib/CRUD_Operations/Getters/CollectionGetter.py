@@ -8,8 +8,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 
 class CollectionGetter(DataGetter):
-	def __init__(self, dc_db, dismiss_null_values = True):
-		DataGetter.__init__(self, dc_db, dismiss_null_values)
+	def __init__(self, dc_db):
+		DataGetter.__init__(self, dc_db)
 		
 		self.get_temptable = '#get_c_temptable'
 

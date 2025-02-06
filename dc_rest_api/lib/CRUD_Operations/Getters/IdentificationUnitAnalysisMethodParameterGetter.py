@@ -19,8 +19,8 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False, dismiss_null_values = True):
-		DataGetter.__init__(self, dc_db, dismiss_null_values)
+	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
+		DataGetter.__init__(self, dc_db)
 		
 		self.fieldname = fieldname
 		
@@ -147,7 +147,7 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		iuamp.MethodMarker,
 		iuamp.ParameterID,
 		iuamp.[Value] AS ParameterValue,
-		p.DisplayText AS ParameterDisplay,
+		COALESCE(p.DisplayText, CAST(p.ParameterID AS VARCHAR(50))) AS ParameterDisplay,
 		p.Description AS ParameterDescription,
 		p.Notes AS ParameterNotes
 		FROM [{0}] g_temp

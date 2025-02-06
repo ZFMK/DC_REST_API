@@ -102,7 +102,7 @@ class DataGetter():
 
 
 	def rows2list(self):
-		if self.dismiss_null_values is True:
+		if self.dismiss_null_values is False:
 			self.rows2listWithNulls()
 		else:
 			self.rows2listWithoutNulls()

@@ -21,8 +21,8 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 	and thus cause a large overhead of data transfer
 	"""
 	
-	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False, dismiss_null_values = True):
-		DataGetter.__init__(self, dc_db, dismiss_null_values)
+	def __init__(self, dc_db, fieldname, users_project_ids = [], amp_filter_temptable = None, withhold_set_before = False):
+		DataGetter.__init__(self, dc_db)
 		
 		self.fieldname = fieldname
 		
@@ -141,7 +141,7 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		iuam.[AnalysisNumber],
 		iuam.MethodID,
 		iuam.MethodMarker,
-		m.DisplayText AS MethodDisplay,
+		COALESCE(m.DisplayText, CAST(m.MethodID AS VARCHAR(50))) AS MethodDisplay,
 		m.Description AS MethodDescription,
 		m.Notes AS MethodTypeNotes
 		FROM [{0}] g_temp
@@ -260,20 +260,22 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		iuamp_getter.getData()
 		iuamp_getter.list2dict()
 		
-		self.results_dict = iuamp_getter.results_dict
-		
 		for iuam in self.results_list:
-			if (iuam['CollectionSpecimenID'] in self.results_dict 
-			and iuam['IdentificationUnitID'] in self.results_dict[iuam['CollectionSpecimenID']] 
-			and iuam['AnalysisID'] in self.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']]
-			and iuam['AnalysisNumber'] in self.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']]
-			and iuam['MethodID'] in self.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']]
-			and iuam['MethodMarker'] in self.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']]):
+			if (iuam['CollectionSpecimenID'] in iuamp_getter.results_dict 
+			and iuam['IdentificationUnitID'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']] 
+			and iuam['AnalysisID'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']]
+			and iuam['AnalysisNumber'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']]
+			and iuam['MethodID'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']]
+			and iuam['MethodMarker'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']]):
 				if 'Parameters' not in iuam:
-					iuam['Parameters'] = []
+					iuam['Parameters'] = {}
 				
-				for parameter_id in self.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']]:
-					iuam['Parameters'].append(self.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id])
+				for parameter_id in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']]:
+					parameter_display = iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id]['ParameterDisplay']
+					if parameter_display not in iuam['Parameters']:
+						iuam['Parameters'][parameter_display] = []
+					
+					iuam['Parameters'][parameter_display].append(iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id])
 
 		
 		return

@@ -9,8 +9,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
 
 class SpecimenPartGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
-		DataGetter.__init__(self, dc_db, dismiss_null_values)
+	def __init__(self, dc_db, users_project_ids = []):
+		DataGetter.__init__(self, dc_db)
 		
 		self.withholded = []
 		

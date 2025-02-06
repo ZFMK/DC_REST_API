@@ -10,8 +10,8 @@ from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter im
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationGetter import IdentificationGetter
 
 class IdentificationUnitGetter(DataGetter):
-	def __init__(self, dc_db, users_project_ids = [], dismiss_null_values = True):
-		DataGetter.__init__(self, dc_db, dismiss_null_values)
+	def __init__(self, dc_db, users_project_ids = []):
+		DataGetter.__init__(self, dc_db)
 		
 		self.withholded = []
 		
@@ -213,9 +213,14 @@ class IdentificationUnitGetter(DataGetter):
 					if 'IdentificationUnitAnalyses' not in iu:
 						iu['IdentificationUnitAnalyses'] = {}
 					if fieldname not in iu['IdentificationUnitAnalyses']:
-						iu['IdentificationUnitAnalyses'][fieldname] = []
+						iu['IdentificationUnitAnalyses'][fieldname] = {}
 					for iua_id in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-						iu['IdentificationUnitAnalyses'][fieldname].append(iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id])
+						for analysis_number in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id]:
+							analysis_display = iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number]['AnalysisDisplay']
+							if analysis_display not in iu['IdentificationUnitAnalyses'][fieldname]:
+								iu['IdentificationUnitAnalyses'][fieldname][analysis_display] = []
+						
+						iu['IdentificationUnitAnalyses'][fieldname][analysis_display].append(iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number])
 		
 		return
 
