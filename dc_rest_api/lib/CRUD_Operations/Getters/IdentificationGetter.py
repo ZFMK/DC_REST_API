@@ -12,8 +12,6 @@ class IdentificationGetter(DataGetter):
 	def __init__(self, dc_db, users_project_ids = []):
 		DataGetter.__init__(self, dc_db)
 		
-		self.withholded = []
-		
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_i_temptable'
 

@@ -39,9 +39,6 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		# the withhold_set_before flag shows whether the withhold has been checked in a parent class or not
 		
 		self.withhold_set_before = withhold_set_before
-		
-		self.withholded = []
-
 
 
 	def getByPrimaryKeys(self, iua_ids):
@@ -132,7 +129,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 	def getData(self):
 		self.setDatabaseURN()
 		if self.withhold_set_before is not True:
-			self.withholded = self.filterAllowedRowGUIDs()
+			self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT DISTINCT
@@ -194,30 +191,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 	def filterAllowedRowGUIDs(self):
 		# this methods checks if the connected Specimen is in one of the users projects or if the Withholding column is empty
 		
-		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
-		withholded = []
-		
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
-		
-		query = """
-		SELECT DISTINCT iua.[RowGUID]
-		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnitAnalysis] iua
-		ON iua.RowGUID = g_temp.[rowguid_to_get]
-		INNER JOIN [IdentificationUnit] iu
-		ON iu.[CollectionSpecimenID] = iua.[CollectionSpecimenID] AND iu.[IdentificationUnitID] = iua.[IdentificationUnitID]
-		INNER JOIN [CollectionSpecimen] cs ON iua.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
-		{1}
-		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '')
-		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
-		{2}
-		;""".format(self.get_temptable, projectjoin, projectwhere)
-		
-		querylog.info(query)
-		self.cur.execute(query, self.users_project_ids)
-		rows = self.cur.fetchall()
-		for row in rows:
-			withholded.append((row[0], row[1], row[2]))
 		
 		query = """
 		DELETE g_temp
@@ -237,7 +211,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		self.cur.execute(query, self.users_project_ids)
 		self.con.commit()
 		
-		return withholded
+		return
 
 
 	def setChildMethods(self):

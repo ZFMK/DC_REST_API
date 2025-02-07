@@ -11,8 +11,6 @@ class CollectionAgentGetter(DataGetter):
 	def __init__(self, dc_db, users_project_ids = []):
 		DataGetter.__init__(self, dc_db)
 		
-		self.withholded = []
-		
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_ca_temptable'
 
@@ -91,7 +89,7 @@ class CollectionAgentGetter(DataGetter):
 
 	def getData(self):
 		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
+		self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT DISTINCT
@@ -128,28 +126,7 @@ class CollectionAgentGetter(DataGetter):
 	def filterAllowedRowGUIDs(self):
 		# this methods checks if the connected Specimen is in one of the users projects or if the Withholding column is empty
 		
-		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
-		withholded = []
-		
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
-		
-		query = """
-		SELECT DISTINCT ca.[CollectionSpecimenID], ca.[CollectorsName], ca.[RowGUID]
-		FROM [{0}] g_temp
-		INNER JOIN [CollectionAgent] ca
-		ON ca.RowGUID = g_temp.[rowguid_to_get]
-		INNER JOIN [CollectionSpecimen] cs ON ca.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
-		{1}
-		WHERE (ca.[DataWithholdingReason] IS NOT NULL AND ca.[DataWithholdingReason] != '')
-		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
-		{2}
-		;""".format(self.get_temptable, projectjoin, projectwhere)
-		
-		querylog.info(query)
-		self.cur.execute(query, self.users_project_ids)
-		rows = self.cur.fetchall()
-		for row in rows:
-			withholded.append((row[0], row[1], row[2]))
 		
 		query = """
 		DELETE g_temp
@@ -167,7 +144,7 @@ class CollectionAgentGetter(DataGetter):
 		self.cur.execute(query, self.users_project_ids)
 		self.con.commit()
 		
-		return withholded
+		return
 
 
 

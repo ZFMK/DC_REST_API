@@ -13,8 +13,6 @@ class IdentificationUnitGetter(DataGetter):
 	def __init__(self, dc_db, users_project_ids = []):
 		DataGetter.__init__(self, dc_db)
 		
-		self.withholded = []
-		
 		self.users_project_ids = users_project_ids
 		self.get_temptable = '#get_iu_temptable'
 
@@ -92,7 +90,7 @@ class IdentificationUnitGetter(DataGetter):
 
 	def getData(self):
 		self.setDatabaseURN()
-		self.withholded = self.filterAllowedRowGUIDs()
+		self.filterAllowedRowGUIDs()
 		
 		query = """
 		SELECT DISTINCT
@@ -142,28 +140,7 @@ class IdentificationUnitGetter(DataGetter):
 	def filterAllowedRowGUIDs(self):
 		# this methods checks if the connected Specimen is in one of the users projects or if the Withholding column is empty
 		
-		# the withholded variable keeps the IDs and RowGUIDs of the withholded rows
-		withholded = []
-		
 		projectjoin, projectwhere = self.getProjectJoinForWithhold()
-		
-		query = """
-		SELECT DISTINCT iu.[CollectionSpecimenID], iu.[IdentificationUnitID], iu.[RowGUID]
-		FROM [{0}] g_temp
-		INNER JOIN [IdentificationUnit] iu
-		ON iu.RowGUID = g_temp.[rowguid_to_get]
-		INNER JOIN [CollectionSpecimen] cs ON iu.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
-		{1}
-		WHERE (iu.[DataWithholdingReason] IS NOT NULL AND iu.[DataWithholdingReason] != '') 
-		OR (cs.[DataWithholdingReason] IS NOT NULL AND cs.[DataWithholdingReason] != '')
-		{2}
-		;""".format(self.get_temptable, projectjoin, projectwhere)
-		
-		querylog.info(query)
-		self.cur.execute(query, self.users_project_ids)
-		rows = self.cur.fetchall()
-		for row in rows:
-			withholded.append((row[0], row[1], row[2]))
 		
 		query = """
 		DELETE g_temp
@@ -181,7 +158,7 @@ class IdentificationUnitGetter(DataGetter):
 		self.cur.execute(query, self.users_project_ids)
 		self.con.commit()
 		
-		return withholded
+		return
 
 
 	def setChildIUAnalyses(self):
@@ -219,8 +196,8 @@ class IdentificationUnitGetter(DataGetter):
 							analysis_display = iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number]['AnalysisDisplay']
 							if analysis_display not in iu['IdentificationUnitAnalyses'][fieldname]:
 								iu['IdentificationUnitAnalyses'][fieldname][analysis_display] = []
-						
-						iu['IdentificationUnitAnalyses'][fieldname][analysis_display].append(iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number])
+							
+							iu['IdentificationUnitAnalyses'][fieldname][analysis_display].append(iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number])
 		
 		return
 
