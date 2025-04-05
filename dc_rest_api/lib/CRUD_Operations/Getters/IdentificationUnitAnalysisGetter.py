@@ -143,7 +143,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		iua.Notes AS AnalysisInstanceNotes,
 		iua.ExternalAnalysisURI,
 		iua.ResponsibleName,
-		iua.[AnalysisDate],
+		iua.AnalysisDate,
 		iua.AnalysisResult,
 		iua.AnalysisID,
 		COALESCE(a.DisplayText, CAST(a.AnalysisID AS VARCHAR(50))) AS AnalysisDisplay,
