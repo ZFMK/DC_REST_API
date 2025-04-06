@@ -8,7 +8,7 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTa
 from dc_rest_api.lib.CRUD_Operations.Matchers.AnalysisMatcher import AnalysisMatcher
 #from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
-class IdentificationUnitAnalysisInserter():
+class AnalysisInserter():
 	def __init__(self, dc_db):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()

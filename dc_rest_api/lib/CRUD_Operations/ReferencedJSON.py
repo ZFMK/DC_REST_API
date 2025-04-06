@@ -21,6 +21,7 @@ class ReferencedJSON():
 			"Collection": "Collections",
 			"CollectionEvent": "CollectionEvents",
 			"CollectionExternalDatasource": "CollectionExternalDatasources",
+			"Analysis": "Analyses"
 		}
 		
 		self.flat_references = {
@@ -28,7 +29,8 @@ class ReferencedJSON():
 			"Collection": "Collections",
 			"CollectionEvent": "CollectionEvents",
 			"CollectionExternalDatasource": "CollectionExternalDatasources",
-			"CollectionSpecimens": "CollectionSpecimens"
+			"CollectionSpecimens": "CollectionSpecimens",
+			"Analysis": "Analyses"
 		}
 		
 		self.initExtractedDicts()
@@ -177,6 +179,7 @@ class ReferencedJSON():
 			'CollectionExternalDatasources': {},
 			'CollectionEvents': {},
 			'CollectionSpecimens': {},
+			'Analyses': {}
 			#'IdentificationUnits': {},
 			#'Identifications': {},
 			#'CollectionSpecimenParts': {},

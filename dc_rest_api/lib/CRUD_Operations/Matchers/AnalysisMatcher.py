@@ -5,7 +5,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 
-class CollectionMatcher():
+class AnalysisMatcher():
 	def __init__(self, dc_db, temptable):
 		self.dc_db = dc_db
 		self.temptable = temptable

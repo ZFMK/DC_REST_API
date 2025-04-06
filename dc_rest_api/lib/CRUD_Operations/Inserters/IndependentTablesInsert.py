@@ -15,6 +15,8 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import Collect
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionEventInserter import CollectionEventInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.ExternalDatasourceInserter import ExternalDatasourceInserter
 
+from dc_rest_api.lib.CRUD_Operations.Inserters.AnalysisInserter import AnalysisInserter
+
 
 # this class do only work with the flattened dicts
 
@@ -65,6 +67,15 @@ class IndependentTablesInsert():
 			except:
 				self.messages.extend(ed_inserter.messages)
 				#pudb.set_trace()
+		
+		if 'Analyses' in self.json_dict:
+			try:
+				analyses = self.json_dict['Analyses']
+				a_inserter = AnalysisInserter(self.dc_db, self.users_roles)
+				a_inserter.insertAnalysisData(analyses)
+			except:
+				self.messages.extend(c_inserter.messages)
+				pudb.set_trace()
 
 
 	def setLinkedEventIDs(self, data_dicts):
