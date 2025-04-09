@@ -143,10 +143,10 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 		iuamp.MethodID,
 		iuamp.MethodMarker,
 		iuamp.ParameterID,
-		iuamp.[Value] AS ParameterValue,
-		COALESCE(p.DisplayText, CAST(p.ParameterID AS VARCHAR(50))) AS ParameterDisplay,
-		p.Description AS ParameterDescription,
-		p.Notes AS ParameterNotes
+		iuamp.[Value],
+		COALESCE(p.DisplayText, CAST(p.ParameterID AS VARCHAR(50))) AS DisplayText,
+		p.Description,
+		p.Notes
 		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
 			ON g_temp.[rowguid_to_get] = iuamp.[RowGUID]
@@ -181,10 +181,22 @@ class IdentificationUnitAnalysisMethodParameterGetter(DataGetter):
 				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
 			if element['MethodMarker'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
 				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
-			#if element['MethodMarker'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['ParameterID']]:
-			#	self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = {}
-				
-			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']][element['ParameterID']] = element 
+			
+			if 'Parameters' not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']]['Parameters'] = []
+			
+			parameter_dict = {}
+			
+			for key in ('ParameterID', 'Value'):
+				if key in element:
+					parameter_dict[key] = element[key]
+			
+			parameter_dict['Parameter'] = {}
+			for key in ('ParameterID', 'DisplayText', 'Description', 'Notes'):
+				if key in element:
+					parameter_dict['Parameter'][key] = element[key]
+			
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']]['Parameters'].append(parameter_dict)
 		
 		return
 

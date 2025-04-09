@@ -139,9 +139,9 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 		iuam.[AnalysisNumber],
 		iuam.MethodID,
 		iuam.MethodMarker,
-		COALESCE(m.DisplayText, CAST(m.MethodID AS VARCHAR(50))) AS MethodDisplay,
-		m.Description AS MethodDescription,
-		m.Notes AS MethodTypeNotes
+		COALESCE(m.DisplayText, CAST(m.MethodID AS VARCHAR(50))) AS DisplayText,
+		m.Description,
+		m.Notes
 		FROM [{0}] g_temp
 		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
 			ON g_temp.[rowguid_to_get] = iuam.[RowGUID]
@@ -174,13 +174,24 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']] = {}
 			if element['AnalysisNumber'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']]:
 				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
-			if element['MethodID'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
-				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']] = {}
-			if element['MethodMarker'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']]:
-				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = {}
-				
-			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']][element['MethodID']][element['MethodMarker']] = element 
-		
+			
+			if 'Methods' not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]['Methods'] = []
+			
+			method_dict = {}
+			
+			# do not forget to add the Parameters list with key Parameters
+			for key in ('MethodID', 'MethodMarker', 'Parameters'):
+				if key in element:
+					method_dict[key] = element[key]
+			
+			method_dict['Method'] = {}
+			for key in ('MethodID', 'DisplayText', 'Description', 'Notes'):
+				if key in element:
+					method_dict['Method'][key] = element[key]
+			
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']]['Methods'].append(method_dict)
+			
 		return
 
 
@@ -243,16 +254,8 @@ class IdentificationUnitAnalysisMethodGetter(DataGetter):
 			and iuam['AnalysisNumber'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']]
 			and iuam['MethodID'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']]
 			and iuam['MethodMarker'] in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']]):
-				if 'Parameters' not in iuam:
-					iuam['Parameters'] = {}
 				
-				for parameter_id in iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']]:
-					parameter_display = iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id]['ParameterDisplay']
-					if parameter_display not in iuam['Parameters']:
-						iuam['Parameters'][parameter_display] = []
-					
-					iuam['Parameters'][parameter_display].append(iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']][parameter_id])
-
+				iuam['Parameters'] = iuamp_getter.results_dict[iuam['CollectionSpecimenID']][iuam['IdentificationUnitID']][iuam['AnalysisID']][iuam['AnalysisNumber']][iuam['MethodID']][iuam['MethodMarker']]['Parameters']
 		
 		return
 

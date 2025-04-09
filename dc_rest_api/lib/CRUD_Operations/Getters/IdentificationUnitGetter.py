@@ -185,8 +185,6 @@ class IdentificationUnitGetter(DataGetter):
 			iua_getter.getData()
 			iua_getter.list2dict()
 			
-			pudb.set_trace()
-			
 			for iu in self.results_list:
 				if iu['CollectionSpecimenID'] in iua_getter.results_dict and iu['IdentificationUnitID'] in iua_getter.results_dict[iu['CollectionSpecimenID']]:
 					if 'IdentificationUnitAnalyses' in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:

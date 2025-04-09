@@ -170,6 +170,7 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 
 	def list2dict(self):
+		#pudb.set_trace()
 		self.results_dict = {}
 		for element in self.results_list:
 			if element['CollectionSpecimenID'] not in self.results_dict:
@@ -181,12 +182,13 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 			
 			analysis_dict = {}
 			
-			for key in ('AnalysisID', 'AnalysisNumber', 'Value', 'ResponsibleName', 'AnalysisDate', 'Notes', 'AnalysisResult'):
+			# do not forget to add the Methods list with key Methods
+			for key in ('AnalysisID', 'AnalysisNumber', 'Value', 'ResponsibleName', 'AnalysisDate', 'Notes', 'AnalysisResult', 'Methods'):
 				if key in element:
 					analysis_dict[key] = element[key]
 			
 			analysis_dict['Analysis'] = {}
-			for key in ('AnalysisID', 'DisplayText', 'Description', 'MeasurementUnit', 'AnalysisTypeNotes', 'Methods'):
+			for key in ('AnalysisID', 'DisplayText', 'Description', 'MeasurementUnit', 'AnalysisTypeNotes'):
 				if key in element:
 					if key == 'AnalysisTypeNotes':
 						analysis_dict['Analysis']['Notes'] = element[key]
@@ -254,16 +256,8 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 			and iua['IdentificationUnitID'] in iuam_getter.results_dict[iua['CollectionSpecimenID']] 
 			and iua['AnalysisID'] in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']]
 			and iua['AnalysisNumber'] in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']]):
-				if 'Methods' not in iua:
-					iua['Methods'] = {}
 				
-				for method_id in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]:
-					
-					for iuam_id in iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id]:
-						method_display = iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id]['MethodDisplay']
-						if method_display not in iua['Methods']:
-							iua['Methods'][method_display] = []
-						iua['Methods'][method_display].append(iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']][method_id][iuam_id])
+				iua['Methods'] = iuam_getter.results_dict[iua['CollectionSpecimenID']][iua['IdentificationUnitID']][iua['AnalysisID']][iua['AnalysisNumber']]['Methods']
 		
 		return
 
