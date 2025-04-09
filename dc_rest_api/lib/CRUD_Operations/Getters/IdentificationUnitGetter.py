@@ -185,19 +185,12 @@ class IdentificationUnitGetter(DataGetter):
 			iua_getter.getData()
 			iua_getter.list2dict()
 			
+			pudb.set_trace()
+			
 			for iu in self.results_list:
 				if iu['CollectionSpecimenID'] in iua_getter.results_dict and iu['IdentificationUnitID'] in iua_getter.results_dict[iu['CollectionSpecimenID']]:
-					if 'IdentificationUnitAnalyses' not in iu:
-						iu['IdentificationUnitAnalyses'] = {}
-					if fieldname not in iu['IdentificationUnitAnalyses']:
-						iu['IdentificationUnitAnalyses'][fieldname] = {}
-					for iua_id in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-						for analysis_number in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id]:
-							analysis_display = iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number]['AnalysisDisplay']
-							if analysis_display not in iu['IdentificationUnitAnalyses'][fieldname]:
-								iu['IdentificationUnitAnalyses'][fieldname][analysis_display] = []
-							
-							iu['IdentificationUnitAnalyses'][fieldname][analysis_display].append(iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][iua_id][analysis_number])
+					if 'IdentificationUnitAnalyses' in iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
+						iu['IdentificationUnitAnalyses'] = iua_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]['IdentificationUnitAnalyses']
 		
 		return
 

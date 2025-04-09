@@ -140,14 +140,13 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 		iua.SpecimenPartID,
 		iua.[AnalysisID],
 		iua.AnalysisNumber,
-		iua.Notes AS AnalysisInstanceNotes,
+		iua.Notes,
 		iua.ExternalAnalysisURI,
 		iua.ResponsibleName,
 		iua.AnalysisDate,
 		iua.AnalysisResult,
-		iua.AnalysisID,
-		COALESCE(a.DisplayText, CAST(a.AnalysisID AS VARCHAR(50))) AS AnalysisDisplay,
-		a.Description AS AnalysisDescription,
+		COALESCE(a.DisplayText, CAST(a.AnalysisID AS VARCHAR(50))) AS DisplayText,
+		a.Description AS Description,
 		a.MeasurementUnit,
 		a.Notes AS AnalysisTypeNotes
 		FROM [{0}] g_temp
@@ -171,19 +170,30 @@ class IdentificationUnitAnalysisGetter(DataGetter):
 
 
 	def list2dict(self):
-		#pudb.set_trace()
 		self.results_dict = {}
 		for element in self.results_list:
 			if element['CollectionSpecimenID'] not in self.results_dict:
 				self.results_dict[element['CollectionSpecimenID']] = {}
 			if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
 				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
-			if element['AnalysisID'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
-				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']] = {}
-			if element['AnalysisNumber'] not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']]:
-				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = {}
+			if 'IdentificationUnitAnalyses' not in self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]:
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]['IdentificationUnitAnalyses'] = []
 			
-			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['AnalysisID']][element['AnalysisNumber']] = element 
+			analysis_dict = {}
+			
+			for key in ('AnalysisID', 'AnalysisNumber', 'Value', 'ResponsibleName', 'AnalysisDate', 'Notes', 'AnalysisResult'):
+				if key in element:
+					analysis_dict[key] = element[key]
+			
+			analysis_dict['Analysis'] = {}
+			for key in ('AnalysisID', 'DisplayText', 'Description', 'MeasurementUnit', 'AnalysisTypeNotes', 'Methods'):
+				if key in element:
+					if key == 'AnalysisTypeNotes':
+						analysis_dict['Analysis']['Notes'] = element[key]
+					else:
+						analysis_dict['Analysis'][key] = element[key]
+			
+			self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']]['IdentificationUnitAnalyses'].append(analysis_dict)
 		
 		return
 
