@@ -58,7 +58,7 @@ class CollectionMatcher():
 
 
 	def __matchIntoPrefiltered(self):
-		# first match all existing Collections by DiplayText and MethodURI
+		# first match all existing Collections by DisplayText and MethodURI
 		
 		query = """
 		INSERT INTO [{0}] (
@@ -76,7 +76,7 @@ class CollectionMatcher():
 			m.[OnlyHierarchy]
 		FROM [Method] a
 		INNER JOIN [{1}] m_temp
-		ON ((m_temp.[DiplayText] = m.[DiplayText]) OR (m_temp.[DiplayText] IS NULL AND m.[DiplayText] IS NULL))
+		ON ((m_temp.[DisplayText] = m.[DisplayText]) OR (m_temp.[DisplayText] IS NULL AND m.[DisplayText] IS NULL))
 		AND ((m_temp.[MethodURI] = m.[MethodURI]) OR (m_temp.[MethodURI] IS NULL AND m.[MethodURI] IS NULL))
 		;""".format(self.prefiltered_temptable, self.temptable)
 		

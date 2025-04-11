@@ -12,9 +12,6 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Inserters.IndependentTablesInsert import IndependentTablesInsert
 
-from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
-from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionEventInserter import CollectionEventInserter
-from dc_rest_api.lib.CRUD_Operations.Inserters.ExternalDatasourceInserter import ExternalDatasourceInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitInserter import IdentificationUnitInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionAgentInserter import CollectionAgentInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.SpecimenPartInserter import SpecimenPartInserter
@@ -60,11 +57,9 @@ class CollectionSpecimenInserter():
 			self.specimen_dicts = flattened_json['CollectionSpecimens']
 			
 			specimen_list = [self.specimen_dicts[cs_id] for cs_id in self.specimen_dicts]
-			
-			independent_tables.setLinkedEventIDs(specimen_list)
-			independent_tables.setLinkedExternalDatasourceIDs(specimen_list)
-			independent_tables.setLinkedCollectionIDs(specimen_list)
-			independent_tables.setLinkedProjectIDs(specimen_list)
+			pudb.set_trace()
+			independent_tables.setLinkedIDs(specimen_list)
+			pudb.set_trace()
 			
 			self.__createSpecimenTempTable()
 			
@@ -110,7 +105,7 @@ class CollectionSpecimenInserter():
 			
 			csp_inserter = SpecimenPartInserter(self.dc_db)
 			csp_inserter.setSpecimenPartDicts(specimenparts)
-			independent_tables.setLinkedCollectionIDs(specimenparts)
+			independent_tables.setLinkedIDs(specimenparts)
 			csp_inserter.insertSpecimenPartData()
 			
 			return

@@ -13,7 +13,7 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.ProjectInserter import ProjectInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionEventInserter import CollectionEventInserter
-from dc_rest_api.lib.CRUD_Operations.Inserters.ExternalDatasourceInserter import ExternalDatasourceInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionExternalDatasourceInserter import CollectionExternalDatasourceInserter
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.AnalysisInserter import AnalysisInserter
 
@@ -28,11 +28,22 @@ class IndependentTablesInsert():
 		
 		self.uid = uid
 		self.users_roles = users_roles
+		
+		self.references = {
+			"Projects": ["Projects", "ProjectID"],
+			"Collection": ["Collections", "CollectionID"],
+			"CollectionEvent": ["CollectionEvents", "CollectionEventID"],
+			"CollectionExternalDatasource": ["CollectionExternalDatasources", "ExternalDatasourceID"],
+			"Analysis": ["Analyses", "AnalysisID"],
+			"Method": ["Methods", "MethodID"],
+			"Parameter": ["Parameters", "ParameterID"]
+		}
+		
 		self.messages = []
 
 
 	def insertIndependentTables(self):
-		
+		# TODO: error handling when user does not have the appropriate rights
 		if 'Projects' in self.json_dict:
 			try:
 				projects = self.json_dict['Projects']
@@ -62,22 +73,70 @@ class IndependentTablesInsert():
 		if 'CollectionExternalDatasources' in self.json_dict:
 			try:
 				datasources = self.json_dict['CollectionExternalDatasources']
-				ed_inserter = ExternalDatasourceInserter(self.dc_db, self.users_roles)
+				ed_inserter = CollectionExternalDatasourceInserter(self.dc_db, self.users_roles)
 				ed_inserter.insertExternalDatasourceData(datasources)
 			except:
 				self.messages.extend(ed_inserter.messages)
-				#pudb.set_trace()
+				pudb.set_trace()
 		
 		if 'Analyses' in self.json_dict:
 			try:
 				analyses = self.json_dict['Analyses']
-				a_inserter = AnalysisInserter(self.dc_db, self.users_roles)
+				a_inserter = AnalysisInserter(self.dc_db)
 				a_inserter.insertAnalysisData(analyses)
 			except:
-				self.messages.extend(c_inserter.messages)
+				self.messages.extend(a_inserter.messages)
 				pudb.set_trace()
 
 
+
+	def setLinkedIDs(self, data_dicts):
+		
+		if isinstance(data_dicts, list):
+			for data_dict in data_dicts:
+				for key in data_dict:
+					if key in self.references:
+						if key == 'Projects':
+							self.__setLinkedProjectIDs(data_dict)
+						else:
+							self.__setLinkedID(data_dict, key)
+					else:
+						self.setLinkedIDs(data_dict[key])
+				
+		elif isinstance(data_dicts, dict):
+			for key in data_dicts:
+				self.setLinkedIDs(data_dicts[key])
+		return
+
+
+	def __setLinkedID(self, data_dict, key):
+		
+		try:
+			ref_id = data_dict[key]
+			id_name = self.references[key][1]
+			list_name = self.references[key][0]
+			data_dict[id_name] = self.json_dict[list_name][ref_id][id_name]
+		
+		except:
+			data_dict[id_name] = None
+			pass
+
+
+	def __setLinkedProjectIDs(self, data_dict):
+		try:
+			project_ids = data_dict['Projects']
+			for project_id in project_ids:
+				#if not 'ProjectID' in data_dict:
+				#	data_dict['ProjectID'] = []
+				data_dict['ProjectID'].append(self.json_dict['Projects'][project_id]['ProjectID'])
+		
+		except:
+			#data_dict['ProjectID'] = []
+			pass
+		return
+
+
+	'''
 	def setLinkedEventIDs(self, data_dicts):
 		for data_dict in data_dicts:
 			try:
@@ -127,6 +186,20 @@ class IndependentTablesInsert():
 				data_dict['ProjectID'] = []
 				pass
 		return
+
+
+	def setLinkedAnalysisIDs(self, data_dicts):
+		pudb.set_trace()
+		for data_dict in data_dicts:
+			try:
+				ref_id = data_dict['Analysis']
+				data_dict['AnalysisID'] = self.json_dict['Analyses'][ref_id]['AnaylsisID']
+			
+			except:
+				data_dict['CollectionID'] = None
+				pass
+		return
+	'''
 
 
 	def insertCollectionProjects(self, specimens_list):

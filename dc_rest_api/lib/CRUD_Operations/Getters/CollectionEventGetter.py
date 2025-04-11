@@ -184,6 +184,7 @@ class CollectionEventGetter(DataGetter):
 		;""".format(self.get_temptable)
 		
 		querylog.info(query)
+		querylog.info(', '.join(self.users_project_ids))
 		self.cur.execute(query)
 		self.con.commit()
 		
@@ -202,6 +203,7 @@ class CollectionEventGetter(DataGetter):
 		;""".format(self.get_temptable, projectjoin, projectwhere)
 		
 		querylog.info(query)
+		querylog.info(', '.join(self.users_project_ids))
 		self.cur.execute(query, self.users_project_ids)
 		self.con.commit()
 		

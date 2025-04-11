@@ -17,7 +17,7 @@ class AnalysisMatcher():
 		self.prefiltered_temptable = '#prefiltered_analyses'
 
 
-	def matchExistingCollections(self):
+	def matchExistingAnalyses(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
 		self.__addSHAOnPrefiltered()
@@ -57,7 +57,7 @@ class AnalysisMatcher():
 
 
 	def __matchIntoPrefiltered(self):
-		# first match all existing Collections by DiplayText and AnalysisURI
+		# first match all existing Collections by DisplayText and AnalysisURI
 		
 		query = """
 		INSERT INTO [{0}] (
@@ -65,17 +65,19 @@ class AnalysisMatcher():
 			[Description_sha],
 			[AnalysisURI],
 			[MeasurementUnit],
-			[OnlyHierarchy]
+			[OnlyHierarchy],
+			[RowGUID]
 		)
 		SELECT
 			a.[DisplayText],
-			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', a.[Description_sha]), 2) AS [Description_sha],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', a.[Description]), 2) AS [Description_sha],
 			a.[AnalysisURI],
 			a.[MeasurementUnit],
-			a.[OnlyHierarchy]
+			a.[OnlyHierarchy],
+			a.[RowGUID]
 		FROM [Analysis] a
 		INNER JOIN [{1}] a_temp
-		ON ((a_temp.[DiplayText] = a.[DiplayText]) OR (a_temp.[DiplayText] IS NULL AND a.[DiplayText] IS NULL))
+		ON ((a_temp.[DisplayText] = a.[DisplayText]) OR (a_temp.[DisplayText] IS NULL AND a.[DisplayText] IS NULL))
 		AND ((a_temp.[AnalysisURI] = a.[AnalysisURI]) OR (a_temp.[AnalysisURI] IS NULL AND a.[AnalysisURI] IS NULL))
 		;""".format(self.prefiltered_temptable, self.temptable)
 		

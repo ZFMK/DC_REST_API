@@ -12,6 +12,7 @@ from dc_rest_api.lib.CRUD_Operations.Getters.CollectionAgentGetter import Collec
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionEventGetter import CollectionEventGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionProjectGetter import CollectionProjectGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionExternalDatasourceGetter import CollectionExternalDatasourceGetter
 
 
 class CollectionSpecimenGetter(DataGetter):
@@ -93,6 +94,7 @@ class CollectionSpecimenGetter(DataGetter):
 		self.setCollections()
 		self.setCollectionEvents()
 		self.setCollectionProjects()
+		self.setCollectionExternalDatasources()
 		return
 
 
@@ -149,7 +151,6 @@ class CollectionSpecimenGetter(DataGetter):
 		for element in self.results_list:
 			self.cs_dict[element['CollectionSpecimenID']] = element
 		return
-
 
 
 	def filterAllowedRowGUIDs(self):
@@ -327,7 +328,6 @@ class CollectionSpecimenGetter(DataGetter):
 		return
 
 
-
 	def setCollectionEvents(self):
 		
 		ce_getter = CollectionEventGetter(self.dc_db, self.users_project_ids)
@@ -356,5 +356,41 @@ class CollectionSpecimenGetter(DataGetter):
 		for cs in self.results_list:
 			if 'CollectionEventID' in cs and cs['CollectionEventID'] in ce_getter.results_dict:
 				cs['CollectionEvent'] = ce_getter.results_dict[cs['CollectionEventID']]
+			elif 'CollectionEventID' in cs and cs['CollectionEventID'] not in ce_getter.results_dict:
+				del cs['CollectionEventID']
+		
+		return
+
+
+	def setCollectionExternalDatasources(self):
+		
+		ed_getter = CollectionExternalDatasourceGetter(self.dc_db)
+		ed_getter.createGetTempTable()
+		
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT ed.[RowGUID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{1}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [CollectionExternalDatasource] ed
+		ON ed.[ExternalDatasourceID] = cs.[ExternalDatasourceID]
+		WHERE cs.[ExternalDatasourceID] IS NOT NULL
+		;""".format(ed_getter.get_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		self.setDatabaseURN()
+		
+		ed_getter.getData()
+		ed_getter.list2dict()
+		
+		for cs in self.results_list:
+			if 'ExternalDatasourceID' in cs and cs['ExternalDatasourceID'] in ed_getter.results_dict:
+				cs['CollectionExternalDatasource'] = ed_getter.results_dict[cs['ExternalDatasourceID']]
+			elif 'ExternalDatasourceID' in cs and cs['ExternalDatasourceID'] not in ed_getter.results_dict:
+				del cs['ExternalDatasourceID']
 		
 		return

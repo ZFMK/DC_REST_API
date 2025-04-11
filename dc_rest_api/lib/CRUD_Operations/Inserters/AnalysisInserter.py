@@ -18,9 +18,9 @@ class AnalysisInserter():
 		self.unique_analyses_temptable = '#unique_a_temptable'
 		
 		self.schema = [
-			{'colname': 'AnalysisID', 'None allowed': False},
+			{'colname': '@id', 'None allowed': False},
 			{'colname': 'DatabaseURN'},
-			{'colname': 'DiplayText'},
+			{'colname': 'DisplayText'},
 			{'colname': 'Description'},
 			{'colname': 'Notes'},
 			{'colname': 'MeasurementUnit'},
@@ -63,11 +63,11 @@ class AnalysisInserter():
 		query = """
 		CREATE TABLE [{0}] (
 		[@id] VARCHAR(100) COLLATE {1} NOT NULL,
-		[AnalysisID] INT NOT NULL,
-		 -- [AnalysisParentID] INT,
+		[AnalysisID] INT,
+		[AnalysisParentID] INT,
 		[RowGUID] UNIQUEIDENTIFIER,
 		[DatabaseURN] NVARCHAR(500) COLLATE {1},
-		[DiplayText] NVARCHAR(50) COLLATE {1},
+		[DisplayText] NVARCHAR(50) COLLATE {1},
 		[Description] NVARCHAR(MAX) COLLATE {1},
 		[Description_sha] VARCHAR(64) COLLATE {1},
 		[Notes] NVARCHAR(MAX) COLLATE {1},
@@ -131,7 +131,7 @@ class AnalysisInserter():
 		CREATE TABLE [{0}] (
 			[AnalysisID] INT,
 			[AnalysisParentID] INT,
-			[DiplayText] NVARCHAR(50) COLLATE {1},
+			[DisplayText] NVARCHAR(50) COLLATE {1},
 			[Description] NVARCHAR(MAX) COLLATE {1},
 			[Notes] NVARCHAR(MAX) COLLATE {1},
 			[MeasurementUnit] NVARCHAR(50) COLLATE {1},
@@ -166,7 +166,7 @@ class AnalysisInserter():
 		query = """
 		UPDATE ue_temp
 		SET 
-			[DiplayText] = a_temp.[DiplayText],
+			[DisplayText] = a_temp.[DisplayText],
 			[Description] = a_temp.[Description],
 			[Notes] = a_temp.[Notes],
 			[MeasurementUnit] = a_temp.[MeasurementUnit],
@@ -186,7 +186,7 @@ class AnalysisInserter():
 	def __insertNewAnalyses(self):
 		query = """
 		INSERT INTO [Analysis] (
-			[DiplayText],
+			[DisplayText],
 			[Description],
 			[Notes],
 			[MeasurementUnit],
@@ -195,7 +195,7 @@ class AnalysisInserter():
 			[RowGUID]
 		)
 		SELECT
-			ue_temp.[DiplayText],
+			ue_temp.[DisplayText],
 			ue_temp.[Description],
 			ue_temp.[Notes],
 			ue_temp.[MeasurementUnit],
@@ -208,9 +208,10 @@ class AnalysisInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		
+		# TODO: what is the reason for updating the ids in ue_temp here?
 		query = """
 		UPDATE ue_temp
-		SET ue_temp.[AnalysisID] = a.[AnalysisID]
+		SET ue_temp.[AnalysisID] = a.[AnalysisID],
 		ue_temp.[AnalysisParentID] = a.[AnalysisParentID]
 		FROM [{0}] ue_temp
 		INNER JOIN [Analysis] a
@@ -226,8 +227,8 @@ class AnalysisInserter():
 	def __updateAnalysisIDsInTempTable(self):
 		query = """
 		UPDATE a_temp
-		SET a_temp.[AnaylsisID] = a.[AnalysisID],
-		a_temp.[AnalysisParentID] = a.[AnalysisParentID]
+		SET a_temp.[AnalysisID] = a.[AnalysisID],
+		a_temp.[AnalysisParentID] = a.[AnalysisParentID],
 		a_temp.[RowGUID] = a.[RowGUID]
 		FROM [{0}] a_temp
 		INNER JOIN [{1}] ue_temp
