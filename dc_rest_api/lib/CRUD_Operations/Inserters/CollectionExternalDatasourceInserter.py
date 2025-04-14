@@ -151,6 +151,9 @@ class CollectionExternalDatasourceInserter():
 		query = """
 		DROP TABLE IF EXISTS [{0}]
 		;""".format(self.unique_ed_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		
 		query = """
 		CREATE TABLE [{0}] (
@@ -194,17 +197,17 @@ class CollectionExternalDatasourceInserter():
 		query = """
 		UPDATE ue_temp
 		SET 
-			[ExternalDatasourceID] = ue_temp.[ExternalDatasourceID],
-			[ExternalDatasourceName] = ue_temp.[ExternalDatasourceName],
-			[ExternalDatasourceVersion] = ue_temp.[ExternalDatasourceVersion],
-			[Rights] = ue_temp.[Rights],
-			[ExternalDatasourceAuthors] = ue_temp.[ExternalDatasourceAuthors],
-			[ExternalDatasourceURI] = ue_temp.[ExternalDatasourceURI],
-			[ExternalDatasourceInstitution] = ue_temp.[ExternalDatasourceInstitution],
-			[ExternalAttribute_NameID] = ue_temp.[ExternalAttribute_NameID],
-			[InternalNotes] = ue_temp.[InternalNotes],
-			[PreferredSequence] = ue_temp.[PreferredSequence],
-			[Disabled] = ue_temp.[Disabled]
+			[ExternalDatasourceID] = ed_temp.[ExternalDatasourceID],
+			[ExternalDatasourceName] = ed_temp.[ExternalDatasourceName],
+			[ExternalDatasourceVersion] = ed_temp.[ExternalDatasourceVersion],
+			[Rights] = ed_temp.[Rights],
+			[ExternalDatasourceAuthors] = ed_temp.[ExternalDatasourceAuthors],
+			[ExternalDatasourceURI] = ed_temp.[ExternalDatasourceURI],
+			[ExternalDatasourceInstitution] = ed_temp.[ExternalDatasourceInstitution],
+			[ExternalAttribute_NameID] = ed_temp.[ExternalAttribute_NameID],
+			[InternalNotes] = ed_temp.[InternalNotes],
+			[PreferredSequence] = ed_temp.[PreferredSequence],
+			[Disabled] = ed_temp.[Disabled]
 		FROM [{0}] ue_temp
 		INNER JOIN [{1}] ed_temp
 		ON ue_temp.[externaldatasource_sha] = ed_temp.[externaldatasource_sha]

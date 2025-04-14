@@ -69,8 +69,6 @@ class IdentificationInserter():
 		return
 
 
-
-
 	def __createIdentificationTempTable(self):
 		query = """
 		DROP TABLE IF EXISTS [{0}];

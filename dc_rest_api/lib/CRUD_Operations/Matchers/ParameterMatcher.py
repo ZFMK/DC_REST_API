@@ -5,7 +5,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 
-class MethodMatcher():
+class ParameterMatcher():
 	def __init__(self, dc_db, temptable):
 		self.dc_db = dc_db
 		self.temptable = temptable
@@ -14,7 +14,7 @@ class MethodMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '#prefiltered_methods'
+		self.prefiltered_temptable = '#prefiltered_parameters'
 
 
 	def matchExistingMethods(self):
@@ -36,18 +36,19 @@ class MethodMatcher():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[MethodID] INT,
-		[MethodParentID] INT,
+		[ParameterID] INT,
+		[MethodID] INT NOT NULL,
 		[DisplayText] NVARCHAR(50) COLLATE {1},
 		[Description] NVARCHAR(MAX) COLLATE {1},
 		[Description_sha] VARCHAR(64) COLLATE {1},
-		[MethodURI] VARCHAR(255) COLLATE {1},
-		[OnlyHierarchy] BIT,
-		[ForCollectionEvent] BIT,
+		[ParameterURI] VARCHAR(255) COLLATE {1},
+		[DefaultValue] NVARCHAR(MAX) COLLATE {1},
+		[DefaultValue_sha] VARCHAR(64) COLLATE {1},
+		[Notes] NVARCHAR(MAX) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER NOT NULL,
 		 -- 
-		[method_sha] VARCHAR(64) COLLATE {1},
-		INDEX [method_sha_idx] ([method_sha])
+		[parameter_sha] VARCHAR(64) COLLATE {1},
+		INDEX [parameter_sha_idx] ([parameter_sha])
 		)
 		;""".format(self.prefiltered_temptable, self.collation)
 		querylog.info(query)
@@ -59,27 +60,27 @@ class MethodMatcher():
 
 	def __matchIntoPrefiltered(self):
 		# first match all existing Collections by DisplayText and MethodURI
-		
+		# parameter depends on MethodID, so it must be included here
 		query = """
 		INSERT INTO [{0}] (
+			p.[MethodID],
 			[DisplayText],
 			[Description_sha],
-			[MethodURI],
-			[OnlyHierarchy],
-			[ForCollectionEvent],
+			[ParameterURI],
+			[DefaultValue_sha],
 			[RowGUID]
 		)
 		SELECT
-			m.[DisplayText],
-			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', m.[Description]), 2) AS [Description_sha],
-			m.[MethodURI],
-			m.[OnlyHierarchy],
-			m.[ForCollectionEvent],
-			m.[RowGUID]
-		FROM [Method] m
-		INNER JOIN [{1}] m_temp
-		ON ((m_temp.[DisplayText] = m.[DisplayText]) OR (m_temp.[DisplayText] IS NULL AND m.[DisplayText] IS NULL))
-		AND ((m_temp.[MethodURI] = m.[MethodURI]) OR (m_temp.[MethodURI] IS NULL AND m.[MethodURI] IS NULL))
+			p.[MethodID],
+			p.[DisplayText],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', p.[Description]), 2) AS [Description_sha],
+			p.[ParameterURI],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', p.[DefaultValue]), 2) AS [DefaultValue_sha],
+			p.[RowGUID]
+		FROM [Parameter] p
+		INNER JOIN [{1}] p_temp
+		ON ((p_temp.[DisplayText] = p.[DisplayText]) OR (p_temp.[DisplayText] IS NULL AND p.[DisplayText] IS NULL))
+		AND ((p_temp.[ParameterURI] = p.[ParameterURI]) OR (p_temp.[ParameterURI] IS NULL AND p.[ParameterURI] IS NULL))
 		;""".format(self.prefiltered_temptable, self.temptable)
 		
 		querylog.info(query)
@@ -90,14 +91,15 @@ class MethodMatcher():
 
 
 	def __addSHAOnPrefiltered(self):
+		# parameter depends on MethodID, so it must be included here
 		query = """
 		UPDATE pf
-		SET [method_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
+		SET [parameter_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
+			[MethodID],
 			[DisplayText],
 			[Description_sha],
-			[MethodURI],
-			[OnlyHierarchy],
-			[ForCollectionEvent]
+			[ParameterURI],
+			[DefaultValue_sha]
 		)), 2)
 		FROM [{0}] pf
 		;""".format(self.prefiltered_temptable)
@@ -109,13 +111,15 @@ class MethodMatcher():
 
 	def __matchPrefilteredToTempTable(self):
 		query = """
-		UPDATE m_temp
-		SET m_temp.[MethodID] = pf.[MethodID],
-		m_temp.[MethodParentID] = pf.[MethodParentID],
-		m_temp.[RowGUID] = pf.[RowGUID]
-		FROM [{0}] m_temp
+		UPDATE p_temp
+		SET 
+		p_temp.[ParameterID] = pf.[ParameterID],
+		 -- MethodID must have been inserted into #parameters_temptable by ParameterInserter
+		 -- p_temp.[MethodID] = pf.[MethodID],
+		p_temp.[RowGUID] = pf.[RowGUID]
+		FROM [{0}] p_temp
 		INNER JOIN [{1}] pf
-		ON pf.[method_sha] = m_temp.[method_sha]
+		ON pf.[parameter_sha] = p_temp.[parameter_sha]
 		;""".format(self.temptable, self.prefiltered_temptable)
 		
 		querylog.info(query)

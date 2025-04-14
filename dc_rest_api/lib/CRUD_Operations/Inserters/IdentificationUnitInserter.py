@@ -7,6 +7,7 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationInserter import IdentificationInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitAnalysisInserter import IdentificationUnitAnalysisInserter
 
 
 class IdentificationUnitInserter():
@@ -52,16 +53,29 @@ class IdentificationUnitInserter():
 		self.__updateIUDicts()
 		
 		identifications = []
+		iuanalyses = []
+		
 		for iu_dict in self.iu_dicts:
 			if 'Identifications' in iu_dict:
 				for i_dict in iu_dict['Identifications']:
 					i_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
 					i_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
 					identifications.append(i_dict)
+			
+			if 'IdentificationUnitAnalyses' in iu_dict:
+				for iua_dict in iu_dict['IdentificationUnitAnalyses']:
+					iua_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
+					iua_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
+					iuanalyses.append(iua_dict)
 		
 		i_inserter = IdentificationInserter(self.dc_db)
 		i_inserter.setIdentificationDicts(identifications)
 		i_inserter.insertIdentificationData()
+		
+		iua_inserter = IdentificationUnitAnalysisInserter(self.dc_db)
+		iua_inserter.setIdentificationUnitAnalysisDicts(iuanalyses)
+		iua_inserter.insertIdentificationUnitAnalysisData()
+		
 		return
 
 

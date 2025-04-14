@@ -6,7 +6,7 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.AnalysisMatcher import AnalysisMatcher
-#from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
+
 
 class AnalysisInserter():
 	def __init__(self, dc_db):
@@ -14,14 +14,15 @@ class AnalysisInserter():
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
-		self.temptable = '#analysis_temptable'
-		self.unique_analyses_temptable = '#unique_a_temptable'
+		self.temptable = '##analysis_temptable'
+		self.unique_analyses_temptable = '##unique_a_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
 			{'colname': 'DatabaseURN'},
 			{'colname': 'DisplayText'},
 			{'colname': 'Description'},
+			{'colname': 'Description_sha', 'compute sha of': 'Description'},
 			{'colname': 'Notes'},
 			{'colname': 'MeasurementUnit'},
 			{'colname': 'AnalysisURI'},
@@ -92,7 +93,6 @@ class AnalysisInserter():
 		UPDATE a_temp
 		SET [analysis_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[DisplayText],
-			[Description],
 			[Description_sha],
 			[AnalysisURI],
 			[MeasurementUnit],

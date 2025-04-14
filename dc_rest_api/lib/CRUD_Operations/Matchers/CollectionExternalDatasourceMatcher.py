@@ -65,6 +65,7 @@ class CollectionExternalDatasourceMatcher():
 		
 		query = """
 		INSERT INTO [{0}] (
+			[ExternalDatasourceID],
 			[ExternalDatasourceName],
 			[ExternalDatasourceVersion],
 			[Rights],
@@ -78,6 +79,7 @@ class CollectionExternalDatasourceMatcher():
 			[RowGUID]
 		)
 		SELECT 
+			ed.[ExternalDatasourceID],
 			ed.[ExternalDatasourceName],
 			ed.[ExternalDatasourceVersion],
 			ed.[Rights],

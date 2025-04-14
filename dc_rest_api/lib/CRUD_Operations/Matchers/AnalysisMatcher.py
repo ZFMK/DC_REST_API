@@ -14,7 +14,7 @@ class AnalysisMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '#prefiltered_analyses'
+		self.prefiltered_temptable = '##prefiltered_analyses'
 
 
 	def matchExistingAnalyses(self):

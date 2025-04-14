@@ -17,10 +17,11 @@ class IdentificationUnitInPartSetter():
 		self.temptable = '#iup_temptable'
 		
 		self.schema = [
-			{'colname': 'iup_num', 'None allowed': False},
+			{'colname': 'entry_num', 'None allowed': False},
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'IdentificationUnitID', 'None allowed': False},
-			{'colname': 'SpecimenPartID', 'None allowed': False}
+			{'colname': 'SpecimenPartID', 'None allowed': False},
+			{'colname': 'DisplayOrder'}
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
@@ -33,7 +34,8 @@ class IdentificationUnitInPartSetter():
 		self.json2temp.set_datadicts(self.iup_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__insertIdentificationUnits()
+		self.__setIdentificationUnitInParts()
+		
 		self.__updateIUTempTable()
 		
 		self.__updateIUDicts()
@@ -62,24 +64,17 @@ class IdentificationUnitInPartSetter():
 		
 		query = """
 		CREATE TABLE [{0}] (
-		[identificationunit_num] INT NOT NULL,
+		[entry_num] INT NOT NULL,
 		[CollectionSpecimenID] INT NOT NULL,
-		[IdentificationUnitID] INT DEFAULT NULL,
-		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
-		[LastIdentificationCache] VARCHAR(255) DEFAULT 'unknown' COLLATE {1} NOT NULL,
-		[TaxonomicGroup] VARCHAR(50) DEFAULT 'unknown' COLLATE {1} NOT NULL,
+		[IdentificationUnitID] INT NOT NULL,
+		[SpecimenPartID] INT NOT NULL,
 		[DisplayOrder] SMALLINT,
-		[LifeStage] VARCHAR(255) COLLATE {1},
-		[Gender] VARCHAR(50) COLLATE {1},
-		[NumberOfUnits] SMALLINT,
-		[NumberOfUnitsModifier] VARCHAR(50) COLLATE {1},
-		[UnitIdentifier] VARCHAR(50) COLLATE {1},
-		[UnitDescription] VARCHAR(50) COLLATE {1},
-		[Notes] VARCHAR(MAX) COLLATE {1},
-		[DataWithholdingReason] VARCHAR(255) COLLATE {1},
-		PRIMARY KEY ([identificationunit_num]),
+		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+		PRIMARY KEY ([entry_num]),
 		INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 		INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
+		INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
+		INDEX [DisplayOrder_idx] ([DisplayOrder]),
 		INDEX [RowGUID_idx] ([RowGUID]),
 		)
 		;""".format(self.temptable, self.collation)
@@ -89,41 +84,25 @@ class IdentificationUnitInPartSetter():
 		return
 
 
-	def __insertIdentificationUnits(self):
+	def __setIdentificationUnitInParts(self):
 		
 		query = """
-		INSERT INTO [IdentificationUnit] 
+		INSERT INTO [IdentificationUnitInPart] 
 		(
 			[CollectionSpecimenID],
-			[RowGUID],
-			[LastIdentificationCache],
-			[TaxonomicGroup],
+			[IdentificationUnitID],
+			[SpecimenPartID],
 			[DisplayOrder],
-			[LifeStage],
-			[Gender],
-			[NumberOfUnits],
-			[NumberOfUnitsModifier],
-			[UnitIdentifier],
-			[UnitDescription],
-			[Notes],
-			[DataWithholdingReason]
+			[RowGUID]
 		)
 		SELECT 
 			[CollectionSpecimenID],
-			[RowGUID],
-			[LastIdentificationCache],
-			[TaxonomicGroup],
-			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [identificationunit_num] ASC)) AS [DisplayOrder],
-			[LifeStage],
-			[Gender],
-			[NumberOfUnits],
-			[NumberOfUnitsModifier],
-			[UnitIdentifier],
-			[UnitDescription],
-			[Notes],
-			[DataWithholdingReason]
+			[IdentificationUnitID],
+			[SpecimenPartID],
+			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID], [IdentificationUnitID] ORDER BY [entry_num] ASC)) AS [DisplayOrder],
+			[RowGUID]
 		FROM [{0}] iu_temp
-		ORDER BY iu_temp.[identificationunit_num]
+		ORDER BY iu_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
