@@ -94,8 +94,6 @@ class CollectionSpecimenInserter():
 						csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 						specimenparts.append(csp_dict)
 			
-			pudb.set_trace()
-			
 			iu_inserter = IdentificationUnitInserter(self.dc_db)
 			iu_inserter.setIdentificationUnitDicts(identificationunits)
 			iu_inserter.insertIdentificationUnitData()

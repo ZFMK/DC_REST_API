@@ -14,7 +14,7 @@ class ParameterMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '##prefiltered_parameters'
+		self.prefiltered_temptable = '#prefiltered_parameters'
 
 
 	def matchExistingParameters(self):

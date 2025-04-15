@@ -292,12 +292,18 @@ class ReferencedJSON():
 
 	def __insertFlattenedSubdicts(self, subdict):
 		if isinstance(subdict, dict):
+			# do not insert empty key:values
+			# this must be done with a list of keys, not with for key in subdict as that would change the available keys during the iteration
+			keys = [key for key in subdict.keys()]
+			for key in keys:
+				if subdict[key] is None:
+					del subdict[key]
+			
 			for key in subdict:
+				
 				if isinstance(key, str) and key in self.flat_references:
 					
 					if isinstance(subdict[key], str) and subdict[key] in self.json_dicts[self.flat_references[key]] and isinstance(self.json_dicts[self.flat_references[key]][subdict[key]], dict):
-						#if key == 'CollectionEvent':
-						#	pudb.set_trace()
 						dict_id = str(subdict[key])
 						subdict[key] = self.json_dicts[self.flat_references[key]][dict_id]
 					

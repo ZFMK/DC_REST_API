@@ -98,7 +98,6 @@ class IndependentTablesInsert():
 			except:
 				self.messages.extend(m_inserter.messages)
 				pudb.set_trace()
-		pudb.set_trace()
 		
 		# set MethodIDs in self.json_dict[Parameters] because Parameters depend on them
 		if 'Parameters' in self.json_dict:

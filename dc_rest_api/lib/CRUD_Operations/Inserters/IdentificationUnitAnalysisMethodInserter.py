@@ -7,6 +7,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
+from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitAnalysisMethodParameterInserter import IdentificationUnitAnalysisMethodParameterInserter
+
 class IdentificationUnitAnalysisMethodInserter():
 	def __init__(self, dc_db):
 		self.dc_db = dc_db
@@ -41,7 +43,6 @@ class IdentificationUnitAnalysisMethodInserter():
 
 
 	def insertIdentificationUnitAnalysisMethodData(self):
-		pudb.set_trace()
 		
 		self.__createIdentificationUnitAnalysisMethodTempTable()
 		
@@ -50,9 +51,28 @@ class IdentificationUnitAnalysisMethodInserter():
 		
 		self.__insertMethodForAanalysis()
 		self.__insertIdentificationUnitAnalysisMethods()
-		self.__updateIUAMTempTable()
 		
-		self.__updateIUAMDicts()
+		# not needed, all IDs are set by insert into temptable
+		#self.__updateIUAMTempTable()
+		#self.__updateIUAMDicts()
+		
+		iuamparameters = []
+		for iuam_dict in self.iuam_dicts:
+			
+			if 'Parameters' in iuam_dict:
+				for iuamp_dict in iuam_dict['Parameters']:
+					iuamp_dict['CollectionSpecimenID'] = iuam_dict['CollectionSpecimenID']
+					iuamp_dict['IdentificationUnitID'] = iuam_dict['IdentificationUnitID']
+					iuamp_dict['AnalysisID'] = iuam_dict['AnalysisID']
+					iuamp_dict['AnalysisNumber'] = iuam_dict['AnalysisNumber']
+					iuamp_dict['MethodID'] = iuam_dict['MethodID']
+					iuamp_dict['MethodMarker'] = iuam_dict['MethodMarker']
+					iuamparameters.append(iuamp_dict)
+		
+		iuamp_inserter = IdentificationUnitAnalysisMethodParameterInserter(self.dc_db)
+		iuamp_inserter.setIdentificationUnitAnalysisMethodParameterDicts(iuamparameters)
+		iuamp_inserter.insertIdentificationUnitAnalysisMethodParameterData()
+		
 		return
 
 
@@ -71,9 +91,9 @@ class IdentificationUnitAnalysisMethodInserter():
 		[CollectionSpecimenID] INT NOT NULL,
 		[IdentificationUnitID] INT NOT NULL,
 		[AnalysisID] INT NOT NULL,
-		[AnalysisNumber] NVARCHAR(50) NOT NULL,
+		[AnalysisNumber] NVARCHAR(50) COLLATE {1} NOT NULL,
 		[MethodID] INT NOT NULL,
-		[MethodMarker] NVARCHAR(50), 
+		[MethodMarker] NVARCHAR(50) COLLATE {1}, 
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 		[DatabaseURN] NVARCHAR(500) COLLATE {1},
 		PRIMARY KEY ([entry_num]),
@@ -141,7 +161,8 @@ class IdentificationUnitAnalysisMethodInserter():
 		self.con.commit()
 		return
 
-
+	# not needed, all IDs are set by insert into temptable
+	'''
 	def __updateIUAMTempTable(self):
 		# update the IdentificationUnitAnalysisIDs in iu_temptable
 		query = """
@@ -210,3 +231,4 @@ class IdentificationUnitAnalysisMethodInserter():
 			iuam_ids[row[0]]['RowGUID'] = row[7]
 		
 		return iuam_ids
+	'''

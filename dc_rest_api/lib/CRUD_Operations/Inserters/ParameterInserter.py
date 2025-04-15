@@ -16,8 +16,8 @@ class ParameterInserter():
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
-		self.temptable = '##parameter_temptable'
-		self.unique_parameters_temptable = '##unique_parameter_temptable'
+		self.temptable = '#parameter_temptable'
+		self.unique_parameters_temptable = '#unique_parameter_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},

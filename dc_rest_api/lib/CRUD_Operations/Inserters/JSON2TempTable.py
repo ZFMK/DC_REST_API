@@ -73,7 +73,6 @@ class JSON2TempTable():
 			
 			# check that at least one value in json_dict entries is not None
 			if values_not_none < 1:
-				#pudb.set_trace()
 				raise ValueError('Can not insert data, all fields are empty')
 			
 			self.datadicts.append(json_dict)

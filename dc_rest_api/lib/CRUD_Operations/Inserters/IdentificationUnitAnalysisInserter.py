@@ -59,7 +59,7 @@ class IdentificationUnitAnalysisInserter():
 		
 		iuamethods = []
 		for iua_dict in self.iua_dicts:
-			# Methods is used in json file instead of IdentificationUnitAnalysisMethods because then Methods can be linked
+			# The key 'Methods' is used in json file instead of 'IdentificationUnitAnalysisMethods' because then Methods can be linked
 			# from different subtables i. e. IUA, CollectionEventMethod, CollectionSpecimenProcessingMethod
 			
 			# if 'IdentificationUnitAnalysisMethods' in iua_dict:
@@ -71,7 +71,6 @@ class IdentificationUnitAnalysisInserter():
 					iuam_dict['IdentificationUnitID'] = iua_dict['IdentificationUnitID']
 					iuam_dict['AnalysisID'] = iua_dict['AnalysisID']
 					iuam_dict['AnalysisNumber'] = iua_dict['AnalysisNumber']
-					iuam_dict['SpecimenPartID'] = iua_dict['SpecimenPartID']
 					iuamethods.append(iuam_dict)
 		
 		iuam_inserter = IdentificationUnitAnalysisMethodInserter(self.dc_db)

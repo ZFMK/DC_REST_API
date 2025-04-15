@@ -7,14 +7,14 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Getters.AnalysisMethodParameterFilter import AnalysisMethodParameterFilter
 
-class IdentificationUnitAnalysisMethodInserter():
+class IdentificationUnitAnalysisMethodParameterInserter():
 	def __init__(self, dc_db):
 		self.dc_db = dc_db
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = '#iuam_temptable'
+		self.temptable = '#iuamp_temptable'
 		
 		self.schema = [
 			{'colname': 'entry_num', 'None allowed': False},
@@ -24,39 +24,40 @@ class IdentificationUnitAnalysisMethodInserter():
 			{'colname': 'AnalysisNumber', 'None allowed': False},
 			{'colname': 'MethodID', 'None allowed': False},
 			{'colname': 'MethodMarker', 'None allowed': False},
+			{'colname': 'ParameterID', 'None allowed': False},
+			{'colname': 'Value'},
 			{'colname': 'DatabaseURN'}
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
 
 
-	def setIdentificationUnitAnalysisMethodDicts(self, json_dicts = []):
-		self.iuam_dicts = []
-		iuam_count = 1
-		for iuam_dict in json_dicts:
-			iuam_dict['entry_num'] = iuam_count
-			iuam_count += 1
-			self.iuam_dicts.append(iuam_dict)
+	def setIdentificationUnitAnalysisMethodParameterDicts(self, json_dicts = []):
+		self.iuamp_dicts = []
+		iuamp_count = 1
+		for iuamp_dict in json_dicts:
+			iuamp_dict['entry_num'] = iuamp_count
+			iuamp_count += 1
+			self.iuamp_dicts.append(iuamp_dict)
 		return
 
 
-	def insertIdentificationUnitAnalysisMethodData(self):
-		pudb.set_trace()
+	def insertIdentificationUnitAnalysisMethodParameterData(self):
 		
-		self.__createIdentificationUnitAnalysisMethodTempTable()
+		self.__createIdentificationUnitAnalysisMethodParameterTempTable()
 		
-		self.json2temp.set_datadicts(self.iuam_dicts)
+		self.json2temp.set_datadicts(self.iuamp_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__insertMethodForAanalysis()
-		self.__insertIdentificationUnitAnalysisMethods()
-		self.__updateIUAMTempTable()
+		self.__insertIdentificationUnitAnalysisMethodParameters()
 		
-		self.__updateIUAMDicts()
+		# not needed, all IDs are set by insert into temptable
+		#self.__updateIUAMPTempTable()
+		#self.__updateIUAMPDicts()
 		return
 
 
-	def __createIdentificationUnitAnalysisMethodTempTable(self):
+	def __createIdentificationUnitAnalysisMethodParameterTempTable(self):
 		query = """
 		DROP TABLE IF EXISTS [{0}];
 		""".format(self.temptable)
@@ -71,9 +72,11 @@ class IdentificationUnitAnalysisMethodInserter():
 		[CollectionSpecimenID] INT NOT NULL,
 		[IdentificationUnitID] INT NOT NULL,
 		[AnalysisID] INT NOT NULL,
-		[AnalysisNumber] NVARCHAR(50) NOT NULL,
+		[AnalysisNumber] NVARCHAR(50) COLLATE {1} NOT NULL,
 		[MethodID] INT NOT NULL,
-		[MethodMarker] NVARCHAR(50), 
+		[MethodMarker] NVARCHAR(50) COLLATE {1} NOT NULL,
+		[ParameterID] INT NOT NULL,
+		[Value] NVARCHAR(MAX) COLLATE {1},
 		[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 		[DatabaseURN] NVARCHAR(500) COLLATE {1},
 		PRIMARY KEY ([entry_num]),
@@ -83,6 +86,7 @@ class IdentificationUnitAnalysisMethodInserter():
 		INDEX [AnalysisNumber_idx] ([AnalysisNumber]),
 		INDEX [MethodID_idx] ([MethodID]),
 		INDEX [MethodMarker_idx] ([MethodMarker]),
+		INDEX [ParameterID_idx] ([ParameterID]),
 		INDEX [RowGUID_idx] ([RowGUID])
 		)
 		;""".format(self.temptable, self.collation)
@@ -92,30 +96,10 @@ class IdentificationUnitAnalysisMethodInserter():
 		return
 
 
-	def __insertMethodForAanalysis(self):
+	def __insertIdentificationUnitAnalysisMethodParameters(self):
 		
 		query = """
-		INSERT INTO [MethodForAnalysis] (
-			MethodID,
-			AnalysisID
-		)
-		SELECT DISTINCT iuam_temp.MethodID, iuam_temp.AnalysisID
-		FROM [{0}] iuam_temp
-		LEFT JOIN [MethodForAnalysis] mfa
-		ON iuam_temp.MethodID = mfa.MethodID
-			AND iuam_temp.AnalysisID = mfa.AnalysisID
-		WHERE mfa.MethodID IS NULL
-		;""".format(self.temptable)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __insertIdentificationUnitAnalysisMethods(self):
-		
-		query = """
-		INSERT INTO [IdentificationUnitAnalysisMethod] 
+		INSERT INTO [IdentificationUnitAnalysisMethodParameter] 
 		(
 			[CollectionSpecimenID],
 			[IdentificationUnitID],
@@ -123,6 +107,8 @@ class IdentificationUnitAnalysisMethodInserter():
 			[AnalysisNumber],
 			[MethodID],
 			[MethodMarker],
+			[ParameterID],
+			[Value],
 			[RowGUID]
 		)
 		SELECT 
@@ -132,9 +118,11 @@ class IdentificationUnitAnalysisMethodInserter():
 			[AnalysisNumber],
 			[MethodID],
 			[MethodMarker],
+			[ParameterID],
+			[Value],
 			[RowGUID]
-		FROM [{0}] iuam_temp
-		ORDER BY iuam_temp.[entry_num]
+		FROM [{0}] iuamp_temp
+		ORDER BY iuamp_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -142,20 +130,23 @@ class IdentificationUnitAnalysisMethodInserter():
 		return
 
 
-	def __updateIUAMTempTable(self):
-		# update the IdentificationUnitAnalysisIDs in iu_temptable
+	# not needed, all IDs are set by insert into temptable
+	'''
+	def __updateIUAMPTempTable(self):
+		
 		query = """
-		UPDATE iuam_temp
+		UPDATE iuamp_temp
 		SET 
-		iuam_temp.[CollectionSpecimenID] = iuam.[CollectionSpecimenID],
-		iuam_temp.[IdentificationUnitID] = iuam.[IdentificationUnitID],
-		iuam_temp.[AnalysisID] = iuam.[AnalysisID],
-		iuam_temp.[AnalysisNumber] = iuam.[AnalysisNumber],
-		iuam_temp.[MethodID] = iuam.[MethodID],
-		iuam_temp.[MethodMarker] = iuam.[MethodMarker]
-		FROM [{0}] iuam_temp
-		INNER JOIN [IdentificationUnitAnalysisMethod] iuam
-		ON iuam_temp.[RowGUID] = iuam.[RowGUID]
+		iuamp_temp.[CollectionSpecimenID] = iuamp.[CollectionSpecimenID],
+		iuamp_temp.[IdentificationUnitID] = iuamp.[IdentificationUnitID],
+		iuamp_temp.[AnalysisID] = iuamp.[AnalysisID],
+		iuamp_temp.[AnalysisNumber] = iuamp.[AnalysisNumber],
+		iuamp_temp.[MethodID] = iuamp.[MethodID],
+		iuamp_temp.[MethodMarker] = iuamp.[MethodMarker],
+		iuamp_temp.[ParameterID] = iuamp.[ParameterID]
+		FROM [{0}] iuamp_temp
+		INNER JOIN [IdentificationUnitAnalysisMethodParameter] iuamp
+		ON iuamp_temp.[RowGUID] = iuamp.[RowGUID]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -164,49 +155,53 @@ class IdentificationUnitAnalysisMethodInserter():
 		return
 
 
-	def __updateIUAMDicts(self):
-		iuam_ids = self.getIDsForIUAMDicts()
-		for iuam_dict in self.iuam_dicts:
-			entry_num = iuam_dict['entry_num']
-			iuam_dict['RowGUID'] = iuam_ids[entry_num]['RowGUID']
-			iuam_dict['IdentificationUnitID'] = iuam_ids[entry_num]['IdentificationUnitID']
-			iuam_dict['AnalysisID'] = iuam_ids[entry_num]['AnalysisID']
-			iuam_dict['AnalysisNumber'] = iuam_ids[entry_num]['AnalysisNumber']
-			iuam_dict['MethodID'] = iuam_ids[entry_num]['MethodID']
-			iuam_dict['MethodMarker'] = iuam_ids[entry_num]['MethodMarker']
+	def __updateIUAMPDicts(self):
+		iuamp_ids = self.getIDsForIUAMPDicts()
+		for iuamp_dict in self.iuamp_dicts:
+			entry_num = iuamp_dict['entry_num']
+			iuamp_dict['RowGUID'] = iuamp_ids[entry_num]['RowGUID']
+			iuamp_dict['IdentificationUnitID'] = iuamp_ids[entry_num]['IdentificationUnitID']
+			iuamp_dict['AnalysisID'] = iuamp_ids[entry_num]['AnalysisID']
+			iuamp_dict['AnalysisNumber'] = iuamp_ids[entry_num]['AnalysisNumber']
+			iuamp_dict['MethodID'] = iuamp_ids[entry_num]['MethodID']
+			iuamp_dict['MethodMarker'] = iuamp_ids[entry_num]['MethodMarker']
+			iuamp_dict['ParameterID'] = iuamp_ids[entry_num]['ParameterID']
 			
 		return
 
 
-	def getIDsForIUAMDicts(self):
+	def getIDsForIUAMPDicts(self):
 		query = """
 		SELECT 
-			iuam_temp.[entry_num],
-			iuam.CollectionSpecimenID,
-			iuam.IdentificationUnitID,
-			iuam.[AnalysisID],
-			iuam.[AnalysisNumber],
-			iuam.[MethodID],
-			iuam.[MethodMarker],
-			iuam.[RowGUID]
-		FROM [IdentificationUnitAnalysisMethod] iuam
-		INNER JOIN [{0}] iuam_temp
-		ON iuam_temp.[RowGUID] = iuam.[RowGUID] 
+			iuamp_temp.[entry_num],
+			iuamp.CollectionSpecimenID,
+			iuamp.IdentificationUnitID,
+			iuamp.[AnalysisID],
+			iuamp.[AnalysisNumber],
+			iuamp.[MethodID],
+			iuamp.[MethodMarker],
+			iuamp.[ParameterID],
+			iuamp.[RowGUID]
+		FROM [IdentificationUnitAnalysisMethodParameter] iuamp
+		INNER JOIN [{0}] iuamp_temp
+		ON iuamp_temp.[RowGUID] = iuamp.[RowGUID] 
 		;""".format(self.temptable)
 		
 		self.cur.execute(query)
 		rows = self.cur.fetchall()
 		
-		iuam_ids = {}
+		iuamp_ids = {}
 		for row in rows:
-			if not row[0] in iuam_ids:
-				iuam_ids[row[0]] = {}
-			iuam_ids[row[0]]['CollectionSpecimenID'] = row[1]
-			iuam_ids[row[0]]['IdentificationUnitID'] = row[2]
-			iuam_ids[row[0]]['AnalysisID'] = row[3]
-			iuam_ids[row[0]]['AnalysisNumber'] = row[4]
-			iuam_ids[row[0]]['MethodID'] = row[5]
-			iuam_ids[row[0]]['MethodMarker'] = row[6]
-			iuam_ids[row[0]]['RowGUID'] = row[7]
+			if not row[0] in iuamp_ids:
+				iuamp_ids[row[0]] = {}
+			iuamp_ids[row[0]]['CollectionSpecimenID'] = row[1]
+			iuamp_ids[row[0]]['IdentificationUnitID'] = row[2]
+			iuamp_ids[row[0]]['AnalysisID'] = row[3]
+			iuamp_ids[row[0]]['AnalysisNumber'] = row[4]
+			iuamp_ids[row[0]]['MethodID'] = row[5]
+			iuamp_ids[row[0]]['MethodMarker'] = row[6]
+			iuamp_ids[row[0]]['ParameterID'] = row[7]
+			iuamp_ids[row[0]]['RowGUID'] = row[8]
 		
-		return iuam_ids
+		return iuamp_ids
+	'''
