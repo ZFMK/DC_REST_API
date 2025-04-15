@@ -16,8 +16,8 @@ class ParameterInserter():
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
-		self.temptable = '#parameter_temptable'
-		self.unique_parameters_temptable = '#unique_parameter_temptable'
+		self.temptable = '##parameter_temptable'
+		self.unique_parameters_temptable = '##unique_parameter_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
@@ -27,7 +27,7 @@ class ParameterInserter():
 			{'colname': 'Description'},
 			{'colname': 'Description_sha', 'compute sha of': 'Description'},
 			{'colname': 'ParameterURI'},
-			{'colname': 'Description'},
+			{'colname': 'DefaultValue'},
 			{'colname': 'DefaultValue_sha', 'compute sha of': 'DefaultValue'},
 			{'colname': 'Notes'},
 		]
@@ -151,10 +151,12 @@ class ParameterInserter():
 		
 		query = """
 		INSERT INTO [{0}] (
-			[parameter_sha]
+			[parameter_sha],
+			[MethodID]
 		)
 		SELECT DISTINCT
-			[parameter_sha]
+			[parameter_sha],
+			[MethodID]
 		FROM [{1}] p_temp
 		WHERE p_temp.[ParameterID] IS NULL
 		;""".format(self.unique_parameters_temptable, self.temptable)

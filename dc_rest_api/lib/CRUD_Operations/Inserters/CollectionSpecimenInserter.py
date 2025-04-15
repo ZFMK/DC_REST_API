@@ -112,54 +112,6 @@ class CollectionSpecimenInserter():
 			return
 
 
-
-	def setLinkedEventIDs(self, data_dicts, flattened_json):
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['CollectionEvent']
-				data_dict['CollectionEventID'] = flattened_json['CollectionEvents'][ref_id]['CollectionEventID']
-			
-			except:
-				pass
-		return
-
-
-	def setLinkedCollectionIDs(self, data_dicts, flattened_json):
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['Collection']
-				data_dict['CollectionID'] = flattened_json['Collections'][ref_id]['CollectionID']
-			
-			except:
-				pass
-		return
-
-
-	def setLinkedExternalDatasourceIDs(self, data_dicts, flattened_json):
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['CollectionExternalDatasource']
-				data_dict['ExternalDatasourceID'] = flattened_json['CollectionExternalDatasources'][ref_id]['ExternalDatasourceID']
-			
-			except:
-				pass
-		return
-
-
-	def setLinkedProjectIDs(self, data_dicts, flattened_json):
-		for data_dict in data_dicts:
-			try:
-				project_ids = data_dict['Projects']
-				for project_id in project_ids:
-					if not 'ProjectID' in data_dict:
-						data_dict['ProjectID'] = []
-					data_dict['ProjectID'].append(flattened_json['Projects'][project_id]['ProjectID'])
-			
-			except:
-				pass
-		return
-
-
 	def __createSpecimenTempTable(self):
 		query = """
 		DROP TABLE IF EXISTS [{0}];

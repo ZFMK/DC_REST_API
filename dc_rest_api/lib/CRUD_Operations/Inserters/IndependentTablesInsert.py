@@ -17,6 +17,7 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionExternalDatasourceInser
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.AnalysisInserter import AnalysisInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.MethodInserter import MethodInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.ParameterInserter import ParameterInserter
 
 
 # this class do only work with the flattened dicts
@@ -97,6 +98,28 @@ class IndependentTablesInsert():
 			except:
 				self.messages.extend(m_inserter.messages)
 				pudb.set_trace()
+		pudb.set_trace()
+		
+		# set MethodIDs in self.json_dict[Parameters] because Parameters depend on them
+		if 'Parameters' in self.json_dict:
+			for pm_id in self.json_dict['Parameters']:
+				try:
+					m_id = self.json_dict['Parameters'][pm_id]['@id_method']
+					self.json_dict['Parameters'][pm_id]['MethodID'] = self.json_dict['Methods'][m_id]['MethodID']
+				except:
+					self.messages.extend('MethodID for parameter {0} could not be found'.format(pm_id))
+			try:
+				parameters = self.json_dict['Parameters']
+				pm_inserter = ParameterInserter(self.dc_db)
+				pm_inserter.insertParameterData(parameters)
+			except:
+				self.messages.extend(pm_inserter.messages)
+				pudb.set_trace()
+		
+		return
+
+
+
 
 
 	def setLinkedIDs(self, data_dicts):

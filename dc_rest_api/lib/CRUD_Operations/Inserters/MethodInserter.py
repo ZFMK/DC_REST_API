@@ -7,8 +7,6 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.MethodMatcher import MethodMatcher
 
-from dc_rest_api.lib.CRUD_Operations.Matchers.MethodMatcher import MethodMatcher
-
 
 class MethodInserter():
 	def __init__(self, dc_db):

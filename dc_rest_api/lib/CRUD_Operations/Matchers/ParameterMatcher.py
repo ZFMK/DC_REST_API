@@ -14,10 +14,10 @@ class ParameterMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '#prefiltered_parameters'
+		self.prefiltered_temptable = '##prefiltered_parameters'
 
 
-	def matchExistingMethods(self):
+	def matchExistingParameters(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
 		self.__addSHAOnPrefiltered()
@@ -59,7 +59,7 @@ class ParameterMatcher():
 
 
 	def __matchIntoPrefiltered(self):
-		# first match all existing Collections by DisplayText and MethodURI
+		# first match all existing Parameters
 		# parameter depends on MethodID, so it must be included here
 		query = """
 		INSERT INTO [{0}] (

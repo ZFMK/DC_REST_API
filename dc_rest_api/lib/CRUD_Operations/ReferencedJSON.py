@@ -63,6 +63,7 @@ class ReferencedJSON():
 
 
 	def __insertSubdicts(self, subdicts):
+		# subdicts is a list of dicts
 		for subdict in subdicts:
 			#if isinstance(subdict, dict) or isinstance(subdict[key], list) or isinstance(subdict[key], tuple)
 			
@@ -175,6 +176,7 @@ class ReferencedJSON():
 
 	def flatten2Dicts(self):
 		# first set all dicts as subdict so that the references are all resolved
+		# when the user provides a mixed json with some extracted independent tables
 		self.insertSubdicts()
 		
 		self.flattened_dicts = {
@@ -186,10 +188,6 @@ class ReferencedJSON():
 			'Analyses': {},
 			'Methods': {},
 			'Parameters': {}
-			#'IdentificationUnits': {},
-			#'Identifications': {},
-			#'CollectionSpecimenParts': {},
-			#'CollectionAgents': {},
 		}
 		
 		self.flattened_keys = [key for key in self.flattened_dicts]
@@ -211,19 +209,41 @@ class ReferencedJSON():
 		return
 
 
+	def __copyMethodHashIntoChildParameters(self, method_dicts):
+		for iuam_entry in method_dicts:
+			if 'Method' in iuam_entry and isinstance(iuam_entry['Method'], dict):
+				copied_dict = dict(iuam_entry['Method'])
+				if '@id' in copied_dict:
+					del copied_dict['@id']
+				methodhash = '_:' + hashlib.sha256(json.dumps(copied_dict).encode()).hexdigest()
+				
+				if 'Parameters' in iuam_entry:
+					for iuamp_entry in iuam_entry['Parameters']:
+						if 'Parameter' in iuamp_entry and isinstance(iuamp_entry['Parameter'], dict):
+							iuamp_entry['Parameter']['@id_method'] = methodhash
+		return
+
+
 	def __flatten_dicts(self, subdicts):
 		for key in subdicts:
+			# due to the problem, that Parameter depends on MethodID (i have no idea why) copy the MethodID from the parent Method dict into the child Parameter dict
+			# Method dicts have been flattened before because the recursive method runs into the leaves first
+			if key == 'Methods':
+				self.__copyMethodHashIntoChildParameters(subdicts[key])
+			
 			# run into the leafs and replace them before replacing the parent nodes
 			if isinstance(subdicts[key], dict):
 				self.__flatten_dicts(subdicts[key])
 			
 			elif isinstance(subdicts[key], list) or isinstance(subdicts[key], tuple):
+				
 				for subdict in subdicts[key]:
 					if isinstance(subdict, list) or isinstance(subdict, tuple) or isinstance(subdict, dict):
 						self.__flatten_dicts(subdict)
 			
 			# dicts with the same id will be overwritten, could this be shortened
 			if key in self.flat_references:
+				
 				if isinstance(subdicts[key], dict):
 					dict_id, copied_dict = self.__calculateSHA(key, subdicts[key])
 					self.flattened_dicts[self.flat_references[key]][dict_id] = copied_dict
