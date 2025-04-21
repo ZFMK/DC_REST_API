@@ -118,7 +118,8 @@ class IndependentTablesInsert():
 		return
 
 
-
+	def insertCollectionProjects(self, specimens_list):
+		self.p_inserter.insertCollectionProjects(specimens_list)
 
 
 	def setLinkedIDs(self, data_dicts):
@@ -233,5 +234,4 @@ class IndependentTablesInsert():
 	'''
 
 
-	def insertCollectionProjects(self, specimens_list):
-		self.p_inserter.insertCollectionProjects(specimens_list)
+

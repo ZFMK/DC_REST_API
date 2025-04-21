@@ -7,7 +7,9 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationInserter import IdentificationInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.SpecimenPartInserter import SpecimenPartInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitAnalysisInserter import IdentificationUnitAnalysisInserter
+
 
 
 class IdentificationUnitInserter():
@@ -85,7 +87,7 @@ class IdentificationUnitInserter():
 		csp_inserter = SpecimenPartInserter(self.dc_db)
 		csp_inserter.setSpecimenPartDicts(specimenparts)
 		pudb.set_trace()
-		independent_tables.setLinkedIDs(specimenparts)
+		#independent_tables.setLinkedIDs(specimenparts)
 		csp_inserter.insertSpecimenPartData()
 		
 		return

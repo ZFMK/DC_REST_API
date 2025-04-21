@@ -5,7 +5,6 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
-
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
 
 
@@ -48,7 +47,7 @@ class SpecimenPartInserter():
 		self.json2temp.set_datadicts(self.csp_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__setDummyCollectionIDs()
+		self.__setEmptyCollectionIDs()
 		self.__setMissingAccessionNumbers()
 		self.__overwriteUnknownMaterialCategories()
 		
@@ -56,20 +55,6 @@ class SpecimenPartInserter():
 		
 		self.__updateCSPTempTable()
 		self.__updateCSPDicts()
-		
-		'''
-		collections = []
-		
-		for csp_dict in self.csp_dicts:
-			if 'Collection' in csp_dict:
-				c_dict = csp_dict['Collection']
-				c_dict['SpecimenPartID'] = csp_dict['SpecimenPartID']
-				collections.append(c_dict)
-		
-		c_inserter = CollectionInserter(self.dc_db)
-		c_inserter.setCollectionDicts(collections)
-		c_inserter.insertCollectionData()
-		'''
 		
 		return
 
@@ -127,22 +112,10 @@ class SpecimenPartInserter():
 		return
 
 
-	def __setDummyCollectionIDs(self):
+	def __setEmptyCollectionIDs(self):
 		"""
-		set dummy CollectionIDs because the CollectionIDs will later be updated against the Collection data in json
+		set empty CollectionIDs to the CollectionID of 'No collection'
 		"""
-		'''
-		query = """
-		UPDATE csp_temp
-		SET csp_temp.[CollectionID] = c.CollectionID
-		FROM [{0}] csp_temp
-		INNER JOIN [Collection] c ON c.[CollectionName] = csp_temp.[CollectionName]
-		;""".format(self.temptable)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		# set the CollectionNames that can not be found to 'No collection' and the according CollectionID in Collection table
-		'''
 		
 		query = """
 		UPDATE csp_temp

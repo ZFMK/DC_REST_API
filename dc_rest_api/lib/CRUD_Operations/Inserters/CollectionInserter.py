@@ -146,7 +146,7 @@ class CollectionInserter():
 
 
 	def createNewCollections(self):
-		# insert only one version of each event when the same event occurres multiple times in json data
+		# insert only one version of each collection when the same collection occurres multiple times in json data
 		self.__setUniqueCollectionsTempTable()
 		self.__insertNewCollections()
 		

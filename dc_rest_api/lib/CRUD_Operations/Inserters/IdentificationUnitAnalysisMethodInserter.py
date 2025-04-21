@@ -161,6 +161,7 @@ class IdentificationUnitAnalysisMethodInserter():
 		self.con.commit()
 		return
 
+
 	# not needed, all IDs are set by insert into temptable
 	'''
 	def __updateIUAMTempTable(self):
