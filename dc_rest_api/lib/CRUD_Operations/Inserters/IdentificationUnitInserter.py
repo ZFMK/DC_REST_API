@@ -38,7 +38,6 @@ class IdentificationUnitInserter():
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)
-		
 
 
 	def insertIdentificationUnitData(self):
@@ -54,6 +53,7 @@ class IdentificationUnitInserter():
 		
 		identifications = []
 		iuanalyses = []
+		specimenparts = []
 		
 		for iu_dict in self.iu_dicts:
 			if 'Identifications' in iu_dict:
@@ -67,6 +67,12 @@ class IdentificationUnitInserter():
 					iua_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
 					iua_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
 					iuanalyses.append(iua_dict)
+			
+			if 'CollectionSpecimenParts' in iu_dict:
+				for csp_dict in iu_dict['CollectionSpecimenParts']:
+					csp_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
+					csp_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
+					specimenparts.append(csp_dict)
 		
 		i_inserter = IdentificationInserter(self.dc_db)
 		i_inserter.setIdentificationDicts(identifications)
@@ -75,6 +81,12 @@ class IdentificationUnitInserter():
 		iua_inserter = IdentificationUnitAnalysisInserter(self.dc_db)
 		iua_inserter.setIdentificationUnitAnalysisDicts(iuanalyses)
 		iua_inserter.insertIdentificationUnitAnalysisData()
+		
+		csp_inserter = SpecimenPartInserter(self.dc_db)
+		csp_inserter.setSpecimenPartDicts(specimenparts)
+		pudb.set_trace()
+		independent_tables.setLinkedIDs(specimenparts)
+		csp_inserter.insertSpecimenPartData()
 		
 		return
 

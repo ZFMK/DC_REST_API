@@ -70,6 +70,7 @@ class ReferencedJSON():
 			if isinstance(subdict, dict):
 				for key in subdict:
 					if key in self.references:
+						# @id-key is in subdict: {'CollectionEvent':{'@id': '_:my_key_refernecing_a_collection_event'}}
 						if isinstance(subdict[key], dict):
 							if '@id' in subdict[key] and len(subdict[key]) == 1:
 								self.__checkReferencedElementsAvailable(key)

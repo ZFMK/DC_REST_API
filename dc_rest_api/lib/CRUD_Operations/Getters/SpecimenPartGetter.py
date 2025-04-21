@@ -37,11 +37,11 @@ class SpecimenPartGetter(DataGetter):
 			self.con.commit()
 		
 			query = """
-			CREATE TABLE [#csp_pks_to_get_temptable] (
+			CREATE TABLE [##csp_pks_to_get_temptable] (
 				[CollectionSpecimenID] INT NOT NULL,
 				[SpecimenPartID] INT NOT NULL,
 				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-				INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
+				INDEX [SpecimenPartID_idx] ([SpecimenPartID])
 			)
 			;"""
 			querylog.info(query)
@@ -85,7 +85,6 @@ class SpecimenPartGetter(DataGetter):
 		return specimenparts
 
 
-
 	def getData(self):
 		self.setDatabaseURN()
 		self.filterAllowedRowGUIDs()
@@ -108,10 +107,14 @@ class SpecimenPartGetter(DataGetter):
 		csp.[ResponsibleName],
 		csp.[ResponsibleAgentURI],
 		csp.[Notes],
-		csp.[DataWithholdingReason]
+		csp.[DataWithholdingReason],
+		iuip.[IdentificationUnitID]
 		FROM [{0}] g_temp
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON csp.[RowGUID] = g_temp.[rowguid_to_get]
+		LEFT JOIN IdentificationUnitInPart iuip
+		ON iuip.CollectionSpecimenID = csp.CollectionSpecimenID
+			AND iuip.SpecimenPartID = csp.SpecimenPartID
 		;""".format(self.get_temptable)
 		self.cur.execute(query)
 		self.columns = [column[0] for column in self.cur.description]
@@ -129,8 +132,13 @@ class SpecimenPartGetter(DataGetter):
 		for element in self.results_list:
 			if element['CollectionSpecimenID'] not in self.results_dict:
 				self.results_dict[element['CollectionSpecimenID']] = {}
-				
-			self.results_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element 
+				if 'IdentificationUnitID' in element and element['IdentificationUnitID'] is not None:
+					if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
+						self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+					self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = element
+				else:
+					self.results_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element
+		return
 
 
 	def filterAllowedRowGUIDs(self):

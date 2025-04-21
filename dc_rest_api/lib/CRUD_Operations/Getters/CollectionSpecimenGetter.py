@@ -175,7 +175,6 @@ class CollectionSpecimenGetter(DataGetter):
 
 
 	def setSpecimenParts(self):
-		
 		csp_getter = SpecimenPartGetter(self.dc_db, self.users_project_ids)
 		csp_getter.createGetTempTable()
 		
@@ -187,6 +186,12 @@ class CollectionSpecimenGetter(DataGetter):
 		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
 		INNER JOIN [{1}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		 -- parts with no IdentificactionUnit should be added to CollectionSpecimen
+		 -- parts with IdentificationUnit should be added via IdentificationUnit by IdentificationUnitGetter
+		LEFT JOIN IdentificationUnitInPart iuip
+		ON iuip.CollectionSpecimenID = csp.CollectionSpecimenID
+			AND iuip.SpecimenPartID = csp.SpecimenPartID
+		WHERE iuip.IdentificationUnitID IS NULL
 		;""".format(csp_getter.get_temptable, self.get_temptable)
 		
 		querylog.info(query)

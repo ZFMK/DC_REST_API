@@ -6,16 +6,14 @@ querylog = logging.getLogger('query')
 
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
-from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter import IdentificationUnitAnalysisGetter
-from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationGetter import IdentificationGetter
-from dc_rest_api.lib.CRUD_Operations.Getters.SpecimenPartGetter import SpecimenPartGetter
 
-class IdentificationUnitGetter(DataGetter):
+
+class PartInIdentificationUnitGetter(DataGetter):
 	def __init__(self, dc_db, users_project_ids = []):
 		DataGetter.__init__(self, dc_db)
 		
 		self.users_project_ids = users_project_ids
-		self.get_temptable = '#get_iu_temptable'
+		self.get_temptable = '#get_iuip_temptable'
 
 
 
@@ -42,8 +40,10 @@ class IdentificationUnitGetter(DataGetter):
 			CREATE TABLE [#iu_pks_to_get_temptable] (
 				[CollectionSpecimenID] INT NOT NULL,
 				[IdentificationUnitID] INT NOT NULL,
+				[SpecimenPartID] INT,
 				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID])
+				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
+				INDEX [SpecimenPartID_idx] ([SpecimenPartID])
 			)
 			;"""
 			querylog.info(query)
@@ -53,7 +53,8 @@ class IdentificationUnitGetter(DataGetter):
 			query = """
 			INSERT INTO [#iu_pks_to_get_temptable] (
 			[CollectionSpecimenID],
-			[IdentificationUnitID]
+			[IdentificationUnitID],
+			[SpecimenPartID]
 			)
 			VALUES {0}
 			""".format(', '.join(placeholders))
@@ -63,10 +64,12 @@ class IdentificationUnitGetter(DataGetter):
 			
 			query = """
 			INSERT INTO [{0}] ([rowguid_to_get])
-			SELECT [RowGUID] FROM [IdentificationUnit] iu
+			SELECT [RowGUID] FROM [CollectionSpecimenPart]
+			[IdentificationUnitInPart] iuip
 			INNER JOIN [#iu_pks_to_get_temptable] pks
 			ON pks.[CollectionSpecimenID] = iu.[CollectionSpecimenID]
 			AND pks.[IdentificationUnitID] = iu.[IdentificationUnitID]
+			AND
 			;""".format(self.get_temptable)
 			querylog.info(query)
 			self.cur.execute(query)
@@ -123,7 +126,6 @@ class IdentificationUnitGetter(DataGetter):
 		
 		self.setChildIdentifications()
 		self.setChildIUAnalyses()
-		self.setChildSpecimenParts()
 		
 		return self.results_list
 
@@ -227,38 +229,12 @@ class IdentificationUnitGetter(DataGetter):
 		return
 
 
-	def setChildSpecimenParts(self):
-		
-		csp_getter = SpecimenPartGetter(self.dc_db, self.users_project_ids)
-		csp_getter.createGetTempTable()
-		
-		query = """
-		INSERT INTO [{0}] ([rowguid_to_get])
-		SELECT DISTINCT csp.[RowGUID]
-		FROM [IdentificationUnit] iu
-		INNER JOIN IdentificationUnitInPart iuip
-		ON iu.CollectionSpecimenID = iuip.CollectionSpecimenID
-		AND iu.IdentificationUnitID = iuip.IdentificationUnitID
-		INNER JOIN [CollectionSpecimenPart] csp
-		ON csp.CollectionSpecimenID = iuip.CollectionSpecimenID
-		AND csp.SpecimenPartID = iuip.SpecimenPartID
-		INNER JOIN [{1}] rg_temp
-		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
-		;""".format(csp_getter.get_temptable, self.get_temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		
-		csp_getter.getData()
-		csp_getter.list2dict()
-		
-		for iu in self.results_list:
-			if iu['CollectionSpecimenID'] in csp_getter.results_dict and iu['IdentificationUnitID'] in csp_getter.results_dict[iu['CollectionSpecimenID']]:
-				if 'CollectionSpecimenParts' not in iu:
-					iu['CollectionSpecimenParts'] = []
-				for csp_id in csp_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']]:
-					iu['CollectionSpecimenParts'].append(csp_getter.results_dict[iu['CollectionSpecimenID']][iu['IdentificationUnitID']][csp_id])
-		
-		return
+
+
+
+
+
+
+
+
 
