@@ -50,7 +50,6 @@ class CollectionSpecimenInserter():
 
 
 	def insertSpecimenData(self, flattened_json):
-		pudb.set_trace()
 		if 'CollectionSpecimens' in flattened_json:
 			independent_tables = IndependentTablesInsert(self.dc_db, flattened_json, self.uid, self.users_roles)
 			independent_tables.insertIndependentTables()

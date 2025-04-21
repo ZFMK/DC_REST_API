@@ -8,6 +8,7 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTa
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationInserter import IdentificationInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.SpecimenPartInserter import SpecimenPartInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitInPartSetter import IdentificationUnitInPartSetter
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitAnalysisInserter import IdentificationUnitAnalysisInserter
 
 
@@ -56,6 +57,7 @@ class IdentificationUnitInserter():
 		identifications = []
 		iuanalyses = []
 		specimenparts = []
+		iuip_dicts = []
 		
 		for iu_dict in self.iu_dicts:
 			if 'Identifications' in iu_dict:
@@ -86,9 +88,9 @@ class IdentificationUnitInserter():
 		
 		csp_inserter = SpecimenPartInserter(self.dc_db)
 		csp_inserter.setSpecimenPartDicts(specimenparts)
-		pudb.set_trace()
-		#independent_tables.setLinkedIDs(specimenparts)
 		csp_inserter.insertSpecimenPartData()
+		
+		self.setIdentificationUnitInPart()
 		
 		return
 
@@ -260,3 +262,21 @@ class IdentificationUnitInserter():
 			iu_ids[row[0]]['DisplayOrder'] = row[3]
 		
 		return iu_ids
+
+
+	def setIdentificationUnitInPart(self):
+		iuip_dicts = []
+		for iu_dict in self.iu_dicts:
+			if 'CollectionSpecimenParts' in iu_dict:
+				for csp_dict in iu_dict['CollectionSpecimenParts']:
+					iuip_dict = {
+						'CollectionSpecimenID': csp_dict['CollectionSpecimenID'],
+						'IdentificationUnitID': csp_dict['IdentificationUnitID'],
+						'SpecimenPartID': csp_dict['SpecimenPartID']
+					}
+					iuip_dicts.append(iuip_dict)
+		iuip_setter = IdentificationUnitInPartSetter(self.dc_db)
+		iuip_setter. setIdentificationUnitInPartDicts(iuip_dicts)
+		iuip_setter.setIdentificationUnitInPartData()
+		
+		return
