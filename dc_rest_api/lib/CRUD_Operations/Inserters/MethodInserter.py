@@ -39,9 +39,8 @@ class MethodInserter():
 		self.json2temp.set_datadicts(self.m_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__addMethodSHA()
-		
 		self.method_matcher = MethodMatcher(self.dc_db, self.temptable)
+		self.method_matcher.addMethodSHA(self.temptable)
 		self.method_matcher.matchExistingMethods()
 		
 		self.createNewMethods()
@@ -81,24 +80,6 @@ class MethodInserter():
 		INDEX [RowGUID_idx] ([RowGUID])
 		)
 		;""".format(self.temptable, self.collation)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __addMethodSHA(self):
-		query = """
-		UPDATE m_temp
-		SET [method_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[DisplayText],
-			[Description_sha],
-			[MethodURI],
-			[OnlyHierarchy],
-			[ForCollectionEvent]
-		)), 2)
-		FROM [{0}] m_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

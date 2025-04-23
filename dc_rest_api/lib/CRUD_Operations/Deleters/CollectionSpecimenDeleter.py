@@ -88,7 +88,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 	def deleteChildSpecimenParts(self):
 		id_lists = []
 		query = """
-		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID]
+		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID], NULL
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]

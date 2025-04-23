@@ -58,9 +58,8 @@ class CollectionInserter():
 		self.json2temp.set_datadicts(self.c_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__addCollectionSHA()
-		
 		self.collection_matcher = CollectionMatcher(self.dc_db, self.temptable)
+		self.collection_matcher.addCollectionSHA(self.temptable)
 		self.collection_matcher.matchExistingCollections()
 		
 		self.createNewCollections()
@@ -113,32 +112,6 @@ class CollectionInserter():
 		INDEX [RowGUID_idx] (RowGUID)
 		)
 		;""".format(self.temptable, self.collation)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __addCollectionSHA(self):
-		query = """
-		UPDATE c_temp
-		SET [collection_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[CollectionName],
-			[CollectionAcronym],
-			[AdministrativeContactName],
-			[AdministrativeContactAgentURI],
-			[Description_sha],
-			[Location],
-			[LocationParentID],
-			[LocationPlan],
-			[LocationPlanWidth],
-			[LocationPlanDate],
-			[LocationGeometry].STAsText(),
-			[LocationHeight],
-			[CollectionOwner]
-		)), 2)
-		FROM [{0}] c_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

@@ -20,7 +20,7 @@ class ParameterMatcher():
 	def matchExistingParameters(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
-		self.__addSHAOnPrefiltered()
+		self.addParameterSHA(self.prefiltered_temptable)
 		
 		self.__matchPrefilteredToTempTable()
 
@@ -63,7 +63,8 @@ class ParameterMatcher():
 		# parameter depends on MethodID, so it must be included here
 		query = """
 		INSERT INTO [{0}] (
-			p.[MethodID],
+			[ParameterID],
+			[MethodID],
 			[DisplayText],
 			[Description_sha],
 			[ParameterURI],
@@ -71,6 +72,7 @@ class ParameterMatcher():
 			[RowGUID]
 		)
 		SELECT
+			p.[ParameterID],
 			p.[MethodID],
 			p.[DisplayText],
 			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', p.[Description]), 2) AS [Description_sha],
@@ -90,10 +92,9 @@ class ParameterMatcher():
 		return
 
 
-	def __addSHAOnPrefiltered(self):
-		# parameter depends on MethodID, so it must be included here
+	def addParameterSHA(self, tablename):
 		query = """
-		UPDATE pf
+		UPDATE t
 		SET [parameter_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[MethodID],
 			[DisplayText],
@@ -101,8 +102,8 @@ class ParameterMatcher():
 			[ParameterURI],
 			[DefaultValue_sha]
 		)), 2)
-		FROM [{0}] pf
-		;""".format(self.prefiltered_temptable)
+		FROM [{0}] t
+		;""".format(tablename)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

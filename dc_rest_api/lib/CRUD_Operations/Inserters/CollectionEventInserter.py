@@ -87,9 +87,9 @@ class CollectionEventInserter():
 		self.json2temp.fill_temptable(self.temptable)
 		
 		self.__updateCollectionDate()
-		self.__addEventSHA()
 		
 		self.event_matcher = CollectionEventMatcher(self.dc_db, self.temptable)
+		self.event_matcher.addEventSHA(self.temptable)
 		self.event_matcher.matchExistingEvents()
 		
 		self.createNewEvents()
@@ -226,60 +226,6 @@ class CollectionEventInserter():
 		where ce_temp.CollectionDate IS NULL
 		""".format(self.temptable)
 		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __addEventSHA(self):
-		query = """
-		UPDATE ce_temp
-		SET [event_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[CollectorsEventNumber],
-			[CollectionDate],
-			[CollectionDay],
-			[CollectionMonth],
-			[CollectionYear],
-			[CollectionEndDay],
-			[CollectionEndMonth],
-			[CollectionEndYear],
-			[CollectionDateSupplement],
-			[CollectionDateCategory],
-			[CollectionTime],
-			[CollectionTimeSpan],
-			[LocalityDescription_sha],
-			[LocalityVerbatim_sha],
-			[HabitatDescription_sha],
-			[ReferenceTitle],
-			[ReferenceURI],
-			 -- e.[ReferenceDetails],
-			[CollectingMethod_sha],
-			[CountryCache],
-			 -- 
-			[Altitude],
-			[Altitude_Accuracy],
-			 --
-			[WGS84_Lat],
-			[WGS84_Lon],
-			[WGS84_Accuracy],
-			[WGS84_RecordingMethod],
-			 -- 
-			[Depth_min_m],
-			[Depth_max_m],
-			[Depth_Accuracy_m],
-			[Depth_RecordingMethod_m],
-			 -- 
-			[Height_min_m],
-			[Height_max_m],
-			[Height_Accuracy_m],
-			[Height_RecordingMethod_m],
-			 -- 
-			[DataWithholdingReason],
-			[DataWithholdingReasonDate]
-		)), 2)
-		FROM [{0}] ce_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

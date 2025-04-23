@@ -20,7 +20,8 @@ class MethodMatcher():
 	def matchExistingMethods(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
-		self.__addSHAOnPrefiltered()
+		
+		self.addMethodSHA(self.prefiltered_temptable)
 		
 		self.__matchPrefilteredToTempTable()
 
@@ -62,6 +63,7 @@ class MethodMatcher():
 		
 		query = """
 		INSERT INTO [{0}] (
+			[MethodID],
 			[DisplayText],
 			[Description_sha],
 			[MethodURI],
@@ -70,6 +72,7 @@ class MethodMatcher():
 			[RowGUID]
 		)
 		SELECT
+			m.[MethodID],
 			m.[DisplayText],
 			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', m.[Description]), 2) AS [Description_sha],
 			m.[MethodURI],
@@ -89,9 +92,9 @@ class MethodMatcher():
 		return
 
 
-	def __addSHAOnPrefiltered(self):
+	def addMethodSHA(self, tablename):
 		query = """
-		UPDATE pf
+		UPDATE t
 		SET [method_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[DisplayText],
 			[Description_sha],
@@ -99,8 +102,8 @@ class MethodMatcher():
 			[OnlyHierarchy],
 			[ForCollectionEvent]
 		)), 2)
-		FROM [{0}] pf
-		;""".format(self.prefiltered_temptable)
+		FROM [{0}] t
+		;""".format(tablename)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

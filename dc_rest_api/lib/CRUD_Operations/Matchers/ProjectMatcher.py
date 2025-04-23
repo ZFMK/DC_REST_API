@@ -20,7 +20,7 @@ class ProjectMatcher():
 	def matchExistingProjects(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
-		self.__addSHAOnPrefiltered()
+		self.addProjectSHA(self.prefiltered_temptable)
 		
 		self.__matchPrefilteredToTempTable()
 
@@ -86,17 +86,17 @@ class ProjectMatcher():
 		return
 
 
-	def __addSHAOnPrefiltered(self):
+	def addProjectSHA(self, tablename):
 		query = """
-		UPDATE pf
+		UPDATE t
 		SET [project_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[Project],
 			[ProjectURI],
 			[StableIdentifierBase],
 			[StableIdentifierTypeID]
 		)), 2)
-		FROM [{0}] pf
-		;""".format(self.prefiltered_temptable)
+		FROM [{0}] t
+		;""".format(tablename)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

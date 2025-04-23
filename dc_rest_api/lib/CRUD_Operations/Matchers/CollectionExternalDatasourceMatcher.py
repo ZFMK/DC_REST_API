@@ -20,7 +20,7 @@ class CollectionExternalDatasourceMatcher():
 	def matchExistingExternalDatasources(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
-		self.__addSHAOnPrefiltered()
+		self.addExternalDatasourceSHA(self.prefiltered_temptable)
 		
 		self.__matchPrefilteredToTempTable()
 
@@ -105,9 +105,9 @@ class CollectionExternalDatasourceMatcher():
 		return
 
 
-	def __addSHAOnPrefiltered(self):
+	def addExternalDatasourceSHA(self, tablename):
 		query = """
-		UPDATE pf
+		UPDATE t
 		SET [externaldatasource_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[ExternalDatasourceName],
 			[ExternalDatasourceVersion],
@@ -120,8 +120,8 @@ class CollectionExternalDatasourceMatcher():
 			 -- [PreferredSequence],
 			 -- [Disabled]
 		)), 2)
-		FROM [{0}] pf
-		;""".format(self.prefiltered_temptable)
+		FROM [{0}] t
+		;""".format(tablename)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

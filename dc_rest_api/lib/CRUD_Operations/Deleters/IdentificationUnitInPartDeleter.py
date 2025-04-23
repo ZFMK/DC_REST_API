@@ -14,13 +14,13 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 		self.delete_temptable = '#iuip_to_delete'
 
 
-	def deleteByPrimaryKeys(self, specimen_part_unit_ids):
+	def deleteByPrimaryKeys(self, iuip_ids):
 		self.createDeleteTempTable()
 		
-		pagesize = 1000
-		while len(specimen_part_unit_ids) > 0:
-			cached_ids = specimen_part_ids[:pagesize]
-			del specimen_unit_ids[:pagesize]
+		pagesize = 600
+		while len(iuip_ids) > 0:
+			cached_ids = iuip_ids[:pagesize]
+			del iuip_ids[:pagesize]
 			placeholders = ['(?, ?, ?)' for _ in cached_ids]
 			values = []
 			for ids in cached_ids:
@@ -37,7 +37,7 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 			CREATE TABLE [#iuip_pks_to_delete_temptable] (
 				[CollectionSpecimenID] INT NOT NULL,
 				[SpecimenPartID] INT NOT NULL,
-				[IdentificationUnitPartID] INT NOT NULL,
+				[IdentificationUnitID] INT NOT NULL,
 				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
 				INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
 				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID])

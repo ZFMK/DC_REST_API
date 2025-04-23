@@ -46,6 +46,7 @@ class IndependentTablesInsert():
 
 	def insertIndependentTables(self):
 		# TODO: error handling when user does not have the appropriate rights
+		
 		if 'Projects' in self.json_dict:
 			try:
 				projects = self.json_dict['Projects']

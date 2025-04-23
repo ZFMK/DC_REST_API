@@ -20,7 +20,7 @@ class AnalysisMatcher():
 	def matchExistingAnalyses(self):
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
-		self.__addSHAOnPrefiltered()
+		self.addAnalysisSHA(self.prefiltered_temptable)
 		
 		self.__matchPrefilteredToTempTable()
 
@@ -61,6 +61,7 @@ class AnalysisMatcher():
 		
 		query = """
 		INSERT INTO [{0}] (
+			[AnalysisID],
 			[DisplayText],
 			[Description_sha],
 			[AnalysisURI],
@@ -69,6 +70,7 @@ class AnalysisMatcher():
 			[RowGUID]
 		)
 		SELECT
+			a.[AnalysisID],
 			a.[DisplayText],
 			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', a.[Description]), 2) AS [Description_sha],
 			a.[AnalysisURI],
@@ -88,9 +90,9 @@ class AnalysisMatcher():
 		return
 
 
-	def __addSHAOnPrefiltered(self):
+	def addAnalysisSHA(self, tablename):
 		query = """
-		UPDATE pf
+		UPDATE t
 		SET [analysis_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[DisplayText],
 			[Description_sha],
@@ -98,8 +100,8 @@ class AnalysisMatcher():
 			[MeasurementUnit],
 			[OnlyHierarchy]
 		)), 2)
-		FROM [{0}] pf
-		;""".format(self.prefiltered_temptable)
+		FROM [{0}] t
+		;""".format(tablename)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

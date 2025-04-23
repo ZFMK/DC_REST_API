@@ -36,15 +36,15 @@ class ParameterInserter():
 
 
 	def insertParameterData(self, json_dicts = []):
+		
 		self.p_dicts = json_dicts
 		self.__createParameterTempTable()
 		
 		self.json2temp.set_datadicts(self.p_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__addParameterSHA()
-		
 		self.parameter_matcher = ParameterMatcher(self.dc_db, self.temptable)
+		self.parameter_matcher.addParameterSHA(self.temptable)
 		self.parameter_matcher.matchExistingParameters()
 		
 		self.createNewParameters()
@@ -84,23 +84,6 @@ class ParameterInserter():
 		INDEX [RowGUID_idx] ([RowGUID])
 		)
 		;""".format(self.temptable, self.collation)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __addParameterSHA(self):
-		query = """
-		UPDATE p_temp
-		SET [parameter_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[DisplayText],
-			[Description_sha],
-			[ParameterURI],
-			[DefaultValue_sha]
-		)), 2)
-		FROM [{0}] p_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

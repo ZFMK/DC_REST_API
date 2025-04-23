@@ -50,9 +50,8 @@ class ProjectInserter():
 		self.json2temp.set_datadicts(self.project_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__addProjectSHA()
-		
 		self.project_matcher = ProjectMatcher(self.dc_db, self.temptable)
+		self.project_matcher.addProjectSHA(self.temptable)
 		self.project_matcher.matchExistingProjects()
 		
 		num_new_projects = self.__getNumberOfUnmatchedProjects()
@@ -116,23 +115,6 @@ class ProjectInserter():
 		)
 		;""".format(self.temptable, self.collation)
 		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __addProjectSHA(self):
-		query = """
-		UPDATE p_temp
-		SET [project_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[Project],
-			[ProjectURI],
-			[StableIdentifierBase],
-			[StableIdentifierTypeID]
-		)), 2)
-		FROM [{0}] p_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

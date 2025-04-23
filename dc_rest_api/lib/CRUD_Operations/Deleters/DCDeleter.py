@@ -12,6 +12,8 @@ class DCDeleter():
 		
 		self.con = self.dc_db.getConnection()
 		self.cur = self.dc_db.getCursor()
+		
+		self.collation = self.dc_db.collation
 
 
 	def checkRowGUIDsUniqueness(self, tablename):

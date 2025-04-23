@@ -51,9 +51,8 @@ class CollectionExternalDatasourceInserter():
 		self.json2temp.set_datadicts(self.ed_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.addExternalDatasourceSHA()
-		
 		self.externaldatasource_matcher = CollectionExternalDatasourceMatcher(self.dc_db, self.temptable)
+		self.externaldatasource_matcher.addExternalDatasourceSHA(self.temptable)
 		self.externaldatasource_matcher.matchExistingExternalDatasources()
 		
 		self.__setUniqueDatasourcesTempTable()
@@ -114,29 +113,6 @@ class CollectionExternalDatasourceInserter():
 		)
 		;""".format(self.temptable, self.collation)
 		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def addExternalDatasourceSHA(self):
-		query = """
-		UPDATE ed_temp
-		SET [externaldatasource_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[ExternalDatasourceName],
-			[ExternalDatasourceVersion],
-			[Rights],
-			[ExternalDatasourceAuthors],
-			[ExternalDatasourceURI],
-			[ExternalDatasourceInstitution],
-			[ExternalAttribute_NameID]
-			 -- [InternalNotes],
-			 -- [PreferredSequence],
-			 -- [Disabled]
-		)), 2)
-		FROM [{0}] ed_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

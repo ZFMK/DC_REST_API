@@ -40,9 +40,8 @@ class AnalysisInserter():
 		self.json2temp.set_datadicts(self.a_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
-		self.__addAnalysisSHA()
-		
 		self.analysis_matcher = AnalysisMatcher(self.dc_db, self.temptable)
+		self.analysis_matcher.addAnalysisSHA(self.temptable)
 		self.analysis_matcher.matchExistingAnalyses()
 		
 		self.createNewAnalyses()
@@ -82,24 +81,6 @@ class AnalysisInserter():
 		INDEX [RowGUID_idx] ([RowGUID])
 		)
 		;""".format(self.temptable, self.collation)
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
-
-	def __addAnalysisSHA(self):
-		query = """
-		UPDATE a_temp
-		SET [analysis_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
-			[DisplayText],
-			[Description_sha],
-			[AnalysisURI],
-			[MeasurementUnit],
-			[OnlyHierarchy]
-		)), 2)
-		FROM [{0}] a_temp
-		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

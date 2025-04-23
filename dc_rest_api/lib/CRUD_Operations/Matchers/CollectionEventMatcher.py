@@ -21,7 +21,7 @@ class CollectionEventMatcher():
 		
 		self.__createPrefilteredTempTable()
 		self.__matchIntoPrefiltered()
-		self.__addEventSHAOnPrefiltered()
+		self.addEventSHA(self.prefiltered_temptable)
 		
 		self.__matchPrefilteredToEventTempTable()
 
@@ -230,9 +230,9 @@ class CollectionEventMatcher():
 		return
 
 
-	def __addEventSHAOnPrefiltered(self):
+	def addEventSHA(self, tablename):
 		query = """
-		UPDATE pf
+		UPDATE t
 		SET [event_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[CollectorsEventNumber],
 			[CollectionDate],
@@ -276,8 +276,8 @@ class CollectionEventMatcher():
 			[DataWithholdingReason],
 			[DataWithholdingReasonDate]
 		)), 2)
-		FROM [{0}] pf
-		;""".format(self.prefiltered_temptable)
+		FROM [{0}] t
+		;""".format(tablename)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()

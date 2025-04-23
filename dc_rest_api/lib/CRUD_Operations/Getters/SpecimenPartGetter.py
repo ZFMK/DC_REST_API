@@ -37,7 +37,7 @@ class SpecimenPartGetter(DataGetter):
 			self.con.commit()
 		
 			query = """
-			CREATE TABLE [##csp_pks_to_get_temptable] (
+			CREATE TABLE [#csp_pks_to_get_temptable] (
 				[CollectionSpecimenID] INT NOT NULL,
 				[SpecimenPartID] INT NOT NULL,
 				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
@@ -132,12 +132,12 @@ class SpecimenPartGetter(DataGetter):
 		for element in self.results_list:
 			if element['CollectionSpecimenID'] not in self.results_dict:
 				self.results_dict[element['CollectionSpecimenID']] = {}
-				if 'IdentificationUnitID' in element and element['IdentificationUnitID'] is not None:
-					if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
-						self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
-					self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = element
-				else:
-					self.results_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element
+			if 'IdentificationUnitID' in element and element['IdentificationUnitID'] is not None:
+				if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
+					self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
+				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = element
+			else:
+				self.results_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element
 		return
 
 
