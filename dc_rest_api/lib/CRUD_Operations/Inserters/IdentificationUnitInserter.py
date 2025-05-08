@@ -28,6 +28,10 @@ class IdentificationUnitInserter():
 			{'colname': 'IdentificationUnitID'},
 			{'colname': 'DatabaseURN'},
 			{'colname': 'LastIdentificationCache', 'default': 'unknown', 'None allowed': False},
+			{'colname': 'TaxonomicGroup', 'default': 'unknown', 'None allowed': False},
+			{'colname': 'OrderCache'},
+			{'colname': 'FamilyCache'},
+			{'colname': 'HierarchyCache'},
 			{'colname': 'LifeStage'},
 			{'colname': 'Gender'},
 			{'colname': 'NumberOfUnits'},
@@ -36,7 +40,6 @@ class IdentificationUnitInserter():
 			{'colname': 'UnitDescription'},
 			{'colname': 'DisplayOrder'},
 			{'colname': 'Notes'},
-			{'colname': 'TaxonomicGroup', 'default': 'unknown', 'None allowed': False},
 			{'colname': 'DataWithholdingReason'},
 		]
 		
@@ -124,6 +127,9 @@ class IdentificationUnitInserter():
 		[LastIdentificationCache] VARCHAR(255) DEFAULT 'unknown' COLLATE {1} NOT NULL,
 		[TaxonomicGroup] VARCHAR(50) DEFAULT 'unknown' COLLATE {1} NOT NULL,
 		[DisplayOrder] SMALLINT,
+		[OrderCache] VARCHAR(255) COLLATE {1},
+		[FamilyCache] VARCHAR(255) COLLATE {1},
+		[HierarchyCache] VARCHAR(500) COLLATE {1},
 		[LifeStage] VARCHAR(255) COLLATE {1},
 		[Gender] VARCHAR(50) COLLATE {1},
 		[NumberOfUnits] SMALLINT,
@@ -154,6 +160,9 @@ class IdentificationUnitInserter():
 			[LastIdentificationCache],
 			[TaxonomicGroup],
 			[DisplayOrder],
+			[OrderCache],
+			[FamilyCache],
+			[HierarchyCache],
 			[LifeStage],
 			[Gender],
 			[NumberOfUnits],
@@ -169,6 +178,9 @@ class IdentificationUnitInserter():
 			[LastIdentificationCache],
 			[TaxonomicGroup],
 			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [entry_num] ASC)) AS [DisplayOrder],
+			[OrderCache],
+			[FamilyCache],
+			[HierarchyCache],
 			[LifeStage],
 			[Gender],
 			[NumberOfUnits],
@@ -202,13 +214,16 @@ class IdentificationUnitInserter():
 		
 		return
 
-
+	'''
 	def __updateIdentificationUnits(self):
 		# update all newly inserted IdentificationUnits with the values from iu_temptable
 		query = """
 		UPDATE iu
 		SET
 			iu.[LastIdentificationCache] = iu_temp.[LastIdentificationCache],
+			iu.[OrderCache] = iu_temp.[OrderCache],
+			iu.[FamilyCache] = iu_temp.[FamilyCache],
+			iu.[HierarchyCache] = iu_temp.[HierarchyCache],
 			iu.[LifeStage] = iu_temp.[LifeStage],
 			iu.[Gender] = iu_temp.[Gender],
 			iu.[NumberOfUnits] = iu_temp.[NumberOfUnits],
@@ -220,16 +235,13 @@ class IdentificationUnitInserter():
 		FROM [IdentificationUnit] iu
 		INNER JOIN [{0}] iu_temp
 			ON (iu.[RowGUID] = iu_temp.[RowGUID])
-		 -- ensure that only inserted identificationunits are updated
-		 -- not needed anymore, because the RowGUIDs are considered as UNIQUE
-		 -- INNER JOIN [#new_iu_ids] nui
-			 -- ON iu_temp.[RowGUID] = nui.[RowGUID] 
 		;""".format(self.temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __updateIUDicts(self):

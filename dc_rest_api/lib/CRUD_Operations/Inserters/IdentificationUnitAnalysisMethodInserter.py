@@ -25,7 +25,7 @@ class IdentificationUnitAnalysisMethodInserter():
 			{'colname': 'AnalysisID', 'None allowed': False},
 			{'colname': 'AnalysisNumber', 'None allowed': False},
 			{'colname': 'MethodID', 'None allowed': False},
-			{'colname': 'MethodMarker', 'None allowed': False},
+			{'colname': 'MethodMarker'},
 			{'colname': 'DatabaseURN'}
 		]
 		
@@ -151,7 +151,7 @@ class IdentificationUnitAnalysisMethodInserter():
 			[AnalysisID],
 			[AnalysisNumber],
 			[MethodID],
-			[MethodMarker],
+			CAST(ISNULL([MethodMarker], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID], [IdentificationUnitID], [AnalysisID], [AnalysisNumber], [MethodID] ORDER BY [entry_num] ASC)) AS NVARCHAR(50)) AS [MethodMarker],
 			[RowGUID]
 		FROM [{0}] iuam_temp
 		ORDER BY iuam_temp.[entry_num]

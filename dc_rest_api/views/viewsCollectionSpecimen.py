@@ -51,7 +51,7 @@ class CollectionSpecimensViews():
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
 		}
-		
+		pudb.set_trace()
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return self.jsonresponse

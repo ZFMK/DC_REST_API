@@ -14,7 +14,7 @@ class CollectionEventMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '#prefiltered_events'
+		self.prefiltered_temptable = '##prefiltered_events'
 
 
 	def matchExistingEvents(self):
@@ -61,7 +61,9 @@ class CollectionEventMatcher():
 		 -- [ReferenceDetails] NVARCHAR(50),
 		[CollectingMethod_sha] VARCHAR(64),
 		 -- [Notes_sha] VARCHAR(64),
-		[CountryCache] NVARCHAR(50),
+		[CountryCache] NVARCHAR(50) COLLATE {1},
+		[Named area (DiversityGazetteer)] NVARCHAR(255) COLLATE {1},
+		
 		[RowGUID] UNIQUEIDENTIFIER NOT NULL,
 		 -- 
 		[event_sha] VARCHAR(64),
@@ -123,6 +125,9 @@ class CollectionEventMatcher():
 			 -- [ReferenceDetails],
 			[CollectingMethod_sha],
 			[CountryCache],
+			 -- 
+			[Named area (DiversityGazetteer)],
+			 -- 
 			[RowGUID],
 			 -- 
 			[Altitude],
@@ -168,6 +173,9 @@ class CollectionEventMatcher():
 			 -- e.[ReferenceDetails],
 			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', e.[CollectingMethod]), 2) AS [CollectingMethod_sha],
 			e.[CountryCache],
+			 -- 
+			na.[Location1] AS [Named area (DiversityGazetteer)],
+			 -- 
 			e.[RowGUID],
 			 -- 
 			alt.Location1 AS [Altitude],
@@ -221,6 +229,8 @@ class CollectionEventMatcher():
 		ON d.CollectionEventID = e.CollectionEventID AND d.LocalisationSystemID = 14
 		LEFT JOIN [CollectionEventLocalisation] h
 		ON h.CollectionEventID = e.CollectionEventID AND h.LocalisationSystemID = 15
+		LEFT JOIN [CollectionEventLocalisation] na
+		ON na.CollectionEventID = e.CollectionEventID AND na.LocalisationSystemID = 7
 		;""".format(self.prefiltered_temptable, self.temptable)
 		
 		querylog.info(query)
@@ -254,6 +264,8 @@ class CollectionEventMatcher():
 			 -- e.[ReferenceDetails],
 			[CollectingMethod_sha],
 			[CountryCache],
+			 -- 
+			[Named area (DiversityGazetteer)],
 			 -- 
 			[Altitude],
 			[Altitude_Accuracy],

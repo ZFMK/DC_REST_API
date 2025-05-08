@@ -127,7 +127,10 @@ class IndependentTablesInsert():
 		
 		if isinstance(data_dicts, list):
 			for data_dict in data_dicts:
-				for key in data_dict:
+				# get keys in an extra list
+				# when using for key in datadict the length of the dict changes and an error is thrown
+				keylist = [key for key in data_dict]
+				for key in keylist:
 					if key in self.references:
 						if key == 'Projects':
 							self.__setLinkedProjectIDs(data_dict)
@@ -135,7 +138,7 @@ class IndependentTablesInsert():
 							self.__setLinkedID(data_dict, key)
 					else:
 						self.setLinkedIDs(data_dict[key])
-				
+		
 		elif isinstance(data_dicts, dict):
 			for key in data_dicts:
 				self.setLinkedIDs(data_dicts[key])

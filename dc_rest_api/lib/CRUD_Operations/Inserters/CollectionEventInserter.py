@@ -15,8 +15,8 @@ class CollectionEventInserter():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = '#event_temptable'
-		self.unique_events_temptable = '#unique_events_temptable'
+		self.temptable = '##event_temptable'
+		self.unique_events_temptable = '##unique_events_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
@@ -48,6 +48,7 @@ class CollectionEventInserter():
 			{'colname': 'Notes'},
 			{'colname': 'CountryCache'},
 			#################
+			{'colname': 'Country'},
 			{'colname': 'State'},
 			{'colname': 'StateDistrict'},
 			{'colname': 'Municipality'},
@@ -86,6 +87,8 @@ class CollectionEventInserter():
 		self.json2temp.set_datadicts(self.ce_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
+		self.__setCountryCache()
+		self.__setNamedArea()
 		self.__updateCollectionDate()
 		
 		self.event_matcher = CollectionEventMatcher(self.dc_db, self.temptable)
@@ -141,13 +144,15 @@ class CollectionEventInserter():
 		[CollectingMethod] VARCHAR(MAX) COLLATE {1},
 		[CollectingMethod_sha] VARCHAR(64),
 		[Notes] VARCHAR(MAX) COLLATE {1},
-		 -- 
 		[CountryCache] VARCHAR(255) COLLATE {1},
-		[State] VARCHAR(255) COLLATE {1},
-		[StateDistrict] VARCHAR(255) COLLATE {1},
-		[County] VARCHAR(255) COLLATE {1},
-		[Municipality] VARCHAR(255) COLLATE {1},
-		[StreetHouseNumber] VARCHAR(255) COLLATE {1},
+		 -- 
+		[Country] NVARCHAR(40) COLLATE {1},
+		[State] NVARCHAR(40) COLLATE {1},
+		[StateDistrict] NVARCHAR(40) COLLATE {1},
+		[County] NVARCHAR(40) COLLATE {1},
+		[Municipality] NVARCHAR(40) COLLATE {1},
+		[StreetHouseNumber] NVARCHAR(40) COLLATE {1},
+		[Named area (DiversityGazetteer)] NVARCHAR(255) COLLATE {1},
 		 -- 
 		[Altitude] VARCHAR(255) COLLATE {1},
 		[Altitude_Accuracy] VARCHAR(255) COLLATE {1},
@@ -186,6 +191,43 @@ class CollectionEventInserter():
 		return
 
 
+	def __setCountryCache(self):
+		# set country and countrycache when one of them is not set but the other is set
+		query = """
+		UPDATE ce_temp
+		SET [Country] = [CountryCache]
+		FROM [{0}] ce_temp
+		WHERE [Country] IS NULL AND [CountryCache] IS NOT NULL
+		;""".format(self.temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		UPDATE ce_temp
+		SET [CountryCache] = [Country]
+		FROM [{0}] ce_temp
+		WHERE [CountryCache] IS NULL AND [Country] IS NOT NULL
+		;""".format(self.temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		return
+
+
+	def __setNamedArea(self):
+		# concateate the fields Country, State, StateDistrict, Municipality, StreetHouseNumber
+		query = """
+		UPDATE ce_temp
+		SET [Named area (DiversityGazetteer)] = CONCAT_WS(', ', ce_temp.[Country], ce_temp.[State], ce_temp.[StateDistrict], ce_temp.[County], ce_temp.[Municipality], ce_temp.[StreetHouseNumber])
+		FROM [{0}] ce_temp
+		;""".format(self.temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		return
+
+
 	def __updateCollectionDate(self):
 		# because the CollectionEvent.trgInsCollectionEvent overwrites CollectionDate with NULL
 		# when one of ColletcionDay, CollectionMonth, or CollectionYear is not given
@@ -198,7 +240,7 @@ class CollectionEventInserter():
 		CollectionMonth = DATEPART(month, CollectionDate),
 		CollectionYear = DATEPART(year, CollectionDate)
 		FROM [{0}] ce_temp
-		where ce_temp.CollectionDate IS NOT NULL AND (CollectionDay IS NULL OR CollectionMonth IS NULL OR CollectionYear IS NULL)
+		WHERE ce_temp.CollectionDate IS NOT NULL AND (CollectionDay IS NULL OR CollectionMonth IS NULL OR CollectionYear IS NULL)
 		""".format(self.temptable)
 		
 		querylog.info(query)
@@ -241,7 +283,7 @@ class CollectionEventInserter():
 		self.__insertEventLocalisationAltitude()
 		self.__insertEventLocalisationDepth()
 		self.__insertEventLocalisationHeight()
-		#self.__insertEventLocalisationNamedArea()
+		self.__insertEventLocalisationNamedArea()
 		
 		self.__updateEventIDsInTempTable()
 		return
@@ -284,6 +326,9 @@ class CollectionEventInserter():
 			[CollectingMethod] VARCHAR(MAX) COLLATE {1},
 			[Notes] VARCHAR(MAX) COLLATE {1},
 			[CountryCache] NVARCHAR(50),
+			 -- 
+			[Named area (DiversityGazetteer)] NVARCHAR(255) COLLATE {1},
+			-- 
 			[RowGUID] UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
 			 -- 
 			[event_sha] VARCHAR(64),
@@ -342,6 +387,8 @@ class CollectionEventInserter():
 			[Notes],
 			[CountryCache],
 			 -- 
+			[Named area (DiversityGazetteer)],
+			 -- 
 			[event_sha],
 			 -- 
 			[Altitude],
@@ -387,6 +434,8 @@ class CollectionEventInserter():
 			ce_temp.[CollectingMethod],
 			ce_temp.[Notes],
 			ce_temp.[CountryCache],
+			 -- 
+			ce_temp.[Named area (DiversityGazetteer)],
 			 -- 
 			ce_temp.[event_sha],
 			 -- 
@@ -620,7 +669,6 @@ class CollectionEventInserter():
 		return
 
 
-	'''
 	def __insertEventLocalisationNamedArea(self):
 		query = """
 		INSERT INTO CollectionEventLocalisation (
@@ -629,19 +677,18 @@ class CollectionEventInserter():
 			[LocalisationSystemID]
 		)
 		SELECT 
-			ce_temp.[CollectionEventID],
-			CONCAT_WS(', ', ce_temp.[CountryCache], ce_temp.[State], ce_temp.[StateDistrict], ce_temp.[County], ce_temp.[Municipality], ce_temp.[StreetHouseNumber]),
+			ue_temp.[CollectionEventID],
+			ue_temp.[Named area (DiversityGazetteer)],
 			ls.[LocalisationSystemID]
-		FROM [{0}] ce_temp
+		FROM [{0}] ue_temp
 		INNER JOIN [LocalisationSystem] ls
 		ON ls.LocalisationSystemName = 'Named area (DiversityGazetteer)'
-		;""".format(self.temptable)
+		;""".format(self.unique_events_temptable)
 		
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
 		return
-	'''
 
 
 	'''
