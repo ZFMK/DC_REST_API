@@ -17,7 +17,7 @@ class ReferencedJSON():
 		self.messages = []
 
 		self.references = {
-			"Project": "Projects", 
+			"Projects": "Projects", 
 			"Collection": "Collections",
 			"CollectionEvent": "CollectionEvents",
 			"CollectionExternalDatasource": "CollectionExternalDatasources",
@@ -27,7 +27,7 @@ class ReferencedJSON():
 		}
 		
 		self.flat_references = {
-			"Project": "Projects", 
+			"Projects": "Projects", 
 			"Collection": "Collections",
 			"CollectionEvent": "CollectionEvents",
 			"CollectionExternalDatasource": "CollectionExternalDatasources",

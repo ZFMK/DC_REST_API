@@ -57,7 +57,6 @@ class CollectionSpecimenInserter():
 			self.specimen_dicts = flattened_json['CollectionSpecimens']
 			
 			specimen_list = [self.specimen_dicts[cs_id] for cs_id in self.specimen_dicts]
-			
 			independent_tables.setLinkedIDs(specimen_list)
 			
 			self.__createSpecimenTempTable()
@@ -70,7 +69,6 @@ class CollectionSpecimenInserter():
 			self.__updateCSTempTable()
 			self.__updateSpecimenDicts()
 			
-			pudb.set_trace()
 			independent_tables.insertCollectionProjects(specimen_list)
 			
 			identificationunits = []

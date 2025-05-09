@@ -264,6 +264,7 @@ class ProjectInserter():
 		return
 
 
+	'''
 	def __insertCollectionProjects(self):
 		query = """
 		INSERT INTO [CollectionProject]
@@ -283,6 +284,7 @@ class ProjectInserter():
 		self.cur.execute(query)
 		self.con.commit()
 		return
+	'''
 
 
 	def __updateProjectDicts(self):
@@ -314,8 +316,8 @@ class ProjectInserter():
 		ids_list = []
 		
 		for specimen_dict in specimens_list:
-			if 'CollectionSpecimenID' in specimen_dict and 'ProjectID' in specimen_dict and len(specimen_dict['ProjectID']) > 0:
-				ids = [[specimen_dict['CollectionSpecimenID'], p_id] for p_id in specimen_dict['ProjectID']]
+			if 'CollectionSpecimenID' in specimen_dict and 'ProjectIDs' in specimen_dict and len(specimen_dict['ProjectIDs']) > 0:
+				ids = [[specimen_dict['CollectionSpecimenID'], p_id] for p_id in specimen_dict['ProjectIDs']]
 				ids_list.extend(ids)
 		
 		

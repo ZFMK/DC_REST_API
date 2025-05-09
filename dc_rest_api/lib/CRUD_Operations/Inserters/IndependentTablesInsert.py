@@ -124,7 +124,9 @@ class IndependentTablesInsert():
 
 
 	def setLinkedIDs(self, data_dicts):
-		
+		# set the DC-ID of the object after it has been inserted into the surrounding object
+		# this is neccessary because when the surrounding objects are inserted into the DC
+		# they need the IDs of the sub-objects to connect to them
 		if isinstance(data_dicts, list):
 			for data_dict in data_dicts:
 				# get keys in an extra list
@@ -162,9 +164,9 @@ class IndependentTablesInsert():
 		try:
 			project_ids = data_dict['Projects']
 			for project_id in project_ids:
-				#if not 'ProjectID' in data_dict:
-				#	data_dict['ProjectID'] = []
-				data_dict['ProjectID'].append(self.json_dict['Projects'][project_id]['ProjectID'])
+				if not 'ProjectID' in data_dict:
+					data_dict['ProjectIDs'] = []
+				data_dict['ProjectIDs'].append(self.json_dict['Projects'][project_id]['ProjectID'])
 		
 		except:
 			#data_dict['ProjectID'] = []
