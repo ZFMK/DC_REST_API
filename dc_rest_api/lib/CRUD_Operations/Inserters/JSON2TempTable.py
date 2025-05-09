@@ -111,6 +111,7 @@ class JSON2TempTable():
 		pagesize = 1
 		if len(valuelists) > 0:
 			pagesize = int(2000 / len(valuelists[0]))
+			# pagesize = 1 # for test purposes
 			
 			while len(valuelists) > 0:
 				values = []

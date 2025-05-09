@@ -70,6 +70,7 @@ class CollectionSpecimenInserter():
 			self.__updateCSTempTable()
 			self.__updateSpecimenDicts()
 			
+			pudb.set_trace()
 			independent_tables.insertCollectionProjects(specimen_list)
 			
 			identificationunits = []
