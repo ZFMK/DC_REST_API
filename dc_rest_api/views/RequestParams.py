@@ -12,7 +12,8 @@ class RequestParams():
 		self.read_request_params()
 		#self.read_search_params()
 		self.read_credentials()
-		self.set_requeststring()
+		#self.set_requeststring()
+		self.set_response_params()
 		
 		pass
 
@@ -84,6 +85,31 @@ class RequestParams():
 				token = None
 				
 		return token
+
+
+	def set_response_params(self):
+		if 'response_pathes' in self.params_dict:
+			for response_path in self.params_dict['response_pathes']:
+				if not 'response_pathes_list' in self.params_dict:
+					self.params_dict['response_pathes_list'] = []
+				try:
+					self.params_dict['response_pathes_list'].append([path.strip() for path in response_path.split(':')])
+				except:
+					try:
+						self.messages.append('Your request contains an invalid value for parameter response_pathes. Wrong value is {0}'.format(str(response_path)))
+					except:
+						self.messages.append('Your request contains an invalid value for parameter response_pathes')
+		else:
+			self.params_dict['response_pathes_list'] = []
+		
+		if 'all_data' in self.params_dict:
+			if self.params_dict['all_data'][-1] in [True, 'True', 'true', '1', 1]:
+				self.params_dict['all_data'] = True
+			else:
+				self.params_dict['all_data'] = False
+		else:
+			self.params_dict['all_data'] = False
+		return
 
 
 ####################################

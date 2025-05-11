@@ -14,7 +14,7 @@ class CollectionEventMatcher():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.prefiltered_temptable = '##prefiltered_events'
+		self.prefiltered_temptable = '#prefiltered_events'
 
 
 	def matchExistingEvents(self):

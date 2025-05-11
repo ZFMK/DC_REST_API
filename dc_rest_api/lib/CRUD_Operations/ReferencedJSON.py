@@ -272,6 +272,103 @@ class ReferencedJSON():
 		return dict_id, copied_dict
 
 
+	def get_filtered_result(self, path_list = None, all_data = False):
+		
+		if path_list is None:
+			path_list = []
+		
+		self.ids_not_ending_with_id = [
+			'AnalysisNumber', 'MethodMarker', 'CollectorsName', 'CollectorsSequence',
+			'CollectorsEventNumber', 'AccessionNumber', 'IdentificationSequence'
+		]
+		
+		result_dict = {}
+		
+		if len(path_list) > 0:
+			pathes = [path for path in path_list]
+			path_dict = {}
+			for path in pathes:
+				self.__set_path_dict(path, path_dict)
+			
+			subdict = self.json_dicts
+			self.__filter_result_by_path_dict(path_dict, all_data, self.json_dicts, result_dict)
+			return result_dict
+		
+		elif all_data is False:
+			self.__filter_result(all_data, self.json_dicts, result_dict)
+			return result_dict
+		
+		else:
+			return self.json_dicts
+
+
+	def __set_path_dict(self, path, path_dict):
+		while len(path) > 0:
+			path_element = path.pop(0)
+			if path_element not in path_dict:
+				path_dict[path_element] = {}
+				self.__set_path_dict(path, path_dict[path_element])
+		return
+
+
+	def __get_filtered_result_item(self, item, all_data):
+		if all_data is True:
+			filtered_dict = {}
+			for key in item:
+				if not isinstance(item[key], dict) and not isinstance(item[key], list):
+					filtered_dict[key] = item[key]
+			return filtered_dict
+		
+		else:
+			ids_dict = {}
+			for key in item:
+				if key in self.ids_not_ending_with_id:
+					ids_dict[key] = item[key]
+				elif key.endswith('ID'):
+					ids_dict[key] = item[key]
+			return ids_dict
+
+
+	def __filter_result(self, all_data, subdict, result_dict):
+		for key in subdict:
+			if isinstance(subdict[key], list):
+				if key not in result_dict:
+					result_dict[key] = []
+				for subdict_item in subdict[key]:
+					if isinstance(subdict_item, dict):
+						filtered_item = self.__get_filtered_result_item(subdict_item, all_data)
+						if len(filtered_item) > 0:
+							result_dict[key].append(filtered_item)
+							self.__filter_result(all_data, subdict_item, filtered_item)
+			elif isinstance(subdict[key], dict):
+				filtered_item = self.__get_filtered_result_item(subdict[key], all_data)
+				if len(filtered_item) > 0:
+					result_dict[key] = filtered_item
+					self.__filter_result(all_data, subdict[key], filtered_item)
+		return
+
+
+	def __filter_result_by_path_dict(self, path_dict, all_data, subdict, result_dict):
+		for path_name in path_dict:
+			if path_name in subdict:
+				if path_name not in result_dict:
+					result_dict[path_name] = []
+				
+				if isinstance(subdict[path_name], list):
+					for subdict_item in subdict[path_name]:
+						if isinstance(subdict_item, dict):
+							filtered_item = self.__get_filtered_result_item(subdict_item, all_data)
+							if len(filtered_item) > 0:
+								result_dict[path_name].append(filtered_item)
+								self.__filter_result_by_path_dict(path_dict[path_name], all_data, subdict_item, filtered_item)
+				elif isinstance(subdict[path_name], dict):
+					filtered_item = self.__get_filtered_result_item(subdict[path_name], all_data)
+					if len(filtered_item) > 0:
+						result_dict[path_name] = filtered_item
+						self.__filter_result_by_path_dict(path_dict[path_name], all_data, subdict[path_name], filtered_item)
+		return
+
+
 	def insertFlattenedSubdicts(self):
 		self.__insertFlattenedSubdicts(self.json_dicts)
 		# delete the referenced dicts when they have been inserted as subdicts
@@ -301,7 +398,6 @@ class ReferencedJSON():
 					del subdict[key]
 			
 			for key in subdict:
-				
 				if isinstance(key, str) and key in self.flat_references:
 					
 					if isinstance(subdict[key], str) and subdict[key] in self.json_dicts[self.flat_references[key]] and isinstance(self.json_dicts[self.flat_references[key]][subdict[key]], dict):
@@ -325,7 +421,6 @@ class ReferencedJSON():
 				self.__insertFlattenedSubdicts(element)
 		
 		return
-
 
 
 	'''

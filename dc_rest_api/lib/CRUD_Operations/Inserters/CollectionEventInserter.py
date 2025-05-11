@@ -15,8 +15,8 @@ class CollectionEventInserter():
 		self.cur = self.dc_db.getCursor()
 		self.collation = self.dc_db.collation
 		
-		self.temptable = '##event_temptable'
-		self.unique_events_temptable = '##unique_events_temptable'
+		self.temptable = '#event_temptable'
+		self.unique_events_temptable = '#unique_events_temptable'
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},

@@ -51,7 +51,7 @@ class CollectionSpecimensViews():
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
 		}
-		pudb.set_trace()
+		# pudb.set_trace()
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return self.jsonresponse
@@ -77,13 +77,13 @@ class CollectionSpecimensViews():
 				self.messages.extend(cs_inserter.messages)
 			
 			referenced_json.insertFlattenedSubdicts()
-			cs_data = json.loads(json.dumps(self.request_params.json_body['CollectionSpecimens'], default = str))
-			self.jsonresponse['CollectionSpecimens'] = cs_data
+			filtered_result = referenced_json.get_filtered_result(self.request_params.params_dict['response_pathes_list'], self.request_params.params_dict['all_data'])
+			cs_data = json.loads(json.dumps(filtered_result, default = str))
 		
 		else:
 			self.messages.append('Error: no "CollectionSpecimens" array in json data')
 		
-		return self.jsonresponse
+		return cs_data
 
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")
@@ -104,15 +104,14 @@ class CollectionSpecimensViews():
 			return jsonresponse
 		
 		specimen_deleter = CollectionSpecimenDeleter(self.dc_db, self.users_project_ids)
-		
 		deleted = []
 		if 'CollectionSpecimenIDs' in self.request_params.json_body:
-			specimen_ids = self.request_params.json_body['CollectionSpecimenIDs']
+			specimen_ids = list(self.request_params.json_body['CollectionSpecimenIDs'])
 			specimen_deleter.deleteByPrimaryKeys(specimen_ids)
 			deleted = specimen_ids
 		
 		elif 'RowGUIDs' in self.request_params.json_body:
-			rowguids = self.request_params.json_body['RowGUIDs']
+			rowguids = list(self.request_params.json_body['RowGUIDs'])
 			specimen_deleter.deleteByRowGUIDs(rowguids)
 			deleted = rowguids
 			pass

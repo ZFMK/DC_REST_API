@@ -7,6 +7,8 @@ querylog = logging.getLogger('query')
 from dc_rest_api.lib.CRUD_Operations.Deleters.DCDeleter import DCDeleter
 from dc_rest_api.lib.CRUD_Operations.Deleters.SpecimenPartDeleter import SpecimenPartDeleter
 from dc_rest_api.lib.CRUD_Operations.Deleters.IdentificationUnitDeleter import IdentificationUnitDeleter
+from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionEventDeleter import CollectionEventDeleter
+
 
 class CollectionSpecimenDeleter(DCDeleter):
 	def __init__(self, dc_db, users_project_ids = []):
@@ -65,7 +67,10 @@ class CollectionSpecimenDeleter(DCDeleter):
 		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
 		self.deleteChildSpecimenParts()
 		self.deleteChildIdentificationUnits()
+		# event ids must be set before CollectionSpecimens are deleted, but Events can only be deleted after CollectionSpecimens
+		self.setCollectionEventIDs()
 		self.deleteFromTable('CollectionSpecimen')
+		self.deleteCollectionEvents()
 		
 		return
 
@@ -80,8 +85,10 @@ class CollectionSpecimenDeleter(DCDeleter):
 		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
 		self.deleteChildSpecimenParts()
 		self.deleteChildIdentificationUnits()
-		
+		# event ids must be set before CollectionSpecimens are deleted, but Events can only be deleted after CollectionSpecimens
+		self.setCollectionEventIDs()
 		self.deleteFromTable('CollectionSpecimen')
+		self.deleteCollectionEvents()
 		return
 
 
@@ -131,6 +138,25 @@ class CollectionSpecimenDeleter(DCDeleter):
 		return
 
 
+	def setCollectionEventIDs(self):
+		self.collection_event_ids = []
+		query = """
+		SELECT cs.CollectionEventID
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_delete]
+		;""".format(self.delete_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		rows = self.cur.fetchall()
+		for row in rows:
+			self.collection_event_ids.append(row)
+		return
 
+
+	def deleteCollectionEvents(self):
+		event_deleter = CollectionEventDeleter(self.dc_db, self.users_project_ids)
+		event_deleter.deleteByPrimaryKeys(self.collection_event_ids)
+		return
 
 
