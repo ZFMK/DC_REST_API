@@ -31,6 +31,8 @@ def main(global_config, **settings):
 	config.add_route('specimens', '/specimens')
 	
 	config.add_route('projects', '/projects')
+	config.add_route('task_progress', '/task_progress/{task_id}')
+	config.add_route('task_result', '/task_result/{task_id}')
 	
 	config.add_route('help', '/help')
 	

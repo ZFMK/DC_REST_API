@@ -219,12 +219,12 @@ class CollectionSpecimenInserter():
 	def __updateSpecimenDicts(self):
 		# write the inserted ids back to the specimen_dicts
 		
-		cs_ids = self.getIDsForSpecimenDicts()
+		self.setIDsForSpecimenDicts()
 		
 		for dict_id in self.specimen_dicts:
 			cs_dict = self.specimen_dicts[dict_id]
-			cs_dict['CollectionSpecimenID'] = cs_ids[dict_id]['CollectionSpecimenID']
-			cs_dict['RowGUID'] = cs_ids[dict_id]['RowGUID']
+			cs_dict['CollectionSpecimenID'] = self.inserted_ids[dict_id]['CollectionSpecimenID']
+			cs_dict['RowGUID'] = self.inserted_ids[dict_id]['RowGUID']
 			
 			# fill the ids for the next level...
 			if 'IdentificationUnits' in cs_dict:
@@ -234,7 +234,7 @@ class CollectionSpecimenInserter():
 		return
 
 
-	def getIDsForSpecimenDicts(self):
+	def setIDsForSpecimenDicts(self):
 		# select all CollectionSpecimenIDs and RowGUIDs
 		query = """
 		SELECT cs_temp.[@id], cs.CollectionSpecimenID, cs.[RowGUID]
@@ -246,13 +246,20 @@ class CollectionSpecimenInserter():
 		self.cur.execute(query)
 		rows = self.cur.fetchall()
 		
-		cs_ids = {}
+		self.inserted_ids = {}
 		for row in rows:
-			if not row[0] in cs_ids:
-				cs_ids[row[0]] = {}
-			cs_ids[row[0]]['CollectionSpecimenID'] = row[1]
-			cs_ids[row[0]]['RowGUID'] = row[2]
+			if not row[0] in self.inserted_ids:
+				self.inserted_ids[row[0]] = {}
+			self.inserted_ids[row[0]]['CollectionSpecimenID'] = row[1]
+			self.inserted_ids[row[0]]['RowGUID'] = row[2]
 		
-		return cs_ids
+		return
 
+
+	def getInsertedListOfSpecimenIDs(self):
+		inserted_ids_list = []
+		for key in self.inserted_ids:
+			inserted_ids_list.append(self.inserted_ids[key])
+		return inserted_ids_list
+		
 

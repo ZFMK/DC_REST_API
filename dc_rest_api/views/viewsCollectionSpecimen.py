@@ -3,8 +3,6 @@ from pyramid.view import view_config, forbidden_view_config
 from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound, HTTPSeeOther
 
-from DBConnectors.MSSQLConnector import MSSQLConnector
-
 from dwb_authentication.security import SecurityPolicy
 from dwb_authentication.dbsession import DBSession
 
@@ -20,6 +18,9 @@ from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenGetter import Col
 
 import pudb
 import json
+
+
+INS_DEL_QUEUE = 'dc_ins_del_queue'
 
 
 class CollectionSpecimensViews():
@@ -57,8 +58,11 @@ class CollectionSpecimensViews():
 			return self.jsonresponse
 		
 		security = SecurityPolicy()
-		self.dc_db = security.get_mssql_connector(self.request)
-		if self.dc_db is None:
+		
+		self.dc_con_params = security.get_dc_connection_params(self.request)
+		# test connection
+		
+		if self.dc_con_params is None:
 			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
 			return self.jsonresponse
 		
@@ -71,19 +75,33 @@ class CollectionSpecimensViews():
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
-				cs_inserter = CollectionSpecimenInserter(self.dc_db, self.uid, users_roles = self.roles)
-				cs_inserter.insertSpecimenData(self.request_params.json_body)
+				pudb.set_trace()
+				# TODO: insert via queue
+				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
+				
+				task_id = queue.submit_insert(dc_params, self.request_params.json_body, uid, user_roles, application_url)
+				
+				progress_url = '{0}/task_progress/{1}'.format(application_url, task_id)
+				
+				# queue object must be deleted here as the queue otherwise complains about SQLLite called in different threads when the next call
+				# of InserDeleteQueue() deletes the exisiting one. 
+				# Obviously pyramid holds the old queue object in memory because it loads viewsCollectionSpecimen only once
+				# del queue
 			except:
-				self.messages.extend(cs_inserter.messages)
+				self.messages.extend(queue.messages)
+				return self.jsonresponse
 			
+			
+			'''
 			referenced_json.insertFlattenedSubdicts()
 			filtered_result = referenced_json.get_filtered_result(self.request_params.params_dict['response_pathes_list'], self.request_params.params_dict['all_data'])
 			cs_data = json.loads(json.dumps(filtered_result, default = str))
+			'''
 		
 		else:
 			self.messages.append('Error: no "CollectionSpecimens" array in json data')
 		
-		return cs_data
+		return self.jsonresponse
 
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")
