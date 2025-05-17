@@ -3,6 +3,8 @@ import pudb
 import logging
 import logging.config
 
+from DBConnectors.MySQLConnector import MySQLConnector
+
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('dc_api')
 logger_query = logging.getLogger('query')
@@ -10,6 +12,7 @@ logger_query = logging.getLogger('query')
 from configparser import ConfigParser
 config = ConfigParser(allow_no_value=True)
 config.read('./config.ini')
+
 
 class ProgressTracker:
 	def __init__(self):
@@ -25,7 +28,30 @@ class ProgressTracker:
 		self.cur = mysql_db.getCursor()
 		self.con = mysql_db.getConnection()
 		
+		self.create_tables()
 		self.delete_old_tasks()
+
+
+	def create_tables(self):
+		
+		query = """
+		CREATE TABLE IF NOT EXISTS task_progress (
+			task_id VARCHAR(36) NOT NULL,
+			task_name VARCHAR(50),
+			progress_in_percent FLOAT,
+			`status` VARCHAR(10),
+			`date_submitted` DATETIME NOT NULL,
+			`date_completed` DATETIME DEFAULT NULL,
+			message VARCHAR(255),
+			task_result JSON,
+			PRIMARY KEY (task_id),
+			KEY (task_name),
+			KEY (`status`)
+		)
+		;"""
+		self.cur.execute(query)
+		self.con.commit()
+		return
 
 
 	def delete_old_tasks(self):
@@ -35,7 +61,7 @@ class ProgressTracker:
 		DELETE FROM task_progress
 		WHERE date_submitted < DATE_ADD(NOW(), INTERVAL -1 MONTH) 
 		;"""
-		self.cur.execute()
+		self.cur.execute(query)
 		self.con.commit()
 		return
 
@@ -71,16 +97,16 @@ class ProgressTracker:
 		return
 
 
-	def insert_new_task(self, task_id, progress_in_percent, status):
+	def insert_new_task(self, task_id, task_name, progress_in_percent, status):
 		query = """
 		INSERT INTO task_progress (
-			task_id, progress_in_percent, `status`, date_submitted, date_completed, message, task_result
+			task_id, task_name, progress_in_percent, `status`, date_submitted, date_completed, message, task_result
 		)
 		VALUES (
-			%s, %s, %s, NOW(), NULL, NULL, NULL 
+			%s, %s, %s, %s, NOW(), NULL, NULL, NULL 
 		)
 		;"""
-		self.cur.execute(query, [task_id, progress_in_percent, status])
+		self.cur.execute(query, [task_id, task_name, progress_in_percent, status])
 		self.con.commit()
 		return
 

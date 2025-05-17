@@ -6,33 +6,6 @@ config.read('./config.ini')
 
 from dwb_authentication.mysql_connect import mysql_connect
 
-class ProgressTables():
-	def __init__(self):
-		self.con, self.cur = mysql_connect()
-		self.create_tables()
-
-
-	def create_tables(self):
-		
-		query = """
-		CREATE TABLE IF NOT EXISTS task_progress (
-			task_id VARCHAR(36) NOT NULL,
-			task_type VARCHAR(10),
-			progress_in_percent FLOAT,
-			`status` VARCHAR(10),
-			`date_submitted` DATETIME NOT NULL,
-			`date_completed` DATETIME DEFAULT NULL,
-			message VARCHAR(255),
-			task_result JSON
-			PRIMARY KEY (task_id),
-			KEY (task_type),
-			KEY (`status`)
-		)
-		;"""
-		self.cur.execute(query)
-		self.con.commit()
-		return
-
 
 class SessionDBSetup():
 	def __init__(self):
@@ -202,6 +175,6 @@ class SessionDBSetup():
 
 if __name__ == "__main__":
 	db_setup = SessionDBSetup()
-	progress_tables_setup = ProgressTables()
+
 
 

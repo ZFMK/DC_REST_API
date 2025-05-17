@@ -11,4 +11,5 @@ pyramid-mako
 pyramid-tm
 waitress
 cryptography
+persist-queue
 

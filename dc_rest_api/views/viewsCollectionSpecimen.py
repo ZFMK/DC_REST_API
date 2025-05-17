@@ -80,8 +80,7 @@ class CollectionSpecimensViews():
 				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
 				
 				task_id = queue.submit_insert(dc_params, self.request_params.json_body, uid, user_roles, application_url)
-				
-				progress_url = '{0}/task_progress/{1}'.format(application_url, task_id)
+				return HTTPSeeOther('{0}/task_progress/{1}'.format(self.request.application_url, task_id), headers={"content_type": "application/json", "accept": "application/json"})
 				
 				# queue object must be deleted here as the queue otherwise complains about SQLLite called in different threads when the next call
 				# of InserDeleteQueue() deletes the exisiting one. 

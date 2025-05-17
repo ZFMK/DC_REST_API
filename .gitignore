@@ -12,3 +12,4 @@ out.json
 examples/intern
 *.*~
 **/data/**
+dc_ins_del_queue/*

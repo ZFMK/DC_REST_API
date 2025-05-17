@@ -17,8 +17,7 @@ from DBConnectors.MSSQLConnector import MSSQLConnector
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenInserter import CollectionSpecimenInserter
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
-from dc_rest_api.lib.ProgressTracker import ProgressTracker
-
+from dc_rest_api.lib.ProgressTracker.ProgressTracker import ProgressTracker
 
 
 def insdel_queue_daemon():
@@ -64,7 +63,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	def submit_to_insert_queue(dc_params, json_dicts, uid, user_roles, application_url):
 		task_id = uuid4()
 		self.put(dc_params, json_dicts, uid, user_roles, task_id, 'insert')
-		
+		self.progress_tracker.insert_new_task(task_id, 'Insert CollectionSpecimens', 0, 'waiting for start') 
 		return task_id
 
 
@@ -113,3 +112,8 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		del specimen_inserter
 		
 		return
+
+
+if __name__ == "__main__":
+	insdel_queue_daemon()
+
