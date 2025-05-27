@@ -1,4 +1,5 @@
 import pudb
+import json
 
 import logging
 import logging.config
@@ -28,22 +29,34 @@ class ProgressTracker:
 		self.cur = mysql_db.getCursor()
 		self.con = mysql_db.getConnection()
 		
-		self.create_tables()
+		#self.create_tables()
 		self.delete_old_tasks()
 
 
 	def create_tables(self):
+		# this method is only for the first time the ProgressTracker is called
+		# should be put into an extra file?!
+		
+		# Delete was only used to change the table during development
+		
+		query = """
+		DROP TABLE IF EXISTS task_progress
+		;"""
+		self.cur.execute(query)
+		self.con.commit()
 		
 		query = """
 		CREATE TABLE IF NOT EXISTS task_progress (
 			task_id VARCHAR(36) NOT NULL,
 			task_name VARCHAR(50),
 			progress_in_percent FLOAT,
-			`status` VARCHAR(10),
+			`status` VARCHAR(50),
+			`notification_url` VARCHAR(255) DEFAULT NULL,
 			`date_submitted` DATETIME NOT NULL,
 			`date_completed` DATETIME DEFAULT NULL,
 			message VARCHAR(255),
 			task_result JSON,
+			step_result JSON,
 			PRIMARY KEY (task_id),
 			KEY (task_name),
 			KEY (`status`)
@@ -69,56 +82,95 @@ class ProgressTracker:
 	def get_progress(self, task_id):
 		query = """
 		SELECT progress_in_percent,
-		`status`
-		FROM Task_progress 
+		`status`,
+		`message`,
+		`notification_url`
+		FROM task_progress 
 		WHERE task_id = %s
 		;"""
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
 		if row is not None:
-			return row[0], row[1]
-		return
+			return {
+				'progress': row[0],
+				'status': row[1],
+				'message': row[2],
+				'notification_url': row[3]
+			}
+		return {}
 
 
-	def update_progress(self, task_id, progress_in_percent, status, task_result = None, message = None):
+	def get_progress_with_results(self, task_id):
+		query = """
+		SELECT progress_in_percent,
+		`status`,
+		`message`,
+		task_result JSON,
+		step_result JSON,
+		`notification_url`
+		FROM task_progress 
+		WHERE task_id = %s
+		;"""
+		self.cur.execute(query, [task_id])
+		row = self.cur.fetchone()
+		if row is not None:
+			return {
+				'progress': row[0],
+				'status': row[1],
+				'message': row[2],
+				'task_result': row[3],
+				'step_result': row[4],
+				'notification_url': row[5]
+			}
+		return {}
+
+
+	def update_progress(self, task_id, progress_in_percent, status, step_result = None, task_result = None, message = None):
+		task_result_string = None
 		if task_result is not None:
 			task_result_string = self.convert_to_json_string(task_result)
+		
+		step_result_string = None
+		if step_result is not None:
+			step_result_string = self.convert_to_json_string(step_result)
 		
 		query = """
 		UPDATE task_progress tp
 		SET tp.progress_in_percent = %s,
 		tp.`status` = %s,
+		tp.step_result = %s,
 		tp.task_result = %s,
 		tp.message = %s
 		WHERE task_id = %s
 		;"""
-		self.cur.execute(query, [progress_in_percent, status, task_id, task_result_string, message])
+		self.cur.execute(query, [progress_in_percent, status, step_result_string, task_result_string, message, task_id])
 		self.con.commit()
 		return
 
 
-	def insert_new_task(self, task_id, task_name, progress_in_percent, status):
+	def insert_new_task(self, task_id, task_name, progress_in_percent, status, notification_url = None):
 		query = """
 		INSERT INTO task_progress (
-			task_id, task_name, progress_in_percent, `status`, date_submitted, date_completed, message, task_result
+			task_id, task_name, progress_in_percent, `status`, `notification_url`, date_submitted, date_completed, message, step_result, task_result
 		)
 		VALUES (
-			%s, %s, %s, %s, NOW(), NULL, NULL, NULL 
+			%s, %s, %s, %s, %s, NOW(), NULL, NULL, NULL, NULL
 		)
 		;"""
-		self.cur.execute(query, [task_id, task_name, progress_in_percent, status])
+		self.cur.execute(query, [task_id, task_name, progress_in_percent, status, notification_url])
 		self.con.commit()
 		return
 
 
-	def set_task_result(self, task_result):
+	def set_task_result(self, task_id, task_result):
+		task_result_string = None
 		if task_result is not None:
 			task_result_string = self.convert_to_json_string(task_result)
 		
 		query = """
 		UPDATE task_progress
 		SET 
-			task_result = %s,,
+			task_result = %s,
 			date_completed = NOW(),
 			progress_in_percent = 100,
 			status = 'complete'
@@ -130,14 +182,15 @@ class ProgressTracker:
 		return
 
 
-	def get_task_result(self):
+	def get_task_result(self, task_id):
 		query = """
 		SELECT task_result,
 		`status`,
+		`notification_url`,
 		date_submitted,
 		date_completed,
 		DATE_ADD(date_submitted, INTERVAL +1 MONTH) AS available_until,
-		message,
+		message
 		FROM task_progress
 		WHERE Task_id = %s
 		;"""
@@ -148,10 +201,11 @@ class ProgressTracker:
 			json_result = json.loads(row[0])
 			json_result.update({
 				"status": row[1],
-				"date_submitted": row[2],
-				"date_completed": row[3],
-				"available_until": row[4],
-				"message": row[5]
+				"notification_url": row[2],
+				"date_submitted": row[3],
+				"date_completed": row[4],
+				"available_until": row[5],
+				"message": row[6]
 			})
 		else:
 			json_result = {}

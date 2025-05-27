@@ -17,7 +17,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		self.delete_temptable = '#cs_to_delete'
 
 
-	def deleteByPrimaryKeys(self, specimen_ids, users_project_ids = []):
+	def deleteByPrimaryKeys(self, specimen_ids):
 		self.createDeleteTempTable()
 		
 		pagesize = 1000
@@ -75,7 +75,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		return
 
 
-	def deleteByRowGUIDs(self, row_guids = []):
+	def deleteByRowGUIDs(self, row_guids):
 		self.row_guids = row_guids
 		
 		self.createDeleteTempTable()

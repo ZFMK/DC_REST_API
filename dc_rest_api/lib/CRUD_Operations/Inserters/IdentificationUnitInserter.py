@@ -28,7 +28,7 @@ class IdentificationUnitInserter():
 			{'colname': 'IdentificationUnitID'},
 			{'colname': 'DatabaseURN'},
 			{'colname': 'LastIdentificationCache', 'default': 'unknown', 'None allowed': False},
-			{'colname': 'TaxonomicGroup', 'default': 'unknown', 'None allowed': False},
+			{'colname': 'TaxonomicGroup', 'default': 'organism', 'None allowed': False},
 			{'colname': 'OrderCache'},
 			{'colname': 'FamilyCache'},
 			{'colname': 'HierarchyCache'},

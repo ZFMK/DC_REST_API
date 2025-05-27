@@ -12,4 +12,5 @@ pyramid-tm
 waitress
 cryptography
 persist-queue
+requests
 

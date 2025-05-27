@@ -10,10 +10,12 @@ from dwb_authentication.dbsession import DBSession
 
 from dc_rest_api.lib.Authentication.UserLogin import UserLogin
 from dc_rest_api.views.RequestParams import RequestParams
-from dc_rest_api.lib.ProgressTracker import ProgressTracker
+from dc_rest_api.lib.ProgressTracker.ProgressTracker import ProgressTracker
 
 import pudb
 import json
+import requests
+from datetime import datetime
 
 
 class TaskProgressViews():
@@ -41,22 +43,30 @@ class TaskProgressViews():
 			'title': 'API for requests on DiversityCollection database, ',
 			'messages': self.messages
 		}
+		
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return self.jsonresponse
 		
 		task_id = self.request.matchdict['task_id']
 		progresstracker = ProgressTracker()
-		progress, status = progresstracker.get_progress(task_id)
+		progress_dict = progresstracker.get_progress(task_id)
 		
-		if status in ('completed', 'failed'):
-			route_path = self.request.route_path()
-			return HTTPSeeOther('{0}/task_result/{1}'.format(self.request.application_url, task_id), headers={"content_type": "application/json", "accept": "application/json"})
+		if progress_dict['status'] in ('complete', 'failed'):
+			pudb.set_trace()
+			self.jsonresponse['status'] = "303"
+			self.jsonresponse['location'] = '{0}/task_result/{1}'.format(self.request.application_url, task_id)
+			task_result_url = '{0}/task_result/{1}'.format(self.request.application_url, task_id)
+			return HTTPSeeOther(location=task_result_url, headers={"status": "303", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		else:
-			self.json_response['progress'] = progress
-			self.json_response['status'] = status
-			self.json_response['message'] = message
+			self.jsonresponse.update(progress_dict)
+			if progress_dict['notification_url'] is not None:
+				r = requests.post(progress_dict['notification_url'], headers = {'Accept': 'application/json', 'Content-Type': 'application/json'},
+					# auth=(self.dc_api_user, self.dc_api_password),
+					verify = self.dc_api_verify_https,
+					json={'task_id': task_id, 'message': 'update available'})
+			
 			return self.jsonresponse
 
 
@@ -66,18 +76,34 @@ class TaskProgressViews():
 			'title': 'API for requests on DiversityCollection database, ',
 			'messages': self.messages
 		}
+		
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return self.jsonresponse
 		
 		task_id = self.request.matchdict['task_id']
 		progresstracker = ProgressTracker()
-		task_result = progresstracker.get_task_result(task_id)
-		if 'status' in task_result and task_result['status'] in ['complete', 'fail']:
-			self.jsonresponse.update(task_result)
+		task_result_dict = progresstracker.get_task_result(task_id)
+		
+		for key in task_result_dict:
+			if isinstance(task_result_dict[key], datetime):
+				task_result_dict[key] = task_result_dict[key].strftime('%Y-%m-%d %H:%M:%S')
+		
+		if 'status' in task_result_dict and task_result_dict['status'] in ['complete', 'failed']:
+			if task_result_dict['notification_url'] is not None:
+				r = requests.post(task_result_dict['notification_url'], headers = {'Accept': 'application/json', 'Content-Type': 'application/json'},
+					verify = self.dc_api_verify_https,
+					json={'task_id': task_id, 'message': 'task result available'})
+			
+			self.jsonresponse.update(task_result_dict)
 			return self.jsonresponse
-		elif 'status' in task_result and task_result['status'] not in ['complete', 'fail']:
-			route_path = self.request.route_path()
-			return HTTPSeeOther('{0}/task_progress/{1}'.format(self.request.application_url, task_id), headers={"content_type": "application/json", "accept": "application/json"})
+		elif 'status' in task_result_dict and task_result_dict['status'] not in ['complete', 'failed']:
+			if task_result_dict['notification_url'] is not None:
+				r = requests.post(task_result_dict['notification_url'], headers = {'Accept': 'application/json', 'Content-Type': 'application/json'},
+					verify = self.dc_api_verify_https,
+					json={'task_id': task_id, 'message': 'update available'})
+			self.jsonresponse.update(task_result_dict)
+			return self.jsonresponse
 		else:
 			self.messages.append('Task with id {0} can not be found'.format(task_id))
+			return self.jsonresponse

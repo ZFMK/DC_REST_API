@@ -12,6 +12,7 @@ class RequestParams():
 		self.read_request_params()
 		#self.read_search_params()
 		self.read_credentials()
+		self.read_single_params()
 		#self.set_requeststring()
 		self.set_response_params()
 		
@@ -20,9 +21,14 @@ class RequestParams():
 
 	def read_request_params(self):
 		self.params_dict = self.request.params.dict_of_lists()
-		# because request.json_body returns an error when not content is in a request with Content-Type: application/json
+		# because request.json_body returns an error when no content is in a request with Content-Type: application/json
 		# the availability of json data is first testet with try except
+		if not self.request.content_length:
+			test = str(self.request.content_length)
+			test = str(self.request.content_type)
+			return
 		try:
+				
 			if self.request.json_body:
 				
 				self.json_body = self.request.json_body
@@ -51,6 +57,14 @@ class RequestParams():
 			if param_name in self.params_dict and len(self.params_dict[param_name]) > 0:
 				if self.params_dict[param_name][-1] != '' and self.params_dict[param_name][-1] is not None:
 					self.credentials[param_name] = self.params_dict[param_name][-1]
+		return
+
+
+	def read_single_params(self):
+		single_params = ['notification_url', ]
+		for param in single_params:
+			if param in self.params_dict and len(self.params_dict[param]) > 0:
+				self.params_dict[param] = self.params_dict[param][-1]
 		return
 
 

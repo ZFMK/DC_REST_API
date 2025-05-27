@@ -11,6 +11,7 @@ from dc_rest_api.views.RequestParams import RequestParams
 
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
 
+from Queues.InsertDeleteQueue import InsertDeleteQueue
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenInserter import CollectionSpecimenInserter
 
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
@@ -19,9 +20,7 @@ from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenGetter import Col
 import pudb
 import json
 
-
-INS_DEL_QUEUE = 'dc_ins_del_queue'
-
+QUEUE_PATH='dc_ins_del_queue'
 
 class CollectionSpecimensViews():
 
@@ -52,7 +51,7 @@ class CollectionSpecimensViews():
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
 		}
-		# pudb.set_trace()
+		#pudb.set_trace()
 		if not self.uid:
 			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
 			return self.jsonresponse
@@ -67,6 +66,7 @@ class CollectionSpecimensViews():
 			return self.jsonresponse
 		
 		try:
+			# this converts self.request_params.json_body to a json that references the dicts indpendent of CollectionSpecimen like CollectionEvents, Projects, Collections
 			referenced_json = ReferencedJSON(self.request_params.json_body)
 			referenced_json.flatten2Dicts()
 		except:
@@ -79,13 +79,28 @@ class CollectionSpecimensViews():
 				# TODO: insert via queue
 				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
 				
-				task_id = queue.submit_insert(dc_params, self.request_params.json_body, uid, user_roles, application_url)
-				return HTTPSeeOther('{0}/task_progress/{1}'.format(self.request.application_url, task_id), headers={"content_type": "application/json", "accept": "application/json"})
+				request_params = {
+					'json_dicts': self.request_params.json_body,
+					'uid': self.uid,
+					'users_roles': self.roles,
+					'notification_url': self.request_params.params_dict.get('notification_url', None)
+				}
+				task_id = queue.submit_to_insert_queue(self.dc_con_params, request_params, self.request.application_url)
 				
 				# queue object must be deleted here as the queue otherwise complains about SQLLite called in different threads when the next call
 				# of InserDeleteQueue() deletes the exisiting one. 
 				# Obviously pyramid holds the old queue object in memory because it loads viewsCollectionSpecimen only once
-				# del queue
+				del queue
+				
+				#self.request.response.status = "202"
+				#self.request.response.location = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				self.jsonresponse['status'] = "303"
+				self.jsonresponse['location'] = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				self.jsonresponse['task_id'] =  task_id
+				
+				progress_url = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				#return self.jsonresponse
+				return HTTPSeeOther(location=progress_url, headers={"status": "303", "Content-Type": "application/json", "Accept": "application/json"})
 			except:
 				self.messages.extend(queue.messages)
 				return self.jsonresponse
@@ -105,6 +120,7 @@ class CollectionSpecimensViews():
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")
 	def deleteSpecimensJSON(self):
+		pudb.set_trace()
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database, delete CollectionSpecimens',
 			'messages': self.messages
