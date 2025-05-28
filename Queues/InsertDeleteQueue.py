@@ -77,6 +77,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
+		pudb.set_trace()
 		dc_db = MSSQLConnector(config = dc_params)
 		
 		ids_list_json = request_params['ids_list_json']
@@ -153,12 +154,14 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		specimen_list = [specimen_dicts[cs_id] for cs_id in specimen_dicts]
 		independent_tables.setLinkedIDs(specimen_list)
 		
-		page = 0
+		# add the progress value from independent tables insert
+		# TODO: refine the progress calculation from independent tables?
+		page = 0 + 20
 		pagesize = 100
-		max_pages = math.ceil(len(specimen_list) / pagesize)
+		max_pages = math.ceil(len(specimen_list) / pagesize) + 20
 		
-		task_result = {"CollectionSpecimenIDs": []}
-		step_result = {"CollectionSpecimenIDs": []}
+		task_result = {"CS_IDs": []}
+		step_result = {"CS_IDs": []}
 		try:
 			while len(specimen_list) > 0:
 				specimen_batch = specimen_list[0:pagesize]
@@ -169,15 +172,13 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 				
 				independent_tables.insertCollectionProjects(specimen_batch)
 				
-				inserted_specimen_ids = specimen_inserter.getInsertedListOfSpecimenIDs()
-				step_result['CollectionSpecimenIDs'] = inserted_specimen_ids['CollectionSpecimenIDs']
-				task_result['CollectionSpecimenIDs'].extend(inserted_specimen_ids['CollectionSpecimenIDs'])
+				inserted_specimen_ids = specimen_inserter.getListOfInsertedIDs()
+				step_result['CS_IDs'] = inserted_specimen_ids['CS_IDs']
+				task_result['CS_IDs'].extend(inserted_specimen_ids['CS_IDs'])
 				
 				page = page + 1
 				percent_done = math.floor(page / max_pages * 100) 
 				self.progress_tracker.update_progress(task_id, percent_done, status = 'inserting specimens', task_result = task_result, step_result = step_result, message = 'please wait for task to complete')
-			
-			pudb.set_trace()
 			
 			percent_done = 100
 			status = 'complete'
@@ -191,6 +192,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 		
 		return
+		
 		
 		'''
 		try:

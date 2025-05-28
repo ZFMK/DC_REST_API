@@ -26,7 +26,7 @@ class SpecimenPartInserter():
 			{'colname': 'DatabaseURN'},
 			{'colname': 'PartSublabel'},
 			{'colname': 'PreparationMethod'},
-			{'colname': 'MaterialCategory', 'None allowed': False},
+			{'colname': 'MaterialCategory', 'None allowed': False, 'default': 'specimen'},
 			{'colname': 'StorageLocation'},
 			{'colname': 'StorageContainer'},
 			{'colname': 'Stock'},

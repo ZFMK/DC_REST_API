@@ -229,7 +229,7 @@ class CollectionSpecimenInserter():
 	def setIDsForSpecimenDicts(self):
 		# select all CollectionSpecimenIDs and RowGUIDs
 		query = """
-		SELECT cs_temp.[@id], cs.CollectionSpecimenID, cs.[RowGUID]
+		SELECT cs_temp.[@id], cs.CollectionSpecimenID, cs.[RowGUID], cs.AccessionNumber
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [{0}] cs_temp
 		ON cs_temp.[RowGUID] = cs.[RowGUID]
@@ -244,10 +244,20 @@ class CollectionSpecimenInserter():
 				self.inserted_ids[row[0]] = {}
 			self.inserted_ids[row[0]]['CollectionSpecimenID'] = row[1]
 			self.inserted_ids[row[0]]['RowGUID'] = row[2]
+			self.inserted_ids[row[0]]['AccessionNumber'] = row[3]
 		
 		return
 
 
+	def getListOfInsertedIDs(self):
+		for element_id in self.inserted_ids:
+			cs_ids = {'CS_IDs': []}
+			for element_id in self.inserted_ids:
+				cs_ids['CS_IDs'].append(self.inserted_ids[element_id])
+			return cs_ids
+
+
+	'''
 	def getInsertedListOfSpecimenIDs(self):
 		cs_ids = {'CollectionSpecimenIDs': []}
 		for element_id in self.inserted_ids:
@@ -260,4 +270,5 @@ class CollectionSpecimenInserter():
 		for element_id in self.inserted_ids:
 			cs_rowguids['RowGUIDs'].append(self.inserted_ids[element_id]['RowGUID'])
 		return cs_rowguids
+	'''
 

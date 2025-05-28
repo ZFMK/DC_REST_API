@@ -75,8 +75,7 @@ class CollectionSpecimensViews():
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
-				pudb.set_trace()
-				# TODO: insert via queue
+				# TODO: get result from queue?
 				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
 				
 				request_params = {

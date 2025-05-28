@@ -186,6 +186,7 @@ class ProgressTracker:
 		query = """
 		SELECT task_result,
 		`status`,
+		`progress_in_percent`,
 		`notification_url`,
 		date_submitted,
 		date_completed,
@@ -201,11 +202,12 @@ class ProgressTracker:
 			json_result = json.loads(row[0])
 			json_result.update({
 				"status": row[1],
-				"notification_url": row[2],
-				"date_submitted": row[3],
-				"date_completed": row[4],
-				"available_until": row[5],
-				"message": row[6]
+				"progress": row[2],
+				"notification_url": row[3],
+				"date_submitted": row[4],
+				"date_completed": row[5],
+				"available_until": row[6],
+				"message": row[7]
 			})
 		else:
 			json_result = {}

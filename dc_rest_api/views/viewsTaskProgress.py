@@ -53,7 +53,6 @@ class TaskProgressViews():
 		progress_dict = progresstracker.get_progress(task_id)
 		
 		if progress_dict['status'] in ('complete', 'failed'):
-			pudb.set_trace()
 			self.jsonresponse['status'] = "303"
 			self.jsonresponse['location'] = '{0}/task_result/{1}'.format(self.request.application_url, task_id)
 			task_result_url = '{0}/task_result/{1}'.format(self.request.application_url, task_id)
@@ -90,6 +89,7 @@ class TaskProgressViews():
 				task_result_dict[key] = task_result_dict[key].strftime('%Y-%m-%d %H:%M:%S')
 		
 		if 'status' in task_result_dict and task_result_dict['status'] in ['complete', 'failed']:
+			
 			if task_result_dict['notification_url'] is not None:
 				r = requests.post(task_result_dict['notification_url'], headers = {'Accept': 'application/json', 'Content-Type': 'application/json'},
 					verify = self.dc_api_verify_https,
@@ -97,6 +97,7 @@ class TaskProgressViews():
 			
 			self.jsonresponse.update(task_result_dict)
 			return self.jsonresponse
+		
 		elif 'status' in task_result_dict and task_result_dict['status'] not in ['complete', 'failed']:
 			if task_result_dict['notification_url'] is not None:
 				r = requests.post(task_result_dict['notification_url'], headers = {'Accept': 'application/json', 'Content-Type': 'application/json'},
