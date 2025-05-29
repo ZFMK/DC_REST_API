@@ -20,28 +20,28 @@ class CollectionSpecimenDeleter(DCDeleter):
 	def deleteByPrimaryKeys(self, specimen_ids):
 		self.createDeleteTempTable()
 		
-		pagesize = 1000
+		query = """
+		DROP TABLE IF EXISTS [#cs_pks_to_delete_temptable]
+		"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+	
+		query = """
+		CREATE TABLE [#cs_pks_to_delete_temptable] (
+			[CollectionSpecimenID] INT NOT NULL,
+			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID])
+		)
+		;"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		pagesize = 2000
 		while len(specimen_ids) > 0:
 			cached_ids = specimen_ids[:pagesize]
 			del specimen_ids[:pagesize]
 			placeholders = ['(?)' for _ in cached_ids]
-			
-			query = """
-			DROP TABLE IF EXISTS [#cs_pks_to_delete_temptable]
-			"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-		
-			query = """
-			CREATE TABLE [#cs_pks_to_delete_temptable] (
-				[CollectionSpecimenID] INT NOT NULL,
-				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID])
-			)
-			;"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
 			
 			query = """
 			INSERT INTO [#cs_pks_to_delete_temptable] (
@@ -52,16 +52,19 @@ class CollectionSpecimenDeleter(DCDeleter):
 			querylog.info(query)
 			self.cur.execute(query, cached_ids)
 			self.con.commit()
-			
-			query = """
-			INSERT INTO [{0}] ([rowguid_to_delete])
-			SELECT [RowGUID] FROM [CollectionSpecimen] cs
-			INNER JOIN [#cs_pks_to_delete_temptable] pks
-			ON pks.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
-			;""".format(self.delete_temptable)
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
+		
+		# must be out of the while loop that fills the #event_pks_to_delete_temptable,
+		# otherwise RowGUIDs are inserted more than once
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_delete])
+		SELECT DISTINCT [RowGUID] 
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [#cs_pks_to_delete_temptable] pks
+		ON pks.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		;""".format(self.delete_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('CollectionSpecimen')
 		self.prohibited = self.filterAllowedRowGUIDs('CollectionSpecimen', ['CollectionSpecimenID', ])
@@ -69,6 +72,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		self.deleteChildIdentificationUnits()
 		# event ids must be set before CollectionSpecimens are deleted, but Events can only be deleted after CollectionSpecimens
 		self.setCollectionEventIDs()
+		self.storeListOfSpecimenIDsToDelete()
 		self.deleteFromTable('CollectionSpecimen')
 		self.deleteCollectionEvents()
 		
@@ -87,6 +91,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		self.deleteChildIdentificationUnits()
 		# event ids must be set before CollectionSpecimens are deleted, but Events can only be deleted after CollectionSpecimens
 		self.setCollectionEventIDs()
+		self.storeListOfSpecimenIDsToDelete()
 		self.deleteFromTable('CollectionSpecimen')
 		self.deleteCollectionEvents()
 		return
@@ -95,7 +100,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 	def deleteChildSpecimenParts(self):
 		id_lists = []
 		query = """
-		SELECT csp.[CollectionSpecimenID], csp.[SpecimenPartID], NULL
+		SELECT DISTINCT csp.[CollectionSpecimenID], csp.[SpecimenPartID], NULL
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [CollectionSpecimenPart] csp
 		ON cs.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
@@ -118,7 +123,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 	def deleteChildIdentificationUnits(self):
 		id_lists = []
 		query = """
-		SELECT cs.[CollectionSpecimenID], iu.[IdentificationUnitID]
+		SELECT DISTINCT cs.[CollectionSpecimenID], iu.[IdentificationUnitID]
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [IdentificationUnit] iu
 		ON iu.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
@@ -160,3 +165,34 @@ class CollectionSpecimenDeleter(DCDeleter):
 		return
 
 
+	def storeListOfSpecimenIDsToDelete(self):
+		self.deleted_ids = []
+		query = """
+		SELECT 
+		cs.CollectionSpecimenID,
+		cs.AccessionNumber,
+		cs.RowGUID
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{0}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_delete]
+		 -- ORDER BY CollectionSpecimenID
+		;""".format(self.delete_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		rows = self.cur.fetchall()
+		for row in rows:
+			ids_dict = {
+				'CollectionSpecimenID': row[0],
+				'AccessionNumber': row[1],
+				'RowGUID': row[2]
+			}
+			
+			self.deleted_ids.append(ids_dict)
+		return
+
+
+	def getListOfDeletedIDs(self):
+		cs_ids = {'CS_IDs': []}
+		for element in self.deleted_ids:
+			cs_ids['CS_IDs'].append(element)
+		return cs_ids

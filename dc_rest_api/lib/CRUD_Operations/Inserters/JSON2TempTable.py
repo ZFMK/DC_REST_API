@@ -134,8 +134,8 @@ class JSON2TempTable():
 				VALUES {2}
 				;""".format(temptable, ',\n'.join(['[{0}]'.format(colname) for colname in colnames]), placeholderstring)
 				
-				querylog.info(query)
-				querylog.info(values)
+				#querylog.info(query)
+				#querylog.info(values)
 				
 				self.cur.execute(query, values)
 				self.con.commit()

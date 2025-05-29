@@ -17,6 +17,27 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 	def deleteByPrimaryKeys(self, iuip_ids):
 		self.createDeleteTempTable()
 		
+		query = """
+		DROP TABLE IF EXISTS [#iuip_pks_to_delete_temptable]
+		"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+	
+		query = """
+		CREATE TABLE [#iuip_pks_to_delete_temptable] (
+			[CollectionSpecimenID] INT NOT NULL,
+			[SpecimenPartID] INT NOT NULL,
+			[IdentificationUnitID] INT NOT NULL,
+			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+			INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
+			INDEX [IdentificationUnitID_idx] ([IdentificationUnitID])
+		)
+		;"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
 		pagesize = 600
 		while len(iuip_ids) > 0:
 			cached_ids = iuip_ids[:pagesize]
@@ -27,27 +48,6 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 				values.extend(ids)
 			
 			query = """
-			DROP TABLE IF EXISTS [#iuip_pks_to_delete_temptable]
-			"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-		
-			query = """
-			CREATE TABLE [#iuip_pks_to_delete_temptable] (
-				[CollectionSpecimenID] INT NOT NULL,
-				[SpecimenPartID] INT NOT NULL,
-				[IdentificationUnitID] INT NOT NULL,
-				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-				INDEX [SpecimenPartID_idx] ([SpecimenPartID]),
-				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID])
-			)
-			;"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-			
-			query = """
 			INSERT INTO [#iuip_pks_to_delete_temptable] (
 			[CollectionSpecimenID], [SpecimenPartID], [IdentificationUnitID]
 			)
@@ -56,18 +56,21 @@ class IdentificationUnitInPartDeleter(DCDeleter):
 			querylog.info(query)
 			self.cur.execute(query, values)
 			self.con.commit()
-			
-			query = """
-			INSERT INTO [{0}] ([rowguid_to_delete])
-			SELECT [RowGUID] FROM [IdentificationUnitInPart] iuip
-			INNER JOIN [#iuip_pks_to_delete_temptable] pks
-			ON pks.[CollectionSpecimenID] = iuip.[CollectionSpecimenID] 
-				AND pks.[SpecimenPartID] = iuip.[SpecimenPartID] 
-				AND pks.[IdentificationUnitID] = iuip.[IdentificationUnitID]
-			;""".format(self.delete_temptable)
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
+		
+		# must be out of the while loop that fills the #event_pks_to_delete_temptable,
+		# otherwise RowGUIDs are inserted more than once
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_delete])
+		SELECT DISTINCT [RowGUID]
+		FROM [IdentificationUnitInPart] iuip
+		INNER JOIN [#iuip_pks_to_delete_temptable] pks
+		ON pks.[CollectionSpecimenID] = iuip.[CollectionSpecimenID] 
+			AND pks.[SpecimenPartID] = iuip.[SpecimenPartID] 
+			AND pks.[IdentificationUnitID] = iuip.[IdentificationUnitID]
+		;""".format(self.delete_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnitInPart')
 		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnitInPart', ['CollectionSpecimenID', 'SpecimenPartID', 'IdentificationUnitID'])

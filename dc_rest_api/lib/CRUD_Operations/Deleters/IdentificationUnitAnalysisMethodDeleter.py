@@ -18,6 +18,33 @@ class IdentificationUnitAnalysisMethodDeleter(DCDeleter):
 	def deleteByPrimaryKeys(self, iuam_ids):
 		self.createDeleteTempTable()
 		
+		query = """
+		DROP TABLE IF EXISTS [#iuam_pks_to_delete_temptable]
+		"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+	
+		query = """
+		CREATE TABLE [#iuam_pks_to_delete_temptable] (
+			[CollectionSpecimenID] INT NOT NULL,
+			[IdentificationUnitID] INT NOT NULL,
+			[AnalysisID] INT NOT NULL,
+			[AnalysisNumber] NVARCHAR(50) COLLATE {0} NOT NULL,
+			[MethodID] INT NOT NULL,
+			[MethodMarker] NVARCHAR(50) COLLATE {0} NOT NULL, 
+			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+			INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
+			INDEX [AnalysisID_idx] ([AnalysisID]),
+			INDEX [AnalysisNumber_idx] ([AnalysisNumber]),
+			INDEX [MethodID_idx] ([MethodID]),
+			INDEX [MethodMarker_idx] ([MethodMarker])
+		)
+		;""".format(self.collation)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
 		pagesize = 300
 		while len(iuam_ids) > 0:
 			cached_ids = iuam_ids[:pagesize]
@@ -28,33 +55,6 @@ class IdentificationUnitAnalysisMethodDeleter(DCDeleter):
 				values.extend(ids)
 			
 			query = """
-			DROP TABLE IF EXISTS [#iuam_pks_to_delete_temptable]
-			"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-		
-			query = """
-			CREATE TABLE [#iuam_pks_to_delete_temptable] (
-				[CollectionSpecimenID] INT NOT NULL,
-				[IdentificationUnitID] INT NOT NULL,
-				[AnalysisID] INT NOT NULL,
-				[AnalysisNumber] NVARCHAR(50) COLLATE {0} NOT NULL,
-				[MethodID] INT NOT NULL,
-				[MethodMarker] NVARCHAR(50) COLLATE {0} NOT NULL, 
-				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID]),
-				INDEX [AnalysisID_idx] ([AnalysisID]),
-				INDEX [AnalysisNumber_idx] ([AnalysisNumber]),
-				INDEX [MethodID_idx] ([MethodID]),
-				INDEX [MethodMarker_idx] ([MethodMarker])
-			)
-			;""".format(self.collation)
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-			
-			query = """
 			INSERT INTO [#iuam_pks_to_delete_temptable] (
 			[CollectionSpecimenID], [IdentificationUnitID], [AnalysisID], [AnalysisNumber], [MethodID], [MethodMarker]
 			)
@@ -63,21 +63,24 @@ class IdentificationUnitAnalysisMethodDeleter(DCDeleter):
 			querylog.info(query)
 			self.cur.execute(query, values)
 			self.con.commit()
-			
-			query = """
-			INSERT INTO [{0}] ([rowguid_to_delete])
-			SELECT [RowGUID] FROM [IdentificationUnitAnalysisMethod] iuam
-			INNER JOIN [#iuam_pks_to_delete_temptable] pks
-			ON pks.[CollectionSpecimenID] = iuam.[CollectionSpecimenID] 
-			AND pks.[IdentificationUnitID] = iuam.[IdentificationUnitID]
-			AND pks.[AnalysisID] = iuam.[AnalysisID]
-			AND pks.[AnalysisNumber] = iuam.[AnalysisNumber]
-			AND pks.[MethodID] = iuam.[MethodID]
-			AND pks.[MethodMarker] = iuam.[MethodMarker]
-			;""".format(self.delete_temptable)
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
+		
+		# must be out of the while loop that fills the #event_pks_to_delete_temptable,
+		# otherwise RowGUIDs are inserted more than once
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_delete])
+		SELECT DISTINCT [RowGUID] 
+		FROM [IdentificationUnitAnalysisMethod] iuam
+		INNER JOIN [#iuam_pks_to_delete_temptable] pks
+		ON pks.[CollectionSpecimenID] = iuam.[CollectionSpecimenID] 
+		AND pks.[IdentificationUnitID] = iuam.[IdentificationUnitID]
+		AND pks.[AnalysisID] = iuam.[AnalysisID]
+		AND pks.[AnalysisNumber] = iuam.[AnalysisNumber]
+		AND pks.[MethodID] = iuam.[MethodID]
+		AND pks.[MethodMarker] = iuam.[MethodMarker]
+		;""".format(self.delete_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnitAnalysisMethod')
 		self.deleteChildIdentificationUnitAnalysisMethodParameters()

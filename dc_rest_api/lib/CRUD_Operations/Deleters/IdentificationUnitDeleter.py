@@ -20,6 +20,25 @@ class IdentificationUnitDeleter(DCDeleter):
 	def deleteByPrimaryKeys(self, specimen_unit_ids):
 		self.createDeleteTempTable()
 		
+		query = """
+		DROP TABLE IF EXISTS [#iu_pks_to_delete_temptable]
+		"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+	
+		query = """
+		CREATE TABLE [#iu_pks_to_delete_temptable] (
+			[CollectionSpecimenID] INT NOT NULL,
+			[IdentificationUnitID] INT NOT NULL,
+			INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
+			INDEX [IdentificationUnitID_idx] ([IdentificationUnitID])
+		)
+		;"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
 		pagesize = 1000
 		while len(specimen_unit_ids) > 0:
 			cached_ids = specimen_unit_ids[:pagesize]
@@ -30,25 +49,6 @@ class IdentificationUnitDeleter(DCDeleter):
 				values.extend(ids)
 			
 			query = """
-			DROP TABLE IF EXISTS [#iu_pks_to_delete_temptable]
-			"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-		
-			query = """
-			CREATE TABLE [#iu_pks_to_delete_temptable] (
-				[CollectionSpecimenID] INT NOT NULL,
-				[IdentificationUnitID] INT NOT NULL,
-				INDEX [CollectionSpecimenID_idx] ([CollectionSpecimenID]),
-				INDEX [IdentificationUnitID_idx] ([IdentificationUnitID])
-			)
-			;"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-			
-			query = """
 			INSERT INTO [#iu_pks_to_delete_temptable] (
 			[CollectionSpecimenID], [IdentificationUnitID]
 			)
@@ -57,16 +57,19 @@ class IdentificationUnitDeleter(DCDeleter):
 			querylog.info(query)
 			self.cur.execute(query, values)
 			self.con.commit()
-			
-			query = """
-			INSERT INTO [{0}] ([rowguid_to_delete])
-			SELECT [RowGUID] FROM [IdentificationUnit] iu
-			INNER JOIN [#iu_pks_to_delete_temptable] pks
-			ON pks.[CollectionSpecimenID] = iu.[CollectionSpecimenID] AND pks.[IdentificationUnitID] = iu.[IdentificationUnitID]
-			;""".format(self.delete_temptable)
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
+		
+		# must be out of the while loop that fills the #event_pks_to_delete_temptable,
+		# otherwise RowGUIDs are inserted more than once
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_delete])
+		SELECT DISTINCT [RowGUID]
+		FROM [IdentificationUnit] iu
+		INNER JOIN [#iu_pks_to_delete_temptable] pks
+		ON pks.[CollectionSpecimenID] = iu.[CollectionSpecimenID] AND pks.[IdentificationUnitID] = iu.[IdentificationUnitID]
+		;""".format(self.delete_temptable)
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		
 		self.checkRowGUIDsUniqueness('IdentificationUnit')
 		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnit', ['CollectionSpecimenID', 'IdentificationUnitID'])

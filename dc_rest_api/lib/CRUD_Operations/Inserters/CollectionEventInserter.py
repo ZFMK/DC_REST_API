@@ -581,6 +581,10 @@ class CollectionEventInserter():
 		FROM [{0}] ue_temp
 		INNER JOIN [LocalisationSystem] ls
 		ON ls.LocalisationSystemName = 'Coordinates WGS84'
+		WHERE ue_temp.[WGS84_Lat] IS NOT NULL
+		OR ue_temp.[WGS84_Lon] IS NOT NULL
+		OR ue_temp.[WGS84_Accuracy] IS NOT NULL
+		OR ue_temp.[WGS84_RecordingMethod] IS NOT NULL
 		;""".format(self.unique_events_temptable)
 		
 		querylog.info(query)
@@ -605,6 +609,8 @@ class CollectionEventInserter():
 		FROM [{0}] ue_temp
 		INNER JOIN [LocalisationSystem] ls
 		ON ls.LocalisationSystemName = 'Altitude (mNN)'
+		WHERE ue_temp.[Altitude] IS NOT NULL
+		OR ue_temp.[Altitude_Accuracy] IS NOT NULL
 		;""".format(self.unique_events_temptable)
 		
 		querylog.info(query)
@@ -633,6 +639,10 @@ class CollectionEventInserter():
 		FROM [{0}] ue_temp
 		INNER JOIN [LocalisationSystem] ls
 		ON ls.LocalisationSystemName = 'Depth'
+		WHERE ue_temp.[Depth_min_m] IS NOT NULL
+		OR ue_temp.[Depth_max_m] IS NOT NULL
+		OR ue_temp.[Depth_Accuracy_m] IS NOT NULL
+		OR ue_temp.[Depth_RecordingMethod_m] IS NOT NULL
 		;""".format(self.unique_events_temptable)
 		
 		querylog.info(query)
@@ -661,6 +671,10 @@ class CollectionEventInserter():
 		FROM [{0}] ue_temp
 		INNER JOIN [LocalisationSystem] ls
 		ON ls.LocalisationSystemName = 'Height'
+		WHERE ue_temp.[Height_min_m] IS NOT NULL
+		OR ue_temp.[Height_max_m] IS NOT NULL
+		OR ue_temp.[Height_Accuracy_m] IS NOT NULL
+		OR ue_temp.[Height_RecordingMethod_m] IS NOT NULL
 		;""".format(self.unique_events_temptable)
 		
 		querylog.info(query)
@@ -683,6 +697,7 @@ class CollectionEventInserter():
 		FROM [{0}] ue_temp
 		INNER JOIN [LocalisationSystem] ls
 		ON ls.LocalisationSystemName = 'Named area (DiversityGazetteer)'
+		WHERE ue_temp.[Named area (DiversityGazetteer)] IS NOT NULL
 		;""".format(self.unique_events_temptable)
 		
 		querylog.info(query)

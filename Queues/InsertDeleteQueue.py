@@ -77,11 +77,11 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
-		pudb.set_trace()
+		
 		dc_db = MSSQLConnector(config = dc_params)
 		
 		ids_list_json = request_params['ids_list_json']
-		users_projects_ids = request_params['users_projects_ids']
+		users_project_ids = request_params['users_project_ids']
 		notification_url = request_params['notification_url']
 		
 		self.progress_tracker.update_progress(task_id, 0, 'delete submission started')
@@ -92,34 +92,37 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			ids_list = [rowguid for rowguid in ids_list_json['RowGUIDs']]
 			ids_key = 'RowGUIDs'
 		elif 'CollectionSpecimenIDs' in ids_list_json:
-			ids_list = [rowguid for rowguid in ids_list_json['CollectionSpecimenIDs']]
+			ids_list = [cs_id for cs_id in ids_list_json['CollectionSpecimenIDs']]
 			ids_key = 'CollectionSpecimenIDs'
 		
 		page = 0
 		pagesize = 100
 		max_pages = math.ceil(len(ids_list) / pagesize)
 		
-		task_result = {"CollectionSpecimenIDs": []}
-		step_result = {"CollectionSpecimenIDs": []}
+		task_result = {"CS_IDs": []}
+		step_result = {"CS_IDs": []}
+		
 		try:
 			while len(ids_list) > 0:
 				ids_batch = []
 				ids_batch = ids_list[:pagesize]
 				del ids_list[:pagesize]
 				
-				specimen_deleter = CollectionSpecimenDeleter(dc_db, users_projects_ids)
+				ids_copy = list(ids_batch)
+				
+				specimen_deleter = CollectionSpecimenDeleter(dc_db, users_project_ids)
 				if ids_key == 'CollectionSpecimenIDs':
 					specimen_deleter.deleteByPrimaryKeys(ids_batch)
 				elif ids_key == 'RowGUIDs':
 					specimen_deleter.deleteByRowGUIDs(ids_batch)
 				
-				step_result['CollectionSpecimenIDs'] = ids_batch
-				task_result['CollectionSpecimenIDs'].extend(ids_batch)
+				deleted_specimen_ids = specimen_deleter.getListOfDeletedIDs()
+				step_result['CS_IDs'] = deleted_specimen_ids['CS_IDs']
+				task_result['CS_IDs'].extend(deleted_specimen_ids['CS_IDs'])
 				
 				page = page + 1
 				percent_done = math.floor(page / max_pages * 100) 
-				self.progress_tracker.update_progress(task_id, percent_done, status = 'deleting specimens', task_result = task_result, message = 'please wait for task to complete')
-			
+				self.progress_tracker.update_progress(task_id, percent_done, status = 'deleting specimens', task_result = task_result, step_result = step_result, message = 'please wait for task to complete')
 			
 			percent_done = 100
 			status = 'complete'
@@ -127,7 +130,8 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
-			self.messages.append(e)
+			#pudb.set_trace()
+			#self.messages.append(e[0])
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 		return
@@ -186,45 +190,10 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
-			pudb.set_trace()
-			self.messages.append(e)
+			#pudb.set_trace()
+			#self.messages.append(e[0])
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
-		
-		return
-		
-		
-		'''
-		try:
-			while len(json_dicts) > 0:
-				json_dicts_batch = json_dicts[0:self.insert_pagesize]
-				del json_dicts[0:self.insert_pagesize]
-				
-				# must be a new instance of CollectionSpecimenInserter?
-				specimen_inserter = CollectionSpecimenInserter(dc_db, uid, users_roles)
-				specimen_inserter.insertSpecimenData(json_dicts_batch)
-				inserted_specimen_ids = specimen_inserter.getInsertedSpecimenIDs()
-				task_result["CollectionSpecimens"].extend(inserted_specimen_ids)
-				
-				pages = pages + self.insert_pagesize
-				percent_done = math.floor(pages / len_dicts * 100) 
-				
-				self.progress_tracker.update_progress(task_id, percent_done, 'processing')
-				del specimen_inserter
-			
-			percent_done = 100
-			status = 'complete'
-			
-			self.progress_tracker.update_progress(task_id, percent_done, status)
-			self.progress_tracker.set_task_result(task_result)
-		
-		except Exception as e:
-			self.messages.append(e)
-			status = 'failed'
-			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
-		
-		del specimen_inserter
-		'''
 		
 		return
 

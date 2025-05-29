@@ -17,7 +17,24 @@ class CollectionEventDeleter(DCDeleter):
 	def deleteByPrimaryKeys(self, event_ids):
 		self.createDeleteTempTable()
 		
-		pagesize = 600
+		query = """
+		DROP TABLE IF EXISTS [#event_pks_to_delete_temptable]
+		"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		CREATE TABLE [#event_pks_to_delete_temptable] (
+			[CollectionEventID] INT NOT NULL,
+			INDEX [CollectionEventID_idx] ([CollectionEventID])
+		)
+		;"""
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		pagesize = 2000
 		while len(event_ids) > 0:
 			cached_ids = event_ids[:pagesize]
 			del event_ids[:pagesize]
@@ -25,23 +42,6 @@ class CollectionEventDeleter(DCDeleter):
 			values = []
 			for ids_list in cached_ids:
 				values.extend(ids_list)
-			
-			query = """
-			DROP TABLE IF EXISTS [#event_pks_to_delete_temptable]
-			"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
-			
-			query = """
-			CREATE TABLE [#event_pks_to_delete_temptable] (
-				[CollectionEventID] INT NOT NULL,
-				INDEX [CollectionEventID_idx] ([CollectionEventID])
-			)
-			;"""
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
 			
 			query = """
 			INSERT INTO [#event_pks_to_delete_temptable] (
@@ -52,16 +52,21 @@ class CollectionEventDeleter(DCDeleter):
 			querylog.info(query)
 			self.cur.execute(query, values)
 			self.con.commit()
-			
-			query = """
-			INSERT INTO [{0}] ([rowguid_to_delete])
-			SELECT ce.[RowGUID] FROM [CollectionEvent] ce
-			INNER JOIN [#event_pks_to_delete_temptable] pks
-			ON pks.[CollectionEventID] = ce.[CollectionEventID]
-			;""".format(self.delete_temptable)
-			querylog.info(query)
-			self.cur.execute(query)
-			self.con.commit()
+		
+		
+		# must be out of the while loop that fills the #event_pks_to_delete_temptable,
+		# otherwise RowGUIDs are inserted more than once
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_delete])
+		SELECT DISTINCT ce.[RowGUID]
+		FROM [CollectionEvent] ce
+		INNER JOIN [#event_pks_to_delete_temptable] pks
+		ON pks.[CollectionEventID] = ce.[CollectionEventID]
+		;""".format(self.delete_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
 		
 		self.filterOtherwiseConnectedEvents()
 		self.checkRowGUIDsUniqueness('CollectionEvent')

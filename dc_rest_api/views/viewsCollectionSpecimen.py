@@ -1,7 +1,7 @@
 from pyramid.response import Response
 from pyramid.view import view_config, forbidden_view_config
 from pyramid.renderers import render
-from pyramid.httpexceptions import HTTPFound, HTTPNotFound, HTTPSeeOther
+from pyramid.httpexceptions import HTTPFound, HTTPNotFound, HTTPSeeOther, HTTPUnauthorized, HTTPInternalServerError, HTTPBadRequest
 
 from dwb_authentication.security import SecurityPolicy
 from dwb_authentication.dbsession import DBSession
@@ -53,8 +53,10 @@ class CollectionSpecimensViews():
 		}
 		#pudb.set_trace()
 		if not self.uid:
-			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
-			return self.jsonresponse
+			message = 'You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request'
+			self.messages.append(message)
+			body = json.dumps(self.jsonresponse)
+			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		security = SecurityPolicy()
 		
@@ -62,8 +64,10 @@ class CollectionSpecimensViews():
 		# test connection
 		
 		if self.dc_con_params is None:
-			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
-			return self.jsonresponse
+			message = 'Can not connect to DiversityCollection server. Please check your credentials'
+			self.messages.append(message)
+			body = json.dumps(self.jsonresponse)
+			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		try:
 			# this converts self.request_params.json_body to a json that references the dicts indpendent of CollectionSpecimen like CollectionEvents, Projects, Collections
@@ -71,7 +75,9 @@ class CollectionSpecimensViews():
 			referenced_json.flatten2Dicts()
 		except:
 			self.messages.extend(referenced_json.messages)
-			return self.jsonresponse
+			message = '; '.join(self.messages)
+			body = json.dumps(self.jsonresponse)
+			return HTTPInternalServerError(detail = message, body = body, headers={"status": "500", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
@@ -102,7 +108,9 @@ class CollectionSpecimensViews():
 				return HTTPSeeOther(location=progress_url, headers={"status": "303", "Content-Type": "application/json", "Accept": "application/json"})
 			except:
 				self.messages.extend(queue.messages)
-				return self.jsonresponse
+				message = '; '.join(self.messages)
+				body = json.dumps(self.jsonresponse)
+				return HTTPInternalServerError(detail = message, body = body, headers={"status": "500", "Content-Type": "application/json", "Accept": "application/json"})
 			
 			
 			'''
@@ -113,49 +121,81 @@ class CollectionSpecimensViews():
 		
 		else:
 			self.messages.append('Error: no "CollectionSpecimens" array in json data')
+			message = '; '.join(self.messages)
+			body = json.dumps(self.jsonresponse)
+			return HTTPBadRequest(detail = message, body = body, headers={"status": "400", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		return self.jsonresponse
 
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "DELETE")
 	def deleteSpecimensJSON(self):
-		pudb.set_trace()
-		jsonresponse = {
+		#pudb.set_trace()
+		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database, delete CollectionSpecimens',
 			'messages': self.messages
 		}
 		
 		if not self.uid:
-			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
-			return jsonresponse
+			message = 'You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request'
+			self.messages.append(message)
+			body = json.dumps(self.jsonresponse)
+			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		security = SecurityPolicy()
-		self.dc_db = security.get_mssql_connector(self.request)
-		if self.dc_db is None:
-			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
-			return jsonresponse
 		
-		specimen_deleter = CollectionSpecimenDeleter(self.dc_db, self.users_project_ids)
-		deleted = []
-		if 'CollectionSpecimenIDs' in self.request_params.json_body:
-			specimen_ids = list(self.request_params.json_body['CollectionSpecimenIDs'])
-			specimen_deleter.deleteByPrimaryKeys(specimen_ids)
-			deleted = specimen_ids
+		self.dc_con_params = security.get_dc_connection_params(self.request)
+		# test connection
 		
-		elif 'RowGUIDs' in self.request_params.json_body:
-			rowguids = list(self.request_params.json_body['RowGUIDs'])
-			specimen_deleter.deleteByRowGUIDs(rowguids)
-			deleted = rowguids
-			pass
+		if self.dc_con_params is None:
+			message = 'Can not connect to DiversityCollection server. Please check your credentials'
+			self.messages.append(message)
+			body = json.dumps(self.jsonresponse)
+			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
-		jsonresponse = {
-			'title': 'DC REST API DELETE CollectionSpecimens',
-			'messages': self.messages,
-			'deleted': deleted,
-			#'CollectionSpecimens': cs_data
-		}
-		
-		return jsonresponse
+		if 'CollectionSpecimenIDs' in self.request_params.json_body or 'RowGUIDs' in self.request_params.json_body:
+			try:
+				# TODO: get result from queue?
+				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
+				
+				if 'CollectionSpecimenIDs' in self.request_params.json_body:
+					ids_key = 'CollectionSpecimenIDs'
+				elif 'RowGUIDs' in self.request_params.json_body:
+					ids_key = 'RowGUIDs'
+				ids_list_json = {}
+				ids_list_json[ids_key] = self.request_params.json_body[ids_key]
+				
+				request_params = {
+					'ids_list_json': ids_list_json,
+					'uid': self.uid,
+					#'users_roles': self.roles,
+					'users_project_ids': self.users_project_ids,
+					'notification_url': self.request_params.params_dict.get('notification_url', None)
+				}
+				task_id = queue.submit_to_delete_queue(self.dc_con_params, request_params, self.request.application_url)
+				
+				# queue object must be deleted here as the queue otherwise complains about SQLLite called in different threads when the next call
+				# of InserDeleteQueue() deletes the exisiting one. 
+				# Obviously pyramid holds the old queue object in memory because it loads viewsCollectionSpecimen only once
+				del queue
+				
+				#self.request.response.status = "202"
+				#self.request.response.location = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				self.jsonresponse['status'] = "303"
+				self.jsonresponse['location'] = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				self.jsonresponse['task_id'] =  task_id
+				
+				progress_url = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				#return self.jsonresponse
+				return HTTPSeeOther(location=progress_url, headers={"status": "303", "Content-Type": "application/json", "Accept": "application/json"})
+			except:
+				self.messages.extend(queue.messages)
+				return self.jsonresponse
+		else:
+			self.messages.append('Error: no array with "CollectionSpecimenIDs" or "RowGUIDs" in delete request')
+			message = '; '.join(self.messages)
+			body = json.dumps(self.jsonresponse)
+			return HTTPBadRequest(detail = message, body = body, headers={"status": "400", "Content-Type": "application/json", "Accept": "application/json"})
 
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "GET")
@@ -167,14 +207,18 @@ class CollectionSpecimensViews():
 		}
 		
 		if not self.uid:
-			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
-			return jsonresponse
+			message = 'You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request'
+			self.messages.append(message)
+			body = json.dumps(self.jsonresponse)
+			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		security = SecurityPolicy()
 		self.dc_db = security.get_mssql_connector(self.request)
 		if self.dc_db is None:
-			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
-			return jsonresponse
+			message = 'Can not connect to DiversityCollection server. Please check your credentials'
+			self.messages.append(message)
+			body = json.dumps(self.jsonresponse)
+			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		specimen_getter = CollectionSpecimenGetter(self.dc_db, self.users_project_ids)
 		
@@ -187,6 +231,12 @@ class CollectionSpecimensViews():
 		elif 'RowGUIDs' in self.request_params.json_body:
 			rowguids = self.request_params.json_body['RowGUIDs']
 			specimens = specimen_getter.getByRowGUIDs(rowguids)
+		
+		else:
+			self.messages.append('Error: no array with "CollectionSpecimenIDs" or "RowGUIDs" in get request')
+			message = '; '.join(self.messages)
+			body = json.dumps(self.jsonresponse)
+			return HTTPBadRequest(detail = message, body = body, headers={"status": "400", "Content-Type": "application/json", "Accept": "application/json"})
 		
 		specimens = json.loads(json.dumps(specimens, default = str))
 		

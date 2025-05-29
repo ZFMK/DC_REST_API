@@ -250,11 +250,10 @@ class CollectionSpecimenInserter():
 
 
 	def getListOfInsertedIDs(self):
+		cs_ids = {'CS_IDs': []}
 		for element_id in self.inserted_ids:
-			cs_ids = {'CS_IDs': []}
-			for element_id in self.inserted_ids:
-				cs_ids['CS_IDs'].append(self.inserted_ids[element_id])
-			return cs_ids
+			cs_ids['CS_IDs'].append(self.inserted_ids[element_id])
+		return cs_ids
 
 
 	'''
