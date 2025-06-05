@@ -97,6 +97,7 @@ class CollectionAgentGetter(DataGetter):
 		g_temp.[DatabaseURN],
 		ca.[CollectionSpecimenID],
 		ca.[CollectorsName],
+		ca.[CollectorsAgentURI],
 		ca.[CollectorsSequence],
 		ca.[CollectorsNumber],
 		ca.[Notes],

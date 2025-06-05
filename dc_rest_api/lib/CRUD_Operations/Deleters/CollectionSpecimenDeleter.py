@@ -53,7 +53,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 			self.cur.execute(query, cached_ids)
 			self.con.commit()
 		
-		# must be out of the while loop that fills the #event_pks_to_delete_temptable,
+		# must be out of the while loop that fills the #specimen_pks_to_delete_temptable,
 		# otherwise RowGUIDs are inserted more than once
 		query = """
 		INSERT INTO [{0}] ([rowguid_to_delete])
@@ -150,6 +150,7 @@ class CollectionSpecimenDeleter(DCDeleter):
 		FROM [CollectionSpecimen] cs
 		INNER JOIN [{0}] rg_temp
 		ON cs.[RowGUID] = rg_temp.[rowguid_to_delete]
+		WHERE cs.CollectionEventID IS NOT NULL
 		;""".format(self.delete_temptable)
 		querylog.info(query)
 		self.cur.execute(query)

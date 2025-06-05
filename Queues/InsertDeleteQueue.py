@@ -11,7 +11,8 @@ QUEUE_PATH='dc_ins_del_queue' # path to the persistent storage of the queue, rel
 
 import logging, logging.config
 logging.config.fileConfig('logging.conf')
-querylog = logging.getLogger('dc_api')
+logger = logging.getLogger('dc_api')
+errorlog = logging.getLogger('error')
 
 from DBConnectors.MSSQLConnector import MSSQLConnector
 
@@ -51,7 +52,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			# TODO: implement update
 			#elif target == 'update':
 			#	self.update_DC_data(dc_params, json_dicts, uid, users_roles, task_id)
-			# TODO: implement delete
 			elif target == 'delete':
 				self.delete_DC_data(dc_params, request_params, task_id)
 		
@@ -77,7 +77,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
-		
 		dc_db = MSSQLConnector(config = dc_params)
 		
 		ids_list_json = request_params['ids_list_json']
@@ -123,15 +122,14 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 				page = page + 1
 				percent_done = math.floor(page / max_pages * 100) 
 				self.progress_tracker.update_progress(task_id, percent_done, status = 'deleting specimens', task_result = task_result, step_result = step_result, message = 'please wait for task to complete')
-			
+				
 			percent_done = 100
 			status = 'complete'
 			self.progress_tracker.update_progress(task_id, percent_done, status, message = None)
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
-			#pudb.set_trace()
-			#self.messages.append(e[0])
+			errorlog.error('Exception in InserDeleteQueue.delete_DC_data()', exc_info = e)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 		return
@@ -139,7 +137,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
 		# DC connection must be set here, to prevent that it is ouddated when the task starts
-		#pudb.set_trace()
 		
 		dc_db = MSSQLConnector(config = dc_params)
 		
@@ -192,6 +189,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		except Exception as e:
 			#pudb.set_trace()
 			#self.messages.append(e[0])
+			errorlog.error('Exception in InserDeleteQueue.insert_DC_data()', exc_info = e)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 		
