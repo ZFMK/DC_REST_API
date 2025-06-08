@@ -37,6 +37,17 @@ class ReferencedJSON():
 			"Parameter": "Parameters"
 		}
 		
+		self.flattened_dicts = {
+			'Projects': {},
+			'Collections': {},
+			'CollectionExternalDatasources': {},
+			'CollectionEvents': {},
+			'CollectionSpecimens': {},
+			'Analyses': {},
+			'Methods': {},
+			'Parameters': {}
+		}
+		
 		self.initExtractedDicts()
 
 
@@ -179,17 +190,6 @@ class ReferencedJSON():
 		# first set all dicts as subdict so that the references are all resolved
 		# when the user provides a mixed json with some extracted independent tables
 		self.insertSubdicts()
-		
-		self.flattened_dicts = {
-			'Projects': {},
-			'Collections': {},
-			'CollectionExternalDatasources': {},
-			'CollectionEvents': {},
-			'CollectionSpecimens': {},
-			'Analyses': {},
-			'Methods': {},
-			'Parameters': {}
-		}
 		
 		self.flattened_keys = [key for key in self.flattened_dicts]
 		self.__flatten_dicts(self.json_dicts)

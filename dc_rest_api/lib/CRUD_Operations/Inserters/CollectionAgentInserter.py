@@ -30,7 +30,6 @@ class CollectionAgentInserter():
 
 
 	def insertCollectionAgentData(self):
-		
 		self.__createAgentTempTable()
 		
 		self.json2temp.set_datadicts(self.ca_dicts)

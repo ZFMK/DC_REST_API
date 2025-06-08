@@ -23,7 +23,7 @@ class IdentificationUnitAnalysisInserter():
 			{'colname': 'CollectionSpecimenID', 'None allowed': False},
 			{'colname': 'IdentificationUnitID', 'None allowed': False},
 			{'colname': 'SpecimenPartID'},
-			{'colname': 'AnalysisID'},
+			{'colname': 'AnalysisID', 'None allowed': False},
 			{'colname': 'AnalysisNumber'},
 			{'colname': 'DatabaseURN'},
 			{'colname': 'AnalysisInstanceNotes'},

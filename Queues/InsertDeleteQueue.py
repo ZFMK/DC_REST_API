@@ -129,6 +129,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
+			pudb.set_trace()
 			errorlog.error('Exception in InserDeleteQueue.delete_DC_data()', exc_info = e)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
@@ -137,7 +138,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
 		# DC connection must be set here, to prevent that it is ouddated when the task starts
-		
 		dc_db = MSSQLConnector(config = dc_params)
 		
 		json_dicts = request_params['json_dicts']
@@ -187,7 +187,8 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
-			#pudb.set_trace()
+			# TODO
+			pudb.set_trace()
 			#self.messages.append(e[0])
 			errorlog.error('Exception in InserDeleteQueue.insert_DC_data()', exc_info = e)
 			status = 'failed'
