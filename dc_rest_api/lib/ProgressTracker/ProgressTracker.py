@@ -105,8 +105,8 @@ class ProgressTracker:
 		SELECT progress_in_percent,
 		`status`,
 		`message`,
-		task_result JSON,
-		step_result JSON,
+		task_result,
+		step_result,
 		`notification_url`
 		FROM task_progress 
 		WHERE task_id = %s
@@ -114,6 +114,13 @@ class ProgressTracker:
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
 		if row is not None:
+			task_result = None
+			step_result = None
+			if row[3] is not None:
+				task_result = json.loads(row[3])
+			if row[3] is not None:
+				step_result = json.loads(row[4])
+			
 			return {
 				'progress': row[0],
 				'status': row[1],
@@ -184,7 +191,8 @@ class ProgressTracker:
 
 	def get_task_result(self, task_id):
 		query = """
-		SELECT task_result,
+		SELECT
+		task_result,
 		`status`,
 		`progress_in_percent`,
 		`notification_url`,
@@ -198,19 +206,26 @@ class ProgressTracker:
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
 		if row is not None:
+			if row[0] is not None:
+				result = json.loads(row[0])
+				message = row[7]
+			else:
+				result = None
+				message = 'Result for task {0} not yet available. Task status is: {1}'.format(task_id, row[1])
 			
-			json_result = json.loads(row[0])
+			json_result = {}
 			json_result.update({
+				"task_result": row[0],
 				"status": row[1],
 				"progress": row[2],
 				"notification_url": row[3],
 				"date_submitted": row[4],
 				"date_completed": row[5],
 				"available_until": row[6],
-				"message": row[7]
+				"message": message
 			})
 		else:
-			json_result = {}
+			json_result = {"message": "task can not be found"}
 		return json_result
 
 

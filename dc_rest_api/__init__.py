@@ -10,6 +10,8 @@ from dwb_authentication.security import SecurityPolicy
 # code might be kept in memory, how can i prevent that?
 from dwb_authentication.setup_session_db.create_database import SessionDBSetup
 
+from Queues.InsertDeleteQueue import insdel_queue_daemon
+insdel_queue_daemon()
 
 def main(global_config, **settings):
 	session_db = SessionDBSetup()

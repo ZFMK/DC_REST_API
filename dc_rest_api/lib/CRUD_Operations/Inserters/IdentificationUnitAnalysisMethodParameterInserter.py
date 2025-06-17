@@ -51,9 +51,8 @@ class IdentificationUnitAnalysisMethodParameterInserter():
 		
 		self.__insertIdentificationUnitAnalysisMethodParameters()
 		
-		# not needed, all IDs are set by insert into temptable
-		#self.__updateIUAMPTempTable()
-		#self.__updateIUAMPDicts()
+		self.__updateIUAMPTempTable()
+		self.__updateIUAMPDicts()
 		return
 
 
@@ -130,8 +129,6 @@ class IdentificationUnitAnalysisMethodParameterInserter():
 		return
 
 
-	# not needed, all IDs are set by insert into temptable
-	'''
 	def __updateIUAMPTempTable(self):
 		
 		query = """
@@ -204,4 +201,4 @@ class IdentificationUnitAnalysisMethodParameterInserter():
 			iuamp_ids[row[0]]['RowGUID'] = row[8]
 		
 		return iuamp_ids
-	'''
+

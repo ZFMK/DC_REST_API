@@ -20,7 +20,10 @@ from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenGetter import Col
 import pudb
 import json
 
-QUEUE_PATH='dc_ins_del_queue'
+import logging, logging.config
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('dc_api')
+errorlog = logging.getLogger('error')
 
 class CollectionSpecimensViews():
 
@@ -43,11 +46,14 @@ class CollectionSpecimensViews():
 		self.roles = self.request.identity['dwb_roles']
 		self.users_projects = self.request.identity['projects']
 		self.users_project_ids = [project[0] for project in self.users_projects]
+		
+		security = SecurityPolicy()
+		self.dc_con_params = security.get_dc_connection_params(self.request)
+		self.token = security.get_token_from_request(self.request)
 
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
-		#pudb.set_trace()
 		
 		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
@@ -60,9 +66,8 @@ class CollectionSpecimensViews():
 			body = json.dumps(self.jsonresponse)
 			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
-		security = SecurityPolicy()
-		
-		self.dc_con_params = security.get_dc_connection_params(self.request)
+		#security = SecurityPolicy()
+		#self.dc_con_params = security.get_dc_connection_params(self.request)
 		# test connection
 		
 		if self.dc_con_params is None:
@@ -83,8 +88,7 @@ class CollectionSpecimensViews():
 		
 		if 'CollectionSpecimens' in self.request_params.json_body:
 			try:
-				# TODO: get result from queue?
-				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
+				queue = InsertDeleteQueue()
 				
 				request_params = {
 					'json_dicts': self.request_params.json_body,
@@ -92,6 +96,7 @@ class CollectionSpecimensViews():
 					'users_roles': self.roles,
 					'notification_url': self.request_params.params_dict.get('notification_url', None)
 				}
+				
 				task_id = queue.submit_to_insert_queue(self.dc_con_params, request_params, self.request.application_url)
 				
 				# queue object must be deleted here as the queue otherwise complains about SQLLite called in different threads when the next call
@@ -106,8 +111,6 @@ class CollectionSpecimensViews():
 				self.jsonresponse['task_id'] =  task_id
 				
 				progress_url = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
-				#return self.jsonresponse
-				return HTTPSeeOther(location=progress_url, headers={"status": "303", "Content-Type": "application/json", "Accept": "application/json"})
 			except:
 				self.messages.extend(queue.messages)
 				message = '; '.join(self.messages)
@@ -143,9 +146,8 @@ class CollectionSpecimensViews():
 			body = json.dumps(self.jsonresponse)
 			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
-		security = SecurityPolicy()
-		
-		self.dc_con_params = security.get_dc_connection_params(self.request)
+		#security = SecurityPolicy()
+		#self.dc_con_params = security.get_dc_connection_params(self.request)
 		# test connection
 		
 		if self.dc_con_params is None:
@@ -157,7 +159,7 @@ class CollectionSpecimensViews():
 		if 'CollectionSpecimenIDs' in self.request_params.json_body or 'RowGUIDs' in self.request_params.json_body:
 			try:
 				# TODO: get result from queue?
-				queue = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
+				queue = InsertDeleteQueue()
 				
 				if 'CollectionSpecimenIDs' in self.request_params.json_body:
 					ids_key = 'CollectionSpecimenIDs'
@@ -213,8 +215,10 @@ class CollectionSpecimensViews():
 			body = json.dumps(self.jsonresponse)
 			return HTTPUnauthorized(detail = message, body = body, headers={"status": "401", "Content-Type": "application/json", "Accept": "application/json"})
 		
+		# TODO: change this according to using the connection params as in the other views
 		security = SecurityPolicy()
 		self.dc_db = security.get_mssql_connector(self.request)
+		
 		if self.dc_db is None:
 			message = 'Can not connect to DiversityCollection server. Please check your credentials'
 			self.messages.append(message)

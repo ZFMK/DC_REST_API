@@ -20,10 +20,16 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenInserter import
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
 from dc_rest_api.lib.ProgressTracker.ProgressTracker import ProgressTracker
 from dc_rest_api.lib.CRUD_Operations.Inserters.IndependentTablesInsert import IndependentTablesInsert
+#from Queues.singleton import singleton
+from Queues.asyncfunc import asyncfunc
 
+QUEUE_PATH='dc_ins_del_queue'
+
+@asyncfunc
 def insdel_queue_daemon():
-	q = InsertDeleteQueue(QUEUE_PATH, auto_commit=True)
+	q = InsertDeleteQueue()
 	q.run_daemon()
+	return
 
 
 class InsertDeleteQueue(persistqueue.SQLiteQueue):
@@ -36,16 +42,18 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	before the Insert task
 	"""
 	
-	def __init__(self, queue_path, auto_commit=True):
-		persistqueue.SQLiteQueue.__init__(self, queue_path, auto_commit)
+	def __init__(self):
+		queue_path = QUEUE_PATH
+		persistqueue.SQLiteQueue.__init__(self, queue_path, auto_commit = True)
 		self.progress_tracker = ProgressTracker()
 		self.messages = []
+		self.daemon_is_running = False
 		pass
 
 
 	def run_daemon(self):
-		self.daemonize = True
-		while self.daemonize:
+		self.daemon_is_running = True
+		while self.daemon_is_running:
 			[dc_params, request_params, task_id, target] = self.get()
 			if target == 'insert':
 				self.insert_DC_data(dc_params, request_params, task_id)
@@ -54,9 +62,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			#	self.update_DC_data(dc_params, json_dicts, uid, users_roles, task_id)
 			elif target == 'delete':
 				self.delete_DC_data(dc_params, request_params, task_id)
-		
-		return
-
+		self.daemon_is_running = False
 
 
 	######### Implementation of wrappers to put items into the queue

@@ -71,6 +71,7 @@ class TaskProgressViews():
 
 	@view_config(route_name='task_result', accept='application/json', renderer="json", request_method = "GET")
 	def get_task_result(self):
+		pudb.set_trace()
 		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database, ',
 			'messages': self.messages

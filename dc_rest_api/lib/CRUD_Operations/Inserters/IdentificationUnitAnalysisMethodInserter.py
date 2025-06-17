@@ -43,7 +43,6 @@ class IdentificationUnitAnalysisMethodInserter():
 
 
 	def insertIdentificationUnitAnalysisMethodData(self):
-		
 		self.__createIdentificationUnitAnalysisMethodTempTable()
 		
 		self.json2temp.set_datadicts(self.iuam_dicts)
@@ -52,9 +51,8 @@ class IdentificationUnitAnalysisMethodInserter():
 		self.__insertMethodForAanalysis()
 		self.__insertIdentificationUnitAnalysisMethods()
 		
-		# not needed, all IDs are set by insert into temptable
-		#self.__updateIUAMTempTable()
-		#self.__updateIUAMDicts()
+		self.__updateIUAMTempTable()
+		self.__updateIUAMDicts()
 		
 		iuamparameters = []
 		for iuam_dict in self.iuam_dicts:
@@ -162,8 +160,6 @@ class IdentificationUnitAnalysisMethodInserter():
 		return
 
 
-	# not needed, all IDs are set by insert into temptable
-	'''
 	def __updateIUAMTempTable(self):
 		# update the IdentificationUnitAnalysisIDs in iu_temptable
 		query = """
@@ -232,4 +228,4 @@ class IdentificationUnitAnalysisMethodInserter():
 			iuam_ids[row[0]]['RowGUID'] = row[7]
 		
 		return iuam_ids
-	'''
+
