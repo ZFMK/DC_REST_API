@@ -107,6 +107,8 @@ class SecurityPolicy:
 
 	def get_mssql_connector(self, request):
 		token = self.get_token_from_request(request)
+		if token is None:
+			return None
 		username, password = self.dbsession.get_credentials_from_session(token)
 		dc_config = self.dbsession.get_mssql_connectionparams_by_token(token)
 		if dc_config is None:
@@ -119,6 +121,8 @@ class SecurityPolicy:
 
 	def get_dc_connection_params(self, request):
 		token = self.get_token_from_request(request)
+		if token is None:
+			return None
 		username, password = self.dbsession.get_credentials_from_session(token)
 		dc_config = self.dbsession.get_mssql_connectionparams_by_token(token)
 		if dc_config is None:

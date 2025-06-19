@@ -7,6 +7,8 @@ querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenRelationGetter import CollectionSpecimenRelationGetter
+
 
 class SpecimenPartGetter(DataGetter):
 	def __init__(self, dc_db, users_project_ids = []):
@@ -123,11 +125,14 @@ class SpecimenPartGetter(DataGetter):
 		self.rows2list()
 		
 		self.setChildCollections()
+		# pudb.set_trace()
+		self.setCollectionSpecimenRelations()
 		
 		return self.results_list
 
 
-	def list2dict(self):
+	def list_2_iu_part_dict(self):
+		# 2 different dicts for parts: parts with units
 		self.results_dict = {}
 		for element in self.results_list:
 			if element['CollectionSpecimenID'] not in self.results_dict:
@@ -136,6 +141,17 @@ class SpecimenPartGetter(DataGetter):
 				if element['IdentificationUnitID'] not in self.results_dict[element['CollectionSpecimenID']]:
 					self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']] = {}
 				self.results_dict[element['CollectionSpecimenID']][element['IdentificationUnitID']][element['SpecimenPartID']] = element
+		return
+
+
+	def list_2_cs_part_dict(self):
+		# 2 different dicts for parts: parts without units
+		self.results_dict = {}
+		for element in self.results_list:
+			if element['CollectionSpecimenID'] not in self.results_dict:
+				self.results_dict[element['CollectionSpecimenID']] = {}
+			if 'IdentificationUnitID' in element and element['IdentificationUnitID'] is not None:
+				pass
 			else:
 				self.results_dict[element['CollectionSpecimenID']][element['SpecimenPartID']] = element
 		return
@@ -195,7 +211,57 @@ class SpecimenPartGetter(DataGetter):
 		return
 
 
-
+	def setCollectionSpecimenRelations(self):
+		csrel_getter = CollectionSpecimenRelationGetter(self.dc_db)
+		csrel_getter.createGetTempTable()
+		
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT csrel.[RowGUID]
+		FROM [CollectionSpecimenPart] csp
+		INNER JOIN [{1}] rg_temp
+		ON csp.[RowGUID] = rg_temp.[rowguid_to_get]
+		LEFT JOIN IdentificationUnitInPart iuip
+		ON iuip.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
+		AND iuip.[SpecimenPartID] = csp.[SpecimenPartID]
+		INNER JOIN [CollectionSpecimenRelation] csrel
+		ON csrel.[CollectionSpecimenID] = csp.[CollectionSpecimenID]
+		AND csrel.[SpecimenPartID] = csp.[SpecimenPartID]
+		AND (csrel.[IdentificationUnitID] = iuip.[IdentificationUnitID]
+			OR (csrel.[IdentificationUnitID] IS NULL AND iuip.[IdentificationUnitID] IS NULL))
+		;""".format(csrel_getter.get_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		self.setDatabaseURN()
+		
+		csrel_getter.getData()
+		csrel_getter.list2dict()
+		
+		for csp_dict in self.results_list:
+			cs_id = csp_dict['CollectionSpecimenID']
+			csp_id = csp_dict['SpecimenPartID']
+			
+			if 'IdentificationUnitID' in csp_dict and csp_dict['IdentificationUnitID'] is not None:
+				iu_id = csp_dict['IdentificationUnitID']
+				if cs_id in csrel_getter.results_dict:
+					for csrel_id in csrel_getter.results_dict[cs_id]:
+						if 'IdentificationUnitID' in csrel_getter.results_dict[cs_id][csrel_id] and 'SpecimenPartID' in csrel_getter.results_dict[cs_id][csrel_id]:
+							if csrel_getter.results_dict[cs_id][csrel_id]['IdentificationUnitID'] == iu_id and csrel_getter.results_dict[cs_id][csrel_id]['SpecimenPartID'] == csp_id:
+								if 'CollectionSpecimenRelations' not in csp_dict[cs_id]:
+									csp_dict['CollectionSpecimenRelations'] = []
+								csp_dict['CollectionSpecimenRelations'].append(csrel_getter.results_dict[cs_id][csrel_id])
+			elif cs_id in csrel_getter.results_dict:
+				for csrel_id in csrel_getter.results_dict[cs_id]:
+					if 'SpecimenPartID' in csrel_getter.results_dict[cs_id][csrel_id] and csrel_getter.results_dict[cs_id][csrel_id]['SpecimenPartID'] == csp_id:
+						if 'IdentificationUnitID' not in csrel_getter.results_dict[cs_id][csrel_id] or csrel_getter.results_dict[cs_id]['IdentificationUnitID'] is None:
+							if 'CollectionSpecimenRelations' not in csp_dict[cs_id]:
+								csp_dict[cs_id]['CollectionSpecimenRelations'] = []
+							csp_dict[cs_id]['CollectionSpecimenRelations'].append(csrel_getter.results_dict[cs_id][csrel_id])
+		
+		return
 
 
 

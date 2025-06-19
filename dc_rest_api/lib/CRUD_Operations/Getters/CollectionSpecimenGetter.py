@@ -13,6 +13,7 @@ from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionG
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionEventGetter import CollectionEventGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionProjectGetter import CollectionProjectGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.CollectionExternalDatasourceGetter import CollectionExternalDatasourceGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenRelationGetter import CollectionSpecimenRelationGetter
 
 
 class CollectionSpecimenGetter(DataGetter):
@@ -95,6 +96,7 @@ class CollectionSpecimenGetter(DataGetter):
 		self.setCollectionEvents()
 		self.setCollectionProjects()
 		self.setCollectionExternalDatasources()
+		self.setCollectionSpecimenRelations()
 		return
 
 
@@ -199,7 +201,7 @@ class CollectionSpecimenGetter(DataGetter):
 		self.con.commit()
 		
 		csp_getter.getData()
-		csp_getter.list2dict()
+		csp_getter.list_2_cs_part_dict()
 		
 		for cs in self.results_list:
 			if cs['CollectionSpecimenID'] in csp_getter.results_dict:
@@ -397,5 +399,38 @@ class CollectionSpecimenGetter(DataGetter):
 				cs['CollectionExternalDatasource'] = ed_getter.results_dict[cs['ExternalDatasourceID']]
 			elif 'ExternalDatasourceID' in cs and cs['ExternalDatasourceID'] not in ed_getter.results_dict:
 				del cs['ExternalDatasourceID']
+		
+		return
+
+
+	def setCollectionSpecimenRelations(self):
+		csrel_getter = CollectionExternalDatasourceGetter(self.dc_db)
+		csrel_getter.createGetTempTable()
+		
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT csrel.[RowGUID]
+		FROM [CollectionSpecimen] cs
+		INNER JOIN [{1}] rg_temp
+		ON cs.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [CollectionSpecimenRelation] csrel
+		ON csrel.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
+		WHERE csrel.IdentificationUnitID IS NULL AND csrel.SpecimenPartID IS NULL
+		;""".format(csrel_getter.get_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		self.setDatabaseURN()
+		
+		csrel_getter.getData()
+		csrel_getter.list2dict()
+		
+		for cs in self.results_list:
+			if cs['CollectionSpecimenID'] in csrel_getter.results_dict:
+				cs['CollectionSpecimenRelations'] = []
+				for csrel_id in csrel_getter.results_dict[cs['CollectionSpecimenID']]:
+					cs['CollectionAgents'].append(csrel_getter.results_dict[cs['CollectionSpecimenID']][csrel_id])
 		
 		return

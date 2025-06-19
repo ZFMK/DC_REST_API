@@ -344,7 +344,7 @@ class DBSession():
 	
 	def get_credentials_from_session(self, token):
 		if token is None:
-			return None
+			return [None, None]
 		hashed_token = self.encryptor.hash_token(token)
 		
 		query = """

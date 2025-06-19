@@ -51,7 +51,7 @@ class IdentificationUnitAnalysisMethodInserter():
 		self.__insertMethodForAanalysis()
 		self.__insertIdentificationUnitAnalysisMethods()
 		
-		self.__updateIUAMTempTable()
+		#self.__updateIUAMTempTable()
 		self.__updateIUAMDicts()
 		
 		iuamparameters = []
@@ -165,11 +165,11 @@ class IdentificationUnitAnalysisMethodInserter():
 		query = """
 		UPDATE iuam_temp
 		SET 
-		iuam_temp.[CollectionSpecimenID] = iuam.[CollectionSpecimenID],
-		iuam_temp.[IdentificationUnitID] = iuam.[IdentificationUnitID],
-		iuam_temp.[AnalysisID] = iuam.[AnalysisID],
-		iuam_temp.[AnalysisNumber] = iuam.[AnalysisNumber],
-		iuam_temp.[MethodID] = iuam.[MethodID],
+		 -- iuam_temp.[CollectionSpecimenID] = iuam.[CollectionSpecimenID],
+		 -- iuam_temp.[IdentificationUnitID] = iuam.[IdentificationUnitID],
+		 -- iuam_temp.[AnalysisID] = iuam.[AnalysisID],
+		 -- iuam_temp.[AnalysisNumber] = iuam.[AnalysisNumber],
+		 -- iuam_temp.[MethodID] = iuam.[MethodID],
 		iuam_temp.[MethodMarker] = iuam.[MethodMarker]
 		FROM [{0}] iuam_temp
 		INNER JOIN [IdentificationUnitAnalysisMethod] iuam

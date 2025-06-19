@@ -9,6 +9,7 @@ from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationUnitAnalysisGetter import IdentificationUnitAnalysisGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.IdentificationGetter import IdentificationGetter
 from dc_rest_api.lib.CRUD_Operations.Getters.SpecimenPartGetter import SpecimenPartGetter
+from dc_rest_api.lib.CRUD_Operations.Getters.CollectionSpecimenRelationGetter import CollectionSpecimenRelationGetter
 
 class IdentificationUnitGetter(DataGetter):
 	def __init__(self, dc_db, users_project_ids = []):
@@ -127,6 +128,8 @@ class IdentificationUnitGetter(DataGetter):
 		self.setChildIdentifications()
 		self.setChildIUAnalyses()
 		self.setChildSpecimenParts()
+		# pudb.set_trace()
+		self.setCollectionSpecimenRelations()
 		
 		return self.results_list
 
@@ -254,7 +257,7 @@ class IdentificationUnitGetter(DataGetter):
 		self.con.commit()
 		
 		csp_getter.getData()
-		csp_getter.list2dict()
+		csp_getter.list_2_iu_part_dict()
 		
 		for iu in self.results_list:
 			if iu['CollectionSpecimenID'] in csp_getter.results_dict and iu['IdentificationUnitID'] in csp_getter.results_dict[iu['CollectionSpecimenID']]:
@@ -265,3 +268,41 @@ class IdentificationUnitGetter(DataGetter):
 		
 		return
 
+
+	def setCollectionSpecimenRelations(self):
+		csrel_getter = CollectionSpecimenRelationGetter(self.dc_db)
+		csrel_getter.createGetTempTable()
+		
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT csrel.[RowGUID]
+		FROM [IdentificationUnit] iu
+		INNER JOIN [{1}] rg_temp
+		ON iu.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [CollectionSpecimenRelation] csrel
+		ON csrel.[CollectionSpecimenID] = iu.[CollectionSpecimenID]
+		AND csrel.[IdentificationUnitID] = iu.[IdentificationUnitID]
+		WHERE csrel.SpecimenPartID IS NULL
+		;""".format(csrel_getter.get_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		self.setDatabaseURN()
+		
+		csrel_getter.getData()
+		csrel_getter.list2dict()
+		
+		for iu in self.results_list:
+			cs_id = iu['CollectionSpecimenID']
+			if cs_id in csrel_getter.results_dict:
+				iu_id = iu['IdentificationUnitID']
+				for csrel_id in csrel_getter.results_dict[cs_id]:
+					if 'IdentificationUnitID' in csrel_getter.results_dict[cs_id][csrel_id]:
+						if csrel_getter.results_dict[cs_id][csrel_id]['IdentificationUnitID'] == iu_id:
+							if not 'CollectionSpecimenRelations' in iu:
+								iu['CollectionSpecimenRelations'] = []
+							iu['CollectionSpecimenRelations'].append(csrel_getter.results_dict[cs_id][csrel_id])
+		
+		return
