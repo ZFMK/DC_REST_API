@@ -90,6 +90,8 @@ class IdentificationUnitDeleter(DCDeleter):
 		self.checkRowGUIDsUniqueness('IdentificationUnit')
 		self.prohibited = self.filterAllowedRowGUIDs('IdentificationUnit', ['CollectionSpecimenID', 'IdentificationUnitID'])
 		self.deleteChildIdentifications()
+		self.deleteChildIdentificationUnitAnalyses()
+		self.deleteChildSpecimenParts()
 		
 		self.deleteFromTable('IdentificationUnit')
 		return

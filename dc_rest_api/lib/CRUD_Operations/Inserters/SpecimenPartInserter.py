@@ -5,7 +5,7 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
-from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenRelationInserter import CollectionSpecimenRelationInserter
 
 
 class SpecimenPartInserter():
@@ -55,6 +55,20 @@ class SpecimenPartInserter():
 		
 		self.__updateCSPTempTable()
 		self.__updateCSPDicts()
+		
+		specimenrelations = []
+		
+		for csp_dict in self.csp_dicts:
+			if 'CollectionSpecimenRelations' in csp_dict:
+				for csrel_dict in iu_dict['CollectionSpecimenRelations']:
+					csrel_dict['CollectionSpecimenID'] = csp_dict['CollectionSpecimenID']
+					csrel_dict['SpecimenPartID'] = csp_dict['SpecimenPartID']
+					specimenrelations.append(csrel_dict)
+		
+		if len(specimenrelations) > 0:
+			csrel_inserter = CollectionSpecimenRelationInserter(self.dc_db)
+			csrel_inserter.setSpecimenRelationDicts(specimenrelations)
+			csrel_inserter.insertSpecimenRelationData()
 		
 		return
 

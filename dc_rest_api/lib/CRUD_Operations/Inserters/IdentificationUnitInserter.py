@@ -10,7 +10,7 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationInserter import Ide
 from dc_rest_api.lib.CRUD_Operations.Inserters.SpecimenPartInserter import SpecimenPartInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitInPartSetter import IdentificationUnitInPartSetter
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitAnalysisInserter import IdentificationUnitAnalysisInserter
-
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenRelationInserter import CollectionSpecimenRelationInserter
 
 
 class IdentificationUnitInserter():
@@ -60,7 +60,7 @@ class IdentificationUnitInserter():
 		identifications = []
 		iuanalyses = []
 		specimenparts = []
-		iuip_dicts = []
+		specimenrelations = []
 		
 		for iu_dict in self.iu_dicts:
 			if 'Identifications' in iu_dict:
@@ -80,18 +80,32 @@ class IdentificationUnitInserter():
 					csp_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
 					csp_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
 					specimenparts.append(csp_dict)
+			
+			if 'CollectionSpecimenRelations' in iu_dict:
+				for csrel_dict in iu_dict['CollectionSpecimenRelations']:
+					csrel_dict['CollectionSpecimenID'] = iu_dict['CollectionSpecimenID']
+					csrel_dict['IdentificationUnitID'] = iu_dict['IdentificationUnitID']
+					specimenrelations.append(csrel_dict)
 		
-		i_inserter = IdentificationInserter(self.dc_db)
-		i_inserter.setIdentificationDicts(identifications)
-		i_inserter.insertIdentificationData()
+		if len(identifications) > 0:
+			i_inserter = IdentificationInserter(self.dc_db)
+			i_inserter.setIdentificationDicts(identifications)
+			i_inserter.insertIdentificationData()
 		
-		iua_inserter = IdentificationUnitAnalysisInserter(self.dc_db)
-		iua_inserter.setIdentificationUnitAnalysisDicts(iuanalyses)
-		iua_inserter.insertIdentificationUnitAnalysisData()
+		if len(iuanalyses) > 0:
+			iua_inserter = IdentificationUnitAnalysisInserter(self.dc_db)
+			iua_inserter.setIdentificationUnitAnalysisDicts(iuanalyses)
+			iua_inserter.insertIdentificationUnitAnalysisData()
 		
-		csp_inserter = SpecimenPartInserter(self.dc_db)
-		csp_inserter.setSpecimenPartDicts(specimenparts)
-		csp_inserter.insertSpecimenPartData()
+		if len(specimenparts) > 0:
+			csp_inserter = SpecimenPartInserter(self.dc_db)
+			csp_inserter.setSpecimenPartDicts(specimenparts)
+			csp_inserter.insertSpecimenPartData()
+		
+		if len(specimenrelations) > 0:
+			csrel_inserter = CollectionSpecimenRelationInserter(self.dc_db)
+			csrel_inserter.setSpecimenRelationDicts(specimenrelations)
+			csrel_inserter.insertSpecimenRelationData()
 		
 		self.setIdentificationUnitInPart()
 		

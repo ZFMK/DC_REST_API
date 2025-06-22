@@ -10,7 +10,7 @@ api_log = logging.getLogger('dc_api')
 
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
-from dc_rest_api.lib.CRUD_Operations.Matchers.CollectionSpecimenRelationMatcher import CollectionSpecimenRelationMatcher
+
 
 class CollectionSpecimenRelationInserter():
 	def __init__(self, dc_db, users_roles = []):
@@ -43,18 +43,26 @@ class CollectionSpecimenRelationInserter():
 		self.messages = []
 
 
-	def insertSpecimenRelationData(self, json_dicts = []):
-		self.csr_dicts = json_dicts
-		
+	def setSpecimenRelationDicts(self, json_dicts = []):
+		self.csrel_dicts = []
+		csrel_count = 1
+		for csrel_dict in json_dicts:
+			csrel_dict['entry_num'] = csrel_count
+			csrel_count += 1
+			self.csrel_dicts.append(csrel_dict)
+		return
+
+
+	def insertSpecimenRelationData(self):
+		pudb.set_trace()
 		self.__createTempTable()
 		
-		self.json2temp.set_datadicts(self.csr_dicts)
+		self.json2temp.set_datadicts(self.csrel_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		
 		self.__insertSpecimenRelations()
-		self.__updateCSRTempTable()
 		
-		self.__updateCSRDicts()
+		self.__updateCSRelDicts()
 		
 		return
 
@@ -101,12 +109,12 @@ class CollectionSpecimenRelationInserter():
 	def __replaceInvalidRelationType(self):
 		invalid_relation_types = 0
 		query = """
-		UPDATE csr_temp
-		SET csr_temp.[RelationType] = NULL
-		FROM [{0}] csr_temp
-		LEFT JOIN [CollSpecimenRelation_Enum] csr_e
-		ON csr_e.[RelationType] = csr_temp.[RelationType]
-		WHERE csr_temp.[RelationType] IS NOT NULL AND csr_e.[RelationType] IS NULL
+		UPDATE csrel_temp
+		SET csrel_temp.[RelationType] = NULL
+		FROM [{0}] csrel_temp
+		LEFT JOIN [CollSpecimenRelation_Enum] csrel_e
+		ON csrel_e.[RelationType] = csrel_temp.[RelationType]
+		WHERE csrel_temp.[RelationType] IS NOT NULL AND csrel_e.[RelationType] IS NULL
 		;""".format(self.temptable)
 		self.cur.execute(query)
 		self.con.commit()
@@ -116,14 +124,14 @@ class CollectionSpecimenRelationInserter():
 			api_log.warn('Some CollectionSpecimenRelations contain invalid values for "RelationType". The RelationType of these entries have been set to NULL')
 		return
 
-
+	'''
 	def __validateCollectionID(self):
 		query = """
-		UPDATE csr_temp
-		SET csr_temp.[CollectionID] = NULL
-		FROM [{0}] csr_temp
+		UPDATE csrel_temp
+		SET csrel_temp.[CollectionID] = NULL
+		FROM [{0}] csrel_temp
 		LEFT JOIN [Collection] c
-		ON c.CollectionID = csr_temp.CollectionID
+		ON c.CollectionID = csrel_temp.CollectionID
 		LEFT JOIN (
 			SELECT c.CollectionID, csp.SpecimenPartID, iuip.IdentificationUnitID, iuip.CollectionSpecimenID
 			FROM IdentificationUnitInPart iuip
@@ -133,10 +141,10 @@ class CollectionSpecimenRelationInserter():
 			LEFT JOIN [Collection] c
 			ON c.CollectionID = csp.CollectionID
 		) AS c_in_part
-		ON c_in_part.CollectionSpecimenID = csr_temp.CollectionSpecimenID
-		AND c_in_part.IdentificationUnitID = csr_temp.IdentificationUnitID
-		AND (c_in_part.SpecimenPartID = csr_temp.SpecimenPartID OR (csr_temp.SpecimenPartID IS NULL))
-		WHERE csr.temp.CollectionID IS NOT NULL AND c.CollectionID IS NULL AND c_in_part.CollectionID IS NULL
+		ON c_in_part.CollectionSpecimenID = csrel_temp.CollectionSpecimenID
+		AND c_in_part.IdentificationUnitID = csrel_temp.IdentificationUnitID
+		AND (c_in_part.SpecimenPartID = csrel_temp.SpecimenPartID OR (csrel_temp.SpecimenPartID IS NULL))
+		WHERE csrel_temp.CollectionID IS NOT NULL AND c.CollectionID IS NULL AND c_in_part.CollectionID IS NULL
 		;""".format(self.temptable)
 		self.cur.execute(query)
 		self.con.commit()
@@ -145,6 +153,7 @@ class CollectionSpecimenRelationInserter():
 			self.messages.append('Some CollectionSpecimenRelations contain invalid values for "CollectionID". The CollectionID of these entries have been set to NULL')
 			api_log.warn('Some CollectionSpecimenRelations contain invalid values for "CollectionID". The CollectionID of these entries have been set to NULL')
 		return
+	'''
 
 
 	def __insertSpecimenRelations(self):
@@ -164,19 +173,19 @@ class CollectionSpecimenRelationInserter():
 			[RowGUID]
 		)
 		SELECT 
-		csr_temp.[CollectionSpecimenID],
-		csr_temp.[RelatedSpecimenURI],
-		csr_temp.[RelatedSpecimenDisplayText],
-		csr_temp.[RelationType],
-		csr_temp.[RelatedSpecimenCollectionID],
-		csr_temp.[RelatedSpecimenDescription],
-		csr_temp.[IdentificationUnitID],
-		csr_temp.[SpecimenPartID],
-		csr_temp.[Notes],
-		csr_temp.[IsInternalRelationCache],
-		csr_temp.[RowGUID]
-		FROM [{0}] csr_temp
-		ORDER BY csr_temp.[entry_num]
+		csrel_temp.[CollectionSpecimenID],
+		csrel_temp.[RelatedSpecimenURI],
+		csrel_temp.[RelatedSpecimenDisplayText],
+		csrel_temp.[RelationType],
+		csrel_temp.[RelatedSpecimenCollectionID],
+		csrel_temp.[RelatedSpecimenDescription],
+		csrel_temp.[IdentificationUnitID],
+		csrel_temp.[SpecimenPartID],
+		csrel_temp.[Notes],
+		csrel_temp.[IsInternalRelationCache],
+		csrel_temp.[RowGUID]
+		FROM [{0}] csrel_temp
+		ORDER BY csrel_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
 		self.cur.execute(query)
@@ -184,30 +193,30 @@ class CollectionSpecimenRelationInserter():
 		return
 
 
-	def __updateCSRDicts(self):
+	def __updateCSRelDicts(self):
 		
-		csr_ids = self.getIDsForCSRDicts()
-		for csr_dict in self.csr_dicts:
-			entry_num = csr_dict['entry_num']
-			csr_dict['RowGUID'] = csr_ids[entry_num]['RowGUID']
+		csrel_ids = self.getIDsForCSRelDicts()
+		for csrel_dict in self.csrel_dicts:
+			entry_num = csrel_dict['entry_num']
+			csrel_dict['RowGUID'] = csrel_ids[entry_num]['RowGUID']
 		return
 
 
-	def getIDsForIDicts(self):
+	def getIDsForCSRelDicts(self):
 		query = """
-		SELECT csr_temp.[entry_num],
-		csr_temp.[RowGUID]
-		FROM [{0}] csr_temp
+		SELECT csrel_temp.[entry_num],
+		csrel_temp.[RowGUID]
+		FROM [{0}] csrel_temp
 		;""".format(self.temptable)
 		
 		self.cur.execute(query)
 		rows = self.cur.fetchall()
 		
-		csr_ids = {}
+		csrel_ids = {}
 		for row in rows:
-			if not row[0] in csr_ids:
-				csr_ids[row[0]] = {}
-			csr_ids[row[0]]['RowGUID'] = row[1]
+			if not row[0] in csrel_ids:
+				csrel_ids[row[0]] = {}
+			csrel_ids[row[0]]['RowGUID'] = row[1]
 		
-		return i_ids
+		return csrel_ids
 

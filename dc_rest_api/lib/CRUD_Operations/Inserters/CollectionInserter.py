@@ -280,42 +280,6 @@ class CollectionInserter():
 		return
 
 
-	'''
-	def __insertCollectionIDsInCollectionSpecimen(self):
-		query = """
-		UPDATE cs
-		SET cs.[CollectionID] = c_temp.[CollectionID]
-		FROM CollectionSpecimen cs
-		INNER JOIN [{0}] c_temp 
-		ON c_temp.[CollectionSpecimenID] = cs.[CollectionSpecimenID]
-		WHERE c_temp.[CollectionID] IS NOT NULL
-		""".format(self.temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-	'''
-
-
-	'''
-	def __insertCollectionIDsInSpecimenPart(self):
-		query = """
-		UPDATE csp
-		SET csp.[CollectionID] = c_temp.[CollectionID]
-		FROM CollectionSpecimenPart csp
-		INNER JOIN [{0}] c_temp
-		ON c_temp.[SpecimenPartID] = csp.[SpecimenPartID]
-		WHERE c_temp.[CollectionID] IS NOT NULL
-		""".format(self.temptable)
-		
-		querylog.info(query)
-		self.cur.execute(query)
-		self.con.commit()
-		return
-	'''
-
-
 	def __updateCollectionDicts(self):
 		c_ids = self.getIDsForCollectionDicts()
 		for dict_id in self.c_dicts:

@@ -15,6 +15,8 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.IndependentTablesInsert import In
 from dc_rest_api.lib.CRUD_Operations.Inserters.IdentificationUnitInserter import IdentificationUnitInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionAgentInserter import CollectionAgentInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.SpecimenPartInserter import SpecimenPartInserter
+from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenRelationInserter import CollectionSpecimenRelationInserter
+
 
 class CollectionSpecimenInserter():
 	
@@ -66,6 +68,7 @@ class CollectionSpecimenInserter():
 		identificationunits = []
 		collectionagents = []
 		specimenparts = []
+		specimenrelations = []
 		
 		for cs_dict in specimen_list:
 			
@@ -83,18 +86,31 @@ class CollectionSpecimenInserter():
 				for csp_dict in cs_dict['CollectionSpecimenParts']:
 					csp_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
 					specimenparts.append(csp_dict)
+			
+			if 'CollectionSpecimenRelations' in cs_dict:
+				for csrel_dict in cs_dict['CollectionSpecimenRelations']:
+					csrel_dict['CollectionSpecimenID'] = cs_dict['CollectionSpecimenID']
+					specimenrelations.append(csrel_dict)
 		
-		iu_inserter = IdentificationUnitInserter(self.dc_db)
-		iu_inserter.setIdentificationUnitDicts(identificationunits)
-		iu_inserter.insertIdentificationUnitData()
+		if len(identificationunits) > 0:
+			iu_inserter = IdentificationUnitInserter(self.dc_db)
+			iu_inserter.setIdentificationUnitDicts(identificationunits)
+			iu_inserter.insertIdentificationUnitData()
 		
-		ca_inserter = CollectionAgentInserter(self.dc_db)
-		ca_inserter.setCollectionAgentDicts(collectionagents)
-		ca_inserter.insertCollectionAgentData()
+		if len(collectionagents) > 0:
+			ca_inserter = CollectionAgentInserter(self.dc_db)
+			ca_inserter.setCollectionAgentDicts(collectionagents)
+			ca_inserter.insertCollectionAgentData()
 		
-		csp_inserter = SpecimenPartInserter(self.dc_db)
-		csp_inserter.setSpecimenPartDicts(specimenparts)
-		csp_inserter.insertSpecimenPartData()
+		if len(specimenparts) > 0:
+			csp_inserter = SpecimenPartInserter(self.dc_db)
+			csp_inserter.setSpecimenPartDicts(specimenparts)
+			csp_inserter.insertSpecimenPartData()
+		
+		if len(specimenrelations) > 0:
+			csrel_inserter = CollectionSpecimenRelationInserter(self.dc_db)
+			csrel_inserter.setSpecimenRelationDicts(specimenrelations)
+			csrel_inserter.insertSpecimenRelationData()
 		
 		return
 

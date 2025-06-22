@@ -6,6 +6,7 @@ querylog = logging.getLogger('query')
 
 
 from dc_rest_api.lib.CRUD_Operations.Getters.DataGetter import DataGetter
+#from dc_rest_api.lib.CRUD_Operations.Getters.CollectionGetter import CollectionGetter
 
 
 class CollectionSpecimenRelationGetter(DataGetter):
@@ -98,11 +99,6 @@ class CollectionSpecimenRelationGetter(DataGetter):
 		return specimenrelations
 
 
-	def setConnectedTableData(self):
-		self.setCollections()
-		return
-
-
 	def getData(self):
 		self.setDatabaseURN()
 		
@@ -145,7 +141,36 @@ class CollectionSpecimenRelationGetter(DataGetter):
 		return
 
 
-
+	'''
+	def setCollections(self):
+		# Collections are the referenced colletions here, what would only work if the referenced specimen is in the same database
+		c_getter = CollectionGetter(self.dc_db)
+		c_getter.createGetTempTable()
+		
+		query = """
+		INSERT INTO [{0}] ([rowguid_to_get])
+		SELECT DISTINCT c.[RowGUID]
+		FROM [CollectionSpecimenRelation] csrel
+		INNER JOIN [{1}] rg_temp
+		ON csrel.[RowGUID] = rg_temp.[rowguid_to_get]
+		INNER JOIN [Collection] c
+		ON csrel.[CollectionID] = c.[CollectionID]
+		WHERE csrel.[CollectionID] IS NOT NULL AND 
+		;""".format(c_getter.get_temptable, self.get_temptable)
+		
+		querylog.info(query)
+		self.cur.execute(query)
+		self.con.commit()
+		
+		c_getter.getData()
+		c_getter.list2dict()
+		
+		for csrel_dict in self.results_list:
+			if csrel_dict['CollectionID'] in c_getter.results_dict:
+				csrel_dict['Collection'] = c_getter.results_dict[csrel_dict['CollectionID']]
+		
+		return
+	'''
 
 
 

@@ -124,7 +124,7 @@ class SpecimenPartGetter(DataGetter):
 		self.results_rows = self.cur.fetchall()
 		self.rows2list()
 		
-		self.setChildCollections()
+		self.setCollections()
 		# pudb.set_trace()
 		self.setCollectionSpecimenRelations()
 		
@@ -181,7 +181,7 @@ class SpecimenPartGetter(DataGetter):
 		return
 
 
-	def setChildCollections(self):
+	def setCollections(self):
 		
 		c_getter = CollectionGetter(self.dc_db)
 		c_getter.createGetTempTable()
