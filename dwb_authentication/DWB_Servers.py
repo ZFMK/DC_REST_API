@@ -53,5 +53,6 @@ class DWB_Servers():
 	def get_default_connector(self):
 		# return the first connector in database
 		dwb_con = None
-		dwb_con = self.servers[0]
+		if len(self.servers) > 0:
+			dwb_con = self.servers[0]
 		return dwb_con

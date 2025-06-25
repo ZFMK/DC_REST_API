@@ -28,7 +28,6 @@ errorlog = logging.getLogger('error')
 class CollectionSpecimensViews():
 
 	def __init__(self, request):
-		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -55,7 +54,6 @@ class CollectionSpecimensViews():
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
-		
 		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
@@ -112,6 +110,7 @@ class CollectionSpecimensViews():
 				self.jsonresponse['task_id'] =  task_id
 				
 				progress_url = '{0}/task_progress/{1}'.format(self.request.application_url, task_id)
+				return HTTPSeeOther(location=progress_url, headers={"status": "303", "Content-Type": "application/json", "Accept": "application/json"})
 			except:
 				self.messages.extend(queue.messages)
 				message = '; '.join(self.messages)
@@ -204,7 +203,7 @@ class CollectionSpecimensViews():
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "GET")
 	def getSpecimensJSON(self):
-		# pudb.set_trace()
+		
 		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database, get CollectionSpecimens',
 			'messages': self.messages

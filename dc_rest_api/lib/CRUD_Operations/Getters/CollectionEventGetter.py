@@ -102,8 +102,14 @@ class CollectionEventGetter(DataGetter):
 		IIF(g_temp.[WithholdDate] IS NULL, ce.[CollectionTimeSpan], NULL) AS [CollectionTimeSpan],
 		ce.[ReferenceTitle],
 		ce.[ReferenceURI],
-		 -- e.[ReferenceDetails],
+		 -- ce.[ReferenceDetails],
 		ce.[CountryCache],
+		ce.[LocalityVerbatim],
+		ce.[LocalityDescription],
+		ce.[HabitatDescription],
+		ce.[CollectingMethod],
+		 -- named area 1
+		n1.Location1 AS [Named area (DiversityGazetteer)],
 		 -- 
 		alt.Location1 AS [Altitude],
 		alt.LocationAccuracy AS [Altitude_Accuracy],
@@ -128,6 +134,8 @@ class CollectionEventGetter(DataGetter):
 		ON ce.[RowGUID] = g_temp.[rowguid_to_get]
 		LEFT JOIN [CollectionEventLocalisation] alt
 		ON alt.CollectionEventID = ce.CollectionEventID AND alt.LocalisationSystemID = 4
+		LEFT JOIN [CollectionEventLocalisation] n1
+		ON n1.CollectionEventID = ce.CollectionEventID AND n1.LocalisationSystemID = 7
 		LEFT JOIN [CollectionEventLocalisation] wgs
 		ON wgs.CollectionEventID = ce.CollectionEventID AND wgs.LocalisationSystemID = 8
 		LEFT JOIN [CollectionEventLocalisation] d

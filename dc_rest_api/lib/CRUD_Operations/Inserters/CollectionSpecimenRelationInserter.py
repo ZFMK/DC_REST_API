@@ -23,7 +23,6 @@ class CollectionSpecimenRelationInserter():
 		self.messages = []
 		
 		self.temptable = '#specimenrelation_temptable'
-		self.unique_ed_temptable = '#unique_specimenrelation_temptable'
 		
 		self.schema = [
 			{'colname': 'entry_num', 'None allowed': False},
@@ -54,9 +53,7 @@ class CollectionSpecimenRelationInserter():
 
 
 	def insertSpecimenRelationData(self):
-		pudb.set_trace()
 		self.__createTempTable()
-		
 		self.json2temp.set_datadicts(self.csrel_dicts)
 		self.json2temp.fill_temptable(self.temptable)
 		

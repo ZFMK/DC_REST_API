@@ -192,7 +192,7 @@ class ProgressTracker:
 	def get_task_result(self, task_id):
 		query = """
 		SELECT
-		task_result,
+		task_result ->> '$',
 		`status`,
 		`progress_in_percent`,
 		`notification_url`,

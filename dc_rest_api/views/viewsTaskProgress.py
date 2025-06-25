@@ -84,6 +84,8 @@ class TaskProgressViews():
 		progresstracker = ProgressTracker()
 		task_result_dict = progresstracker.get_task_result(task_id)
 		
+		if 'task_result' in task_result_dict and task_result_dict['task_result']:
+			task_result_dict['task_result'] = json.loads(task_result_dict['task_result'])
 		for key in task_result_dict:
 			if isinstance(task_result_dict[key], datetime):
 				task_result_dict[key] = task_result_dict[key].strftime('%Y-%m-%d %H:%M:%S')
