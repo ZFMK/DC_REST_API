@@ -29,7 +29,7 @@ class CollectionExternalDatasourceInserter():
 			# do not add ExternalDatasourceID as it should be set by comparison
 			#{'colname': 'ExternalDatasourceID'},
 			{'colname': 'DatabaseURN'},
-			{'colname': 'ExternalDatasourceName', 'None allowed': False},
+			{'colname': 'ExternalDatasourceName'},
 			{'colname': 'ExternalDatasourceVersion'},
 			{'colname': 'ExternalDatasourceURI'},
 			{'colname': 'ExternalDatasourceInstitution'},
@@ -92,7 +92,7 @@ class CollectionExternalDatasourceInserter():
 		[ExternalDatasourceID] INT DEFAULT NULL,
 		[RowGUID] UNIQUEIDENTIFIER,
 		[DatabaseURN] NVARCHAR(500) COLLATE {1},
-		[ExternalDatasourceName] VARCHAR(255) COLLATE {1} NOT NULL,
+		[ExternalDatasourceName] VARCHAR(255) COLLATE {1},
 		[ExternalDatasourceVersion] VARCHAR(255) COLLATE {1},
 		 -- 
 		[Rights] NVARCHAR(500) COLLATE {1},

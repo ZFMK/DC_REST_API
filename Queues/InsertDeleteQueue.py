@@ -6,6 +6,8 @@ from uuid import uuid4
 import persistqueue
 #import tempfile
 import math
+import traceback
+import re
 
 QUEUE_PATH='dc_ins_del_queue' # path to the persistent storage of the queue, relative to the working directory
 
@@ -20,10 +22,14 @@ from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionSpecimenInserter import
 from dc_rest_api.lib.CRUD_Operations.Deleters.CollectionSpecimenDeleter import CollectionSpecimenDeleter
 from dc_rest_api.lib.ProgressTracker.ProgressTracker import ProgressTracker
 from dc_rest_api.lib.CRUD_Operations.Inserters.IndependentTablesInsert import IndependentTablesInsert
+
+from dc_rest_api.lib.EmailNotification.async_email import notify_developers
+
 #from Queues.singleton import singleton
 from Queues.asyncfunc import asyncfunc
 
 QUEUE_PATH='dc_ins_del_queue'
+
 
 @asyncfunc
 def insdel_queue_daemon():
@@ -135,10 +141,11 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
-			pudb.set_trace()
-			errorlog.error('Exception in InserDeleteQueue.delete_DC_data()', exc_info = e)
+			#pudb.set_trace()
+			errorlog.error('Exception in InsertDeleteQueue.delete_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
+			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
 		return
 	
 	
@@ -194,11 +201,12 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		
 		except Exception as e:
 			# TODO
-			pudb.set_trace()
+			#pudb.set_trace()
 			#self.messages.append(e[0])
-			errorlog.error('Exception in InserDeleteQueue.insert_DC_data()', exc_info = e)
+			errorlog.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
+			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
 		
 		return
 

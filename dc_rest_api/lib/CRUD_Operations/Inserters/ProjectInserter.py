@@ -3,6 +3,7 @@ import pudb
 import logging, logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
+errorlog = logging.getLogger('error')
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.JSON2TempTable import JSON2TempTable
 from dc_rest_api.lib.CRUD_Operations.Matchers.ProjectMatcher import ProjectMatcher

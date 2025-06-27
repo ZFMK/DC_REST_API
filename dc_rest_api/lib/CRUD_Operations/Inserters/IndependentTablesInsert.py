@@ -8,7 +8,7 @@ import logging
 import logging.config
 logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
-
+errorlog = logging.getLogger('error')
 
 from dc_rest_api.lib.CRUD_Operations.Inserters.ProjectInserter import ProjectInserter
 from dc_rest_api.lib.CRUD_Operations.Inserters.CollectionInserter import CollectionInserter
@@ -52,18 +52,18 @@ class IndependentTablesInsert():
 				projects = self.json_dict['Projects']
 				self.p_inserter = ProjectInserter(self.dc_db, self.uid, self.users_roles)
 				self.p_inserter.insertProjectData(projects)
-			except:
-				self.messages.extend(self.p_inserter.messages)
-				pudb.set_trace()
+			except Exception as e:
+				self.messages.extend('Exception while inserting projects')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting projects', exc_info = True)
 		
 		if 'Collections' in self.json_dict:
 			try:
 				collections = self.json_dict['Collections']
 				c_inserter = CollectionInserter(self.dc_db, self.users_roles)
 				c_inserter.insertCollectionData(collections)
-			except:
-				self.messages.extend(c_inserter.messages)
-				pudb.set_trace()
+			except Exception as e:
+				self.messages.extend('Exception while inserting collections')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting collections', exc_info = True)
 		
 		if 'CollectionEvents' in self.json_dict:
 			try:
@@ -71,7 +71,8 @@ class IndependentTablesInsert():
 				ce_inserter = CollectionEventInserter(self.dc_db)
 				ce_inserter.insertCollectionEventData(events)
 			except:
-				self.messages.extend(ce_inserter.messages)
+				self.messages.extend('Exception while inserting collection events')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting collection events', exc_info = True)
 		
 		if 'CollectionExternalDatasources' in self.json_dict:
 			try:
@@ -79,8 +80,8 @@ class IndependentTablesInsert():
 				ed_inserter = CollectionExternalDatasourceInserter(self.dc_db, self.users_roles)
 				ed_inserter.insertExternalDatasourceData(datasources)
 			except:
-				self.messages.extend(ed_inserter.messages)
-				pudb.set_trace()
+				self.messages.extend('Exception while inserting collection external datasources')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting collection external datasources', exc_info = True)
 		
 		if 'Analyses' in self.json_dict:
 			try:
@@ -88,8 +89,8 @@ class IndependentTablesInsert():
 				a_inserter = AnalysisInserter(self.dc_db)
 				a_inserter.insertAnalysisData(analyses)
 			except:
-				self.messages.extend(a_inserter.messages)
-				pudb.set_trace()
+				self.messages.extend('Exception while inserting analyses')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting analyses', exc_info = True)
 		
 		if 'Methods' in self.json_dict:
 			try:
@@ -97,8 +98,8 @@ class IndependentTablesInsert():
 				m_inserter = MethodInserter(self.dc_db)
 				m_inserter.insertMethodData(methods)
 			except:
-				self.messages.extend(m_inserter.messages)
-				pudb.set_trace()
+				self.messages.extend('Exception while inserting methods')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting methods', exc_info = True)
 		
 		# set MethodIDs in self.json_dict[Parameters] because Parameters depend on them
 		if 'Parameters' in self.json_dict:
@@ -107,14 +108,16 @@ class IndependentTablesInsert():
 					m_id = self.json_dict['Parameters'][pm_id]['@id_method']
 					self.json_dict['Parameters'][pm_id]['MethodID'] = self.json_dict['Methods'][m_id]['MethodID']
 				except:
+					self.messages.extend('Exception while inserting parameters')
+					errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting parameters, MethodID for parameter could not be found', exc_info = True)
 					self.messages.extend('MethodID for parameter {0} could not be found'.format(pm_id))
 			try:
 				parameters = self.json_dict['Parameters']
 				pm_inserter = ParameterInserter(self.dc_db)
 				pm_inserter.insertParameterData(parameters)
 			except:
-				self.messages.extend(pm_inserter.messages)
-				pudb.set_trace()
+				self.messages.extend('Exception while inserting parameters')
+				errorlog.error('Exception in InsertDeleteQueue.insert_DC_data(), inserting parameters', exc_info = True)
 		
 		return
 
@@ -172,72 +175,5 @@ class IndependentTablesInsert():
 			#data_dict['ProjectID'] = []
 			pass
 		return
-
-
-	'''
-	def setLinkedEventIDs(self, data_dicts):
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['CollectionEvent']
-				data_dict['CollectionEventID'] = self.json_dict['CollectionEvents'][ref_id]['CollectionEventID']
-			
-			except:
-				data_dict['CollectionEventID'] = None
-				pass
-		return
-
-
-	def setLinkedCollectionIDs(self, data_dicts):
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['Collection']
-				data_dict['CollectionID'] = self.json_dict['Collections'][ref_id]['CollectionID']
-			
-			except:
-				data_dict['CollectionID'] = None
-				pass
-		return
-
-
-	def setLinkedExternalDatasourceIDs(self, data_dicts):
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['CollectionExternalDatasource']
-				data_dict['ExternalDatasourceID'] = self.json_dict['CollectionExternalDatasources'][ref_id]['ExternalDatasourceID']
-			
-			except:
-				data_dict['ExternalDatasourceID'] = None
-				pass
-		return
-
-
-	def setLinkedProjectIDs(self, data_dicts):
-		for data_dict in data_dicts:
-			try:
-				project_ids = data_dict['Projects']
-				for project_id in project_ids:
-					if not 'ProjectID' in data_dict:
-						data_dict['ProjectID'] = []
-					data_dict['ProjectID'].append(self.json_dict['Projects'][project_id]['ProjectID'])
-			
-			except:
-				data_dict['ProjectID'] = []
-				pass
-		return
-
-
-	def setLinkedAnalysisIDs(self, data_dicts):
-		pudb.set_trace()
-		for data_dict in data_dicts:
-			try:
-				ref_id = data_dict['Analysis']
-				data_dict['AnalysisID'] = self.json_dict['Analyses'][ref_id]['AnaylsisID']
-			
-			except:
-				data_dict['CollectionID'] = None
-				pass
-		return
-	'''
-
 
 
