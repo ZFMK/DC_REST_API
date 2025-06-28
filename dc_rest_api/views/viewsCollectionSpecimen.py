@@ -37,7 +37,7 @@ class CollectionSpecimensViews():
 		self.userlogin = UserLogin(self.request)
 		self.credentials = self.request_params.credentials
 		
-		if len(self.request_params.credentials) > 0:
+		if self.request_params.credentials['username'] and self.request_params.credentials['password']:
 			self.userlogin.handle_credentials(self.credentials)
 			self.messages.extend(self.userlogin.get_messages())
 		

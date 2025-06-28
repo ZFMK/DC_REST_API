@@ -29,8 +29,8 @@ class UserLogin():
 		if 'logout' in credentials and credentials['logout'] == 'logout':
 			self.log_out_user()
 		
-		if 'username' in credentials and 'password' in credentials:
-			self.token = self.authenticate_user(credentials['username'], credentials['password'])
+		if credentials['username'] and credentials['password']:
+			self.token = self.authenticate_user(credentials['username'], credentials['password'], credentials['db_accronym'])
 		
 		elif 'token' in credentials and credentials['token']:
 			self.token = credentials['token']
@@ -93,14 +93,14 @@ class UserLogin():
 		return unknown_password
 
 
-	def authenticate_user(self, username, password):
+	def authenticate_user(self, username, password, db_accronym):
 		
 		loginparams = self.check_loginparams(username, password)
 		if len(loginparams) < 2:
 			return None
 		
 		security = SecurityPolicy()
-		self.token = security.validate_credentials(username = loginparams['username'], password = loginparams['password'])
+		self.token = security.validate_credentials(username = loginparams['username'], password = loginparams['password'], connector_accronym = db_accronym)
 		
 		if self.token is not None:
 			self.authenticate_by_token()

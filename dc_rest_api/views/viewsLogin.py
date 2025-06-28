@@ -28,10 +28,11 @@ class LoginViews(object):
 		self.messages = []
 
 
-	@view_config(route_name='login', accept='text/html')
-	@forbidden_view_config(accept='text/html')
+	#@view_config(route_name='login', accept='text/html')
+	#@forbidden_view_config(accept='text/html')
+	# not yet implemented
 	def login_view(self):
-		
+		# pudb.set_trace()
 		login_url = self.request.route_url('login')
 		referrer = self.request.url
 		if referrer == login_url:
@@ -42,7 +43,7 @@ class LoginViews(object):
 		
 		if 'form.submitted' in self.request.params:
 			
-			self.token = self.userlogin.authenticate_user(self.request.params.get('username', ''), self.request.params.get('password', ''))
+			self.token = self.userlogin.authenticate_user(self.request.params.get('username', ''), self.request.params.get('password', ''), self.request.params.get('db_accronym', ''))
 			
 			self.messages.extend(self.userlogin.get_messages())
 			
@@ -94,8 +95,8 @@ class LoginViews(object):
 		
 		# check if there are any authentication data given in request
 		# and if so: authenticate the user
-		if 'username' in self.credentials and 'password' in self.credentials:
-			token = self.userlogin.authenticate_user(self.credentials['username'], self.credentials['password'])
+		if self.credentials['username'] and self.credentials['password']:
+			token = self.userlogin.authenticate_user(self.credentials['username'], self.credentials['password'], self.credentials['db_accronym'])
 			roles = self.request.identity['dwb_roles']
 			project_list = self.request.identity['projects']
 			projects = [project[1] for project in project_list]

@@ -52,16 +52,18 @@ class RequestParams():
 
 	def read_credentials(self):
 		self.credentials = {}
-		credentials = ['username', 'password', 'token', 'logout']
-		for param_name in credentials: 
+		credentials = ['username', 'password', 'token', 'logout', 'db_accronym']
+		for param_name in credentials:
 			if param_name in self.params_dict and len(self.params_dict[param_name]) > 0:
-				if self.params_dict[param_name][-1] != '' and self.params_dict[param_name][-1] is not None:
+				if self.params_dict[param_name][-1]:
 					self.credentials[param_name] = self.params_dict[param_name][-1]
+			else:
+				self.credentials[param_name] = None
 		return
 
 
 	def read_single_params(self):
-		single_params = ['notification_url', ]
+		single_params = ['notification_url']
 		for param in single_params:
 			if param in self.params_dict and len(self.params_dict[param]) > 0:
 				self.params_dict[param] = self.params_dict[param][-1]
