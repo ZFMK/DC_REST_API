@@ -205,9 +205,9 @@ class IdentificationUnitInserter():
 			[DataWithholdingReason]
 		FROM [{0}] iu_temp
 		LEFT JOIN CollTaxonomicGroup_Enum tg_enum
-		ON tg_enum.code = iu_temp.[TaxonomicGroup]
+		ON tg_enum.code COLLATE {1} = iu_temp.[TaxonomicGroup] COLLATE {1}
 		ORDER BY iu_temp.[entry_num]
-		;""".format(self.temptable)
+		;""".format(self.temptable, self.collation)
 		querylog.info(query)
 		self.cur.execute(query)
 		self.con.commit()
