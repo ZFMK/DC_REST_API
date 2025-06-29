@@ -28,7 +28,6 @@ errorlog = logging.getLogger('error')
 class CollectionSpecimensViews():
 
 	def __init__(self, request):
-		pudb.set_trace()
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		

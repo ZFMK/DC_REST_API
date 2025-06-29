@@ -8,6 +8,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 
+import re
+
 from datetime import datetime
 
 from dc_rest_api.lib.decorators import asyncfunc
