@@ -89,29 +89,35 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
-		dc_db = MSSQLConnector(config = dc_params)
-		
-		ids_list_json = request_params['ids_list_json']
-		users_project_ids = request_params['users_project_ids']
-		notification_url = request_params['notification_url']
-		
-		self.progress_tracker.update_progress(task_id, 0, 'delete submission started')
-		
-		ids_list = []
-		
-		if 'RowGUIDs' in ids_list_json:
-			ids_list = [rowguid for rowguid in ids_list_json['RowGUIDs']]
-			ids_key = 'RowGUIDs'
-		elif 'CollectionSpecimenIDs' in ids_list_json:
-			ids_list = [cs_id for cs_id in ids_list_json['CollectionSpecimenIDs']]
-			ids_key = 'CollectionSpecimenIDs'
-		
-		page = 0
-		pagesize = 100
-		max_pages = math.ceil(len(ids_list) / pagesize)
-		
-		task_result = {"CS_IDs": []}
-		step_result = {"CS_IDs": []}
+		try:
+			dc_db = MSSQLConnector(config = dc_params)
+			
+			ids_list_json = request_params['ids_list_json']
+			users_project_ids = request_params['users_project_ids']
+			notification_url = request_params['notification_url']
+			
+			self.progress_tracker.update_progress(task_id, 0, 'delete submission started')
+			
+			ids_list = []
+			
+			if 'RowGUIDs' in ids_list_json:
+				ids_list = [rowguid for rowguid in ids_list_json['RowGUIDs']]
+				ids_key = 'RowGUIDs'
+			elif 'CollectionSpecimenIDs' in ids_list_json:
+				ids_list = [cs_id for cs_id in ids_list_json['CollectionSpecimenIDs']]
+				ids_key = 'CollectionSpecimenIDs'
+			
+			page = 0
+			pagesize = 100
+			max_pages = math.ceil(len(ids_list) / pagesize)
+			
+			task_result = {"CS_IDs": []}
+			step_result = {"CS_IDs": []}
+		except Exception as e:
+			errorlog.error('Exception in InsertDeleteQueue.delete_DC_data(), data preparation', exc_info = True)
+			status = 'failed'
+			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
+			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(), data preparation: \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
 		
 		try:
 			while len(ids_list) > 0:
