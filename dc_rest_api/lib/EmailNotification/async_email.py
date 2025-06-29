@@ -46,7 +46,7 @@ def send_async_email(msg):
 def notify_developers(text):
 	developers = config.get('mail_service', 'dev_group', fallback = None)
 	if developers:
-		developers = [developer_mail.strip() for developer_mail in re.split('r[,;]', self.developers)]
+		developers = [developer_mail.strip() for developer_mail in re.split('r[,;]', developers)]
 		for developer in developers:
 			msg = MIMEText(text)
 			msg['Subject'] = 'DC_REST_API Error'
