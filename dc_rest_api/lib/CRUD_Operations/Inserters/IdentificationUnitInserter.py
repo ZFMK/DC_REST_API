@@ -190,7 +190,7 @@ class IdentificationUnitInserter():
 			[CollectionSpecimenID],
 			[RowGUID],
 			[LastIdentificationCache],
-			[TaxonomicGroup],
+			ISNULL(tg_enum.[Code], 'unknown')
 			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [entry_num] ASC)) AS [DisplayOrder],
 			[OrderCache],
 			[FamilyCache],
@@ -204,6 +204,8 @@ class IdentificationUnitInserter():
 			[Notes],
 			[DataWithholdingReason]
 		FROM [{0}] iu_temp
+		LEFT JOIN CollTaxonomicGroup_Enum tg_enum
+		ON tg_enum.code = iu_temp.[TaxonomicGroup]
 		ORDER BY iu_temp.[entry_num]
 		;""".format(self.temptable)
 		querylog.info(query)
