@@ -30,10 +30,10 @@ FROM build_app AS run_app
 
 ADD set_config.py ./dc_rest_api/set_config.py
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
-#ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini config.ini && python3 ./set_config.py production.ini.template production.ini && pserve production.ini
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENTRYPOINT cd ./dc_rest_api && python3 ./set_config.py config.template.ini config.ini && python3 ./set_config.py production.ini.template production.ini && pserve production.ini
 
-#CMD /usr/bin/bash
+CMD /usr/bin/bash
 
 
 EXPOSE $PYRAMID_PORT

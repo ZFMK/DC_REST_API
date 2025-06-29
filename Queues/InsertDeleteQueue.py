@@ -89,7 +89,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
-		pudb.set_trace()
 		dc_db = MSSQLConnector(config = dc_params)
 		
 		ids_list_json = request_params['ids_list_json']
@@ -150,7 +149,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
-		pudb.set_trace()
 		# DC connection must be set here, to prevent that it is ouddated when the task starts
 		dc_db = MSSQLConnector(config = dc_params)
 		
