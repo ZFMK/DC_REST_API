@@ -141,7 +141,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.set_task_result(task_id, task_result)
 		
 		except Exception as e:
-			#pudb.set_trace()
 			errorlog.error('Exception in InsertDeleteQueue.delete_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
@@ -201,8 +200,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		
 		except Exception as e:
 			# TODO
-			#pudb.set_trace()
-			#self.messages.append(e[0])
 			errorlog.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
