@@ -23,7 +23,7 @@ smtp_server = config.get('mail_service', 'smtp_server', fallback = None)
 # for external smtp server
 smtp_sender = config.get('mail_service', 'smtp_sender', fallback = None)
 smtp_user = config.get('mail_service', 'smtp_user', fallback = None)
-smtp_passwd = config.get('mail_service', 'smtp_passwd', fallback = None)
+smtp_passwd = config.get('mail_service', 'smtp_password', fallback = None)
 smtp_port = config.get('mail_service', 'smtp_port', fallback = None)
 
 
@@ -31,9 +31,8 @@ smtp_port = config.get('mail_service', 'smtp_port', fallback = None)
 now = datetime.now()
 datestring = now.strftime("%a, %d %b %Y %I:%M:%S%p %Z")
 
-#@asyncfunc
+@asyncfunc
 def send_async_email(msg):
-	pudb.set_trace()
 	if smtp_user is not None and smtp_passwd is not None and smtp_port is not None:
 		s = smtplib.SMTP(smtp_server, smtp_port)
 		s.starttls()
@@ -46,7 +45,6 @@ def send_async_email(msg):
 
 
 def notify_developers(text):
-	pudb.set_trace()
 	developers = config.get('mail_service', 'dev_group', fallback = None)
 	if developers:
 		developers = [developer_mail.strip() for developer_mail in re.split('r[,;]', developers)]
