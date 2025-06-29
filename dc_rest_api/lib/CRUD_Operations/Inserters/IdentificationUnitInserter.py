@@ -191,7 +191,7 @@ class IdentificationUnitInserter():
 			iu_temp.[RowGUID],
 			iu_temp.[LastIdentificationCache],
 			ISNULL(tg_enum.[Code], 'unknown') AS [TaxonomicGroup],
-			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY iu_temp.[CollectionSpecimenID] ORDER BY iu_temp.[entry_num] ASC)) AS [DisplayOrder],
+			ISNULL (iu_temp.[DisplayOrder], ROW_NUMBER() OVER(PARTITION BY iu_temp.[CollectionSpecimenID] ORDER BY iu_temp.[entry_num] ASC)) AS [DisplayOrder],
 			iu_temp.[OrderCache],
 			iu_temp.[FamilyCache],
 			iu_temp.[HierarchyCache],
