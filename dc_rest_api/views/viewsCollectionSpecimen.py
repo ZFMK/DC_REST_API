@@ -28,6 +28,7 @@ errorlog = logging.getLogger('error')
 class CollectionSpecimensViews():
 
 	def __init__(self, request):
+		pudb.set_trace()
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -54,6 +55,7 @@ class CollectionSpecimensViews():
 
 	@view_config(route_name='specimens', accept='application/json', renderer="json", request_method = "POST")
 	def insertSpecimensJSON(self):
+		pudb.set_trace()
 		self.jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
