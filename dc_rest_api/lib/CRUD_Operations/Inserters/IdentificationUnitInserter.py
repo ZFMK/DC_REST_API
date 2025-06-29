@@ -187,22 +187,22 @@ class IdentificationUnitInserter():
 			[DataWithholdingReason]
 		)
 		SELECT 
-			[CollectionSpecimenID],
-			[RowGUID],
-			[LastIdentificationCache],
-			ISNULL(tg_enum.[Code], 'unknown'),
-			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [entry_num] ASC)) AS [DisplayOrder],
-			[OrderCache],
-			[FamilyCache],
-			[HierarchyCache],
-			[LifeStage],
-			[Gender],
-			[NumberOfUnits],
-			[NumberOfUnitsModifier],
-			[UnitIdentifier],
-			[UnitDescription],
-			[Notes],
-			[DataWithholdingReason]
+			iu_temp.[CollectionSpecimenID],
+			iu_temp.[RowGUID],
+			iu_temp.[LastIdentificationCache],
+			ISNULL(tg_enum.[Code], 'unknown') AS [TaxonomicGroup],
+			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY iu_temp.[CollectionSpecimenID] ORDER BY iu_temp.[entry_num] ASC)) AS [DisplayOrder],
+			iu_temp.[OrderCache],
+			iu_temp.[FamilyCache],
+			iu_temp.[HierarchyCache],
+			iu_temp.[LifeStage],
+			iu_temp.[Gender],
+			iu_temp.[NumberOfUnits],
+			iu_temp.[NumberOfUnitsModifier],
+			iu_temp.[UnitIdentifier],
+			iu_temp.[UnitDescription],
+			iu_temp.[Notes],
+			iu_temp.[DataWithholdingReason]
 		FROM [{0}] iu_temp
 		LEFT JOIN CollTaxonomicGroup_Enum tg_enum
 		ON tg_enum.code COLLATE {1} = iu_temp.[TaxonomicGroup] COLLATE {1}
