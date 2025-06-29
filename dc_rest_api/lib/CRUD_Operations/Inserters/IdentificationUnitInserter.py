@@ -190,7 +190,7 @@ class IdentificationUnitInserter():
 			[CollectionSpecimenID],
 			[RowGUID],
 			[LastIdentificationCache],
-			ISNULL(tg_enum.[Code], 'unknown')
+			ISNULL(tg_enum.[Code], 'unknown'),
 			ISNULL ([DisplayOrder], ROW_NUMBER() OVER(PARTITION BY [CollectionSpecimenID] ORDER BY [entry_num] ASC)) AS [DisplayOrder],
 			[OrderCache],
 			[FamilyCache],
