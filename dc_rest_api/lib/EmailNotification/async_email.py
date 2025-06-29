@@ -31,8 +31,9 @@ smtp_port = config.get('mail_service', 'smtp_port', fallback = None)
 now = datetime.now()
 datestring = now.strftime("%a, %d %b %Y %I:%M:%S%p %Z")
 
-@asyncfunc
+#@asyncfunc
 def send_async_email(msg):
+	pudb.set_trace()
 	if smtp_user is not None and smtp_passwd is not None and smtp_port is not None:
 		s = smtplib.SMTP(smtp_server, smtp_port)
 		s.starttls()
