@@ -29,7 +29,7 @@ class ProgressTracker:
 		self.cur = mysql_db.getCursor()
 		self.con = mysql_db.getConnection()
 		
-		#self.create_tables()
+		self.create_tables()
 		self.delete_old_tasks()
 
 
@@ -39,11 +39,13 @@ class ProgressTracker:
 		
 		# Delete was only used to change the table during development
 		
+		'''
 		query = """
 		DROP TABLE IF EXISTS task_progress
 		;"""
 		self.cur.execute(query)
 		self.con.commit()
+		'''
 		
 		query = """
 		CREATE TABLE IF NOT EXISTS task_progress (
