@@ -99,7 +99,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			self.progress_tracker.update_progress(task_id, 0, 'delete submission started')
 			
 			ids_list = []
-			
 			if 'RowGUIDs' in ids_list_json:
 				ids_list = [rowguid for rowguid in ids_list_json['RowGUIDs']]
 				ids_key = 'RowGUIDs'
@@ -118,7 +117,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(), data preparation: \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
-		
+			return
 		try:
 			while len(ids_list) > 0:
 				ids_batch = []
@@ -151,36 +150,44 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
+			return
 		return
 	
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
-		# DC connection must be set here, to prevent that it is ouddated when the task starts
-		dc_db = MSSQLConnector(config = dc_params)
-		
-		json_dicts = request_params['json_dicts']
-		uid = request_params['uid']
-		users_roles = request_params['users_roles']
-		notification_url = request_params['notification_url']
-		
-		self.progress_tracker.update_progress(task_id, 0, 'insert submission started')
-		
-		independent_tables = IndependentTablesInsert(dc_db, json_dicts, uid, users_roles)
-		independent_tables.insertIndependentTables()
-		self.progress_tracker.update_progress(task_id, 20, 'independent tables')
-		
-		specimen_dicts = json_dicts['CollectionSpecimens']
-		specimen_list = [specimen_dicts[cs_id] for cs_id in specimen_dicts]
-		independent_tables.setLinkedIDs(specimen_list)
-		
-		# add the progress value from independent tables insert
-		# TODO: refine the progress calculation from independent tables?
-		page = 0 + 20
-		pagesize = 100
-		max_pages = math.ceil(len(specimen_list) / pagesize) + 20
-		
-		task_result = {"CS_IDs": []}
-		step_result = {"CS_IDs": []}
+		try:
+			# DC connection must be set here, to prevent that it is ouddated when the task starts
+			dc_db = MSSQLConnector(config = dc_params)
+			
+			json_dicts = request_params['json_dicts']
+			uid = request_params['uid']
+			users_roles = request_params['users_roles']
+			notification_url = request_params['notification_url']
+			
+			self.progress_tracker.update_progress(task_id, 0, 'insert submission started')
+			
+			independent_tables = IndependentTablesInsert(dc_db, json_dicts, uid, users_roles)
+			independent_tables.insertIndependentTables()
+			self.progress_tracker.update_progress(task_id, 20, 'independent tables')
+			
+			specimen_dicts = json_dicts['CollectionSpecimens']
+			specimen_list = [specimen_dicts[cs_id] for cs_id in specimen_dicts]
+			independent_tables.setLinkedIDs(specimen_list)
+			
+			# add the progress value from independent tables insert
+			# TODO: refine the progress calculation from independent tables?
+			page = 0 + 20
+			pagesize = 100
+			max_pages = math.ceil(len(specimen_list) / pagesize) + 20
+			
+			task_result = {"CS_IDs": []}
+			step_result = {"CS_IDs": []}
+		except Exception as e:
+			errorlog.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
+			status = 'failed'
+			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
+			notify_developers('Exception in InsertDeleteQueue.insert_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
+			return
 		try:
 			while len(specimen_list) > 0:
 				specimen_batch = specimen_list[0:pagesize]
@@ -210,7 +217,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
-		
+			return
 		return
 
 

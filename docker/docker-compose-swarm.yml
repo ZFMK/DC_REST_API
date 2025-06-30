@@ -25,6 +25,8 @@ services:
 
   dc_rest_api:
     image: docker.leibniz-lib.de:5000/dc_rest_api
+    volumes:
+      - /var/data/dc_rest_api/logs:./dc_rest_api/logs
     ports:
       - "${PYRAMID_PORT}:${PYRAMID_PORT}"
     networks:
