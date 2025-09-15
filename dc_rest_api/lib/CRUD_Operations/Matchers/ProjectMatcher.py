@@ -39,8 +39,8 @@ class ProjectMatcher():
 		[ProjectID] INT,
 		[Project] NVARCHAR(50) COLLATE {1} NOT NULL,
 		[ProjectURI] VARCHAR(255) COLLATE {1},
-		[StableIdentifierBase] VARCHAR(500) COLLATE {1},
-		[StableIdentifierTypeID] INT,
+		 -- [StableIdentifierBase] VARCHAR(500) COLLATE {1},
+		 -- [StableIdentifierTypeID] INT,
 		[RowGUID] UNIQUEIDENTIFIER NOT NULL,
 		[project_sha] VARCHAR(64) COLLATE {1},
 		INDEX [project_sha_idx] ([project_sha])
@@ -61,16 +61,16 @@ class ProjectMatcher():
 			[ProjectID],
 			[Project],
 			[ProjectURI],
-			[StableIdentifierBase],
-			[StableIdentifierTypeID],
+			 -- [StableIdentifierBase],
+			 -- [StableIdentifierTypeID],
 			[RowGUID]
 		)
 		SELECT 
 			pp.[ProjectID],
 			pp.[Project],
 			pp.[ProjectURI],
-			pp.[StableIdentifierBase],
-			pp.[StableIdentifierTypeID],
+			 -- pp.[StableIdentifierBase],
+			 -- pp.[StableIdentifierTypeID],
 			pp.[RowGUID]
 		FROM [ProjectProxy] pp
 		INNER JOIN [{1}] p_temp ON
@@ -91,9 +91,9 @@ class ProjectMatcher():
 		UPDATE t
 		SET [project_sha] = CONVERT(VARCHAR(64), HASHBYTES('sha2_256', CONCAT(
 			[Project],
-			[ProjectURI],
-			[StableIdentifierBase],
-			[StableIdentifierTypeID]
+			[ProjectURI] -- ,
+			 -- [StableIdentifierBase],
+			 -- [StableIdentifierTypeID]
 		)), 2)
 		FROM [{0}] t
 		;""".format(tablename)
