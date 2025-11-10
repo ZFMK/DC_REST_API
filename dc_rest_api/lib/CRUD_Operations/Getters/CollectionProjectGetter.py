@@ -22,7 +22,7 @@ class CollectionProjectGetter(DataGetter):
 		while len(cp_ids) > 0:
 			cached_ids = cp_ids[:batchsize]
 			del cp_ids[:batchsize]
-			placeholders = ['(?)' for _ in cached_ids]
+			placeholders = ['(?, ?)' for _ in cached_ids]
 			values = [value for value in cached_ids]
 			
 			query = """
@@ -88,7 +88,6 @@ class CollectionProjectGetter(DataGetter):
 		query = """
 		SELECT DISTINCT
 		cp_temp.[rowguid_to_get] AS [RowGUID],
-		cp_temp.[DatabaseURN],
 		cp.[CollectionSpecimenID],
 		pp.[ProjectID],
 		pp.[Project],

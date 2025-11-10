@@ -10,6 +10,8 @@ from dc_rest_api.lib.Authentication.UserLogin import UserLogin
 from dc_rest_api.views.RequestParams import RequestParams
 from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
 from dc_rest_api.lib.CRUD_Operations.Inserters.ProjectInserter import ProjectInserter
+from dc_rest_api.lib.CRUD_Operations.Getters.ProjectGetter import ProjectGetter
+
 
 import pudb
 import json
@@ -18,7 +20,6 @@ import json
 class ProjectsViews():
 
 	def __init__(self, request):
-		
 		self.request = request
 		self.request_params = RequestParams(self.request)
 		
@@ -39,7 +40,7 @@ class ProjectsViews():
 
 
 	@view_config(route_name='projects', accept='application/json', renderer="json", request_method = "POST")
-	def insertSpecimensJSON(self):
+	def insertProjectsJSON(self):
 		jsonresponse = {
 			'title': 'API for requests on DiversityCollection database',
 			'messages': self.messages
@@ -76,6 +77,47 @@ class ProjectsViews():
 			#'aggregations': aggregations,
 			'messages': self.messages,
 			'Projects': p_data
+		}
+		
+		return jsonresponse
+
+
+	@view_config(route_name='projects', accept='application/json', renderer="json", request_method = "GET")
+	def getProjectsJSON(self):
+		jsonresponse = {
+			'title': 'API for requests on DiversityCollection database',
+			'messages': self.messages
+		}
+		
+		if not self.uid:
+			self.messages.append('You must be logged in to use the DC REST API. Please send your credentials or a valid session token with your request')
+			return jsonresponse
+		
+		security = SecurityPolicy()
+		self.dc_db = security.get_mssql_connector(self.request)
+		if self.dc_db is None:
+			self.messages.append('Can not connect to DiversityCollection server. Please check your credentials')
+			return jsonresponse
+		
+		projects_json = []
+		project_getter = ProjectGetter(self.dc_db)
+		
+		if 'ProjectIDs' in self.request_params.json_body:
+			project_ids = self.request_params.json_body['ProjectIDs']
+			projects_json = project_getter.getByPrimaryKeys(project_ids)
+			pass
+		
+		elif 'Projects' in self.request_params.json_body:
+			project_names = self.request_params.json_body['Projects']
+			projects_json = project_getter.getByProjectNames(project_names)
+			pass
+		
+		
+		jsonresponse = {
+			'title': 'DC REST API get Project(s)',
+			#'aggregations': aggregations,
+			'messages': self.messages,
+			'Projects': projects_json
 		}
 		
 		return jsonresponse

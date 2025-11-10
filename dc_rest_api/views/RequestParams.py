@@ -28,7 +28,7 @@ class RequestParams():
 			test = str(self.request.content_type)
 			return
 		try:
-				
+			
 			if self.request.json_body:
 				
 				self.json_body = self.request.json_body
