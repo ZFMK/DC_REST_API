@@ -66,7 +66,7 @@ class ProjectsViews():
 			p_inserter.insertProjectData(projects)
 		
 		else:
-			self.messages.append('Error: no "Projects" array in json data')
+			self.messages.append('Error: "Projects"-array missing in json data')
 		
 		referenced_json.insertFlattenedSubdicts()
 		
