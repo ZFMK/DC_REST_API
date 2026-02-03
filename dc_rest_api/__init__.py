@@ -13,9 +13,15 @@ from dwb_authentication.setup_session_db.create_database import SessionDBSetup
 from Queues.InsertDeleteQueue import insdel_queue_daemon
 insdel_queue_daemon()
 
+import logging, logging.config
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('dc_api')
+
 def main(global_config, **settings):
 	session_db = SessionDBSetup()
 	del session_db
+	
+	logger.info('started session_db')
 	
 	config = Configurator(settings=settings)
 	
