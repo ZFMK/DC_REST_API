@@ -89,6 +89,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
+		pudb.set_trace()
 		try:
 			dc_db = MSSQLConnector(config = dc_params)
 			
@@ -102,9 +103,11 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			if 'RowGUIDs' in ids_list_json:
 				ids_list = [rowguid for rowguid in ids_list_json['RowGUIDs']]
 				ids_key = 'RowGUIDs'
+				logger.info('Deleting by RowGUIDs')
 			elif 'CollectionSpecimenIDs' in ids_list_json:
 				ids_list = [cs_id for cs_id in ids_list_json['CollectionSpecimenIDs']]
 				ids_key = 'CollectionSpecimenIDs'
+				logger.info('Deleting by CollectionSpecimenIDs')
 			
 			page = 0
 			pagesize = 100
@@ -136,6 +139,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 				step_result['CS_IDs'] = deleted_specimen_ids['CS_IDs']
 				task_result['CS_IDs'].extend(deleted_specimen_ids['CS_IDs'])
 				
+				
 				page = page + 1
 				percent_done = math.floor(page / max_pages * 100) 
 				self.progress_tracker.update_progress(task_id, percent_done, status = 'deleting specimens', task_result = task_result, step_result = step_result, message = 'please wait for task to complete')
@@ -155,6 +159,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
+		pudb.set_trace()
 		try:
 			# DC connection must be set here, to prevent that it is ouddated when the task starts
 			dc_db = MSSQLConnector(config = dc_params)
@@ -192,7 +197,8 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			while len(specimen_list) > 0:
 				specimen_batch = specimen_list[0:pagesize]
 				del specimen_list[0:pagesize]
-			
+				
+				logger.info('inserting specimens')
 				specimen_inserter = CollectionSpecimenInserter(dc_db, uid, users_roles)
 				specimen_inserter.insertSpecimenData(specimen_batch, task_id)
 				

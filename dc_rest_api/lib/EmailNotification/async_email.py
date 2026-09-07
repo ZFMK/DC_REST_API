@@ -19,6 +19,11 @@ from configparser import ConfigParser
 config = ConfigParser(allow_no_value=True)
 config.read('./config.ini')
 
+import logging, logging.config
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('dc_api')
+errorlog = logging.getLogger('error')
+
 smtp_server = config.get('mail_service', 'smtp_server', fallback = None)
 # for external smtp server
 smtp_sender = config.get('mail_service', 'smtp_sender', fallback = None)
@@ -45,47 +50,56 @@ def send_async_email(msg):
 
 
 def notify_developers(text):
-	developers = config.get('mail_service', 'dev_group', fallback = None)
-	if developers:
-		developers = [developer_mail.strip() for developer_mail in re.split('r[,;]', developers)]
-		for developer in developers:
-			msg = MIMEText(text)
-			msg['Subject'] = 'DC_REST_API Error'
-			msg['From'] = smtp_sender
-			msg['To'] = developer
-			msg['Date'] = datestring
-			if smtp_server is not None:
-				send_async_email(msg)
+	try:
+		developers = config.get('mail_service', 'dev_group', fallback = None)
+		if developers:
+			developers = [developer_mail.strip() for developer_mail in re.split('r[,;]', developers)]
+			for developer in developers:
+				msg = MIMEText(text)
+				msg['Subject'] = 'DC_REST_API Error'
+				msg['From'] = smtp_sender
+				msg['To'] = developer
+				msg['Date'] = datestring
+				if smtp_server is not None:
+					send_async_email(msg)
+	except Exception as e:
+		errorlog.error('async_email.notify_developers() failed', exc_info = True)
 	return
 
 
 def send_mail(mail_to, header, text):
-	msg = MIMEText(text)
-	msg['Subject'] = header
-	msg['From'] = smtp_sender
-	msg['To'] = mail_to
-	msg['Date'] = datestring
-	if smtp_server is not None:
-		send_async_email(msg)
+	try:
+		msg = MIMEText(text)
+		msg['Subject'] = header
+		msg['From'] = smtp_sender
+		msg['To'] = mail_to
+		msg['Date'] = datestring
+		if smtp_server is not None:
+			send_async_email(msg)
+	except Exception as e:
+		errorlog.error('async_email.send_mail() failed', exc_info = True)
 	return
 
 
 def send_mail_with_attachment(mail_to, header, text, file, desired_file_name):
-	msg = MIMEMultipart()
-	msg['Subject'] = header
-	msg['From'] = smtp_sender
-	msg['To'] = mail_to
-	msg['Date'] = datestring
-	
-	msg.attach(MIMEText(text))
-	
-	file_base_name = basename(file)
-	with open(file, 'rb') as file_to_attach:
-		attachment = MIMEApplication(file_to_attach.read(), Name=file_base_name)
-	#attachment['Content-Disposition'] = 'attachment; filename="{0}"'.format(file_base_name)
-	attachment['Content-Disposition'] = 'attachment; filename="{0}"'.format(desired_file_name)
-	
-	msg.attach(attachment)
-	if smtp_server is not None:
-		send_async_email(msg)
+	try:
+		msg = MIMEMultipart()
+		msg['Subject'] = header
+		msg['From'] = smtp_sender
+		msg['To'] = mail_to
+		msg['Date'] = datestring
+		
+		msg.attach(MIMEText(text))
+		
+		file_base_name = basename(file)
+		with open(file, 'rb') as file_to_attach:
+			attachment = MIMEApplication(file_to_attach.read(), Name=file_base_name)
+		#attachment['Content-Disposition'] = 'attachment; filename="{0}"'.format(file_base_name)
+		attachment['Content-Disposition'] = 'attachment; filename="{0}"'.format(desired_file_name)
+		
+		msg.attach(attachment)
+		if smtp_server is not None:
+			send_async_email(msg)
+	except Exception as e:
+		errorlog.error('async_email.send_mail_with_attachment() failed', exc_info = True)
 	return
