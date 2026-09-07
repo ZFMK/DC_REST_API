@@ -147,6 +147,8 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			status = 'complete'
 			self.progress_tracker.update_progress(task_id, percent_done, status, message = None)
 			self.progress_tracker.set_task_result(task_id, task_result)
+			notify_developers('The following entries have been deleted from database {0}: \n{1}'.format(dc_params['accronym'], '"' + '",\n"'.join([str(ids['CollectionSpecimenID']) for ids in task_result['CS_IDs']]) + '"'))
+			logger.info('The following entries have been deleted from database {0}: \n{1}'.format(dc_params['accronym'], '"' + '", "'.join([str(ids['CollectionSpecimenID']) for ids in task_result['CS_IDs']]) + '"'))
 		
 		except Exception as e:
 			errorlog.error('Exception in InsertDeleteQueue.delete_DC_data()', exc_info = True)
@@ -214,6 +216,8 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			status = 'complete'
 			self.progress_tracker.update_progress(task_id, percent_done, status, message = None)
 			self.progress_tracker.set_task_result(task_id, task_result)
+			notify_developers('The following entries have been inserted into database {0}: \n{1}'.format(dc_params['accronym'],'"' + '",\n"'.join([str(ids['CollectionSpecimenID']) for ids in task_result['CS_IDs']]) + '"'))
+			logger.info('The following entries have been inserted into database {0}: \n{1}'.format(dc_params['accronym'],'"' + '", "'.join([str(ids['CollectionSpecimenID']) for ids in task_result['CS_IDs']]) + '"'))
 		
 		except Exception as e:
 			# TODO

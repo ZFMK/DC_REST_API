@@ -56,7 +56,7 @@ def notify_developers(text):
 			developers = [developer_mail.strip() for developer_mail in re.split('r[,;]', developers)]
 			for developer in developers:
 				msg = MIMEText(text)
-				msg['Subject'] = 'DC_REST_API Error'
+				msg['Subject'] = 'DC_REST_API'
 				msg['From'] = smtp_sender
 				msg['To'] = developer
 				msg['Date'] = datestring
