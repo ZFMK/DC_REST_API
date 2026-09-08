@@ -6,9 +6,6 @@ logging.config.fileConfig('logging.conf')
 querylog = logging.getLogger('query')
 
 
-from dc_rest_api.lib.CRUD_Operations.ReferencedJSON import ReferencedJSON
-
-
 class JSON2TempTable():
 
 	def __init__(self, dc_db, schema):
