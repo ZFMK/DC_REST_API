@@ -20,7 +20,6 @@ class CollectionEventInserter():
 		
 		self.schema = [
 			{'colname': '@id', 'None allowed': False},
-			#{'colname': 'CollectionSpecimenID'},
 			# do not add CollectionEventID as it should be set by comparison
 			#{'colname': 'CollectionEventID'},
 			{'colname': 'DatabaseURN'},
@@ -47,13 +46,12 @@ class CollectionEventInserter():
 			# {'colname': 'ReferenceDetails'},
 			{'colname': 'Notes'},
 			{'colname': 'CountryCache'},
-			#################
+			# structure for named area
 			{'colname': 'Country'},
 			{'colname': 'State'},
 			{'colname': 'StateDistrict'},
 			{'colname': 'Municipality'},
 			{'colname': 'StreetHouseNumber'},
-			#################
 			#  lsID = 4
 			{'colname': 'Altitude'},
 			{'colname': 'Altitude_Accuracy'},
