@@ -26,7 +26,7 @@ class MethodInserter():
 			{'colname': 'MethodURI'},
 			{'colname': 'Notes'},
 			{'colname': 'OnlyHierarchy', 'default': 0},
-			{'colname': 'ForCollectionEvent', 'default': 0},
+			{'colname': 'ForCollectionEvent', 'default': None},
 		]
 		
 		self.json2temp = JSON2TempTable(dc_db, self.schema)

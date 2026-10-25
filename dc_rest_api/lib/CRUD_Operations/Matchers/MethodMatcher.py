@@ -65,6 +65,7 @@ class MethodMatcher():
 		INSERT INTO [{0}] (
 			[MethodID],
 			[DisplayText],
+			[Description],
 			[Description_sha],
 			[MethodURI],
 			[OnlyHierarchy],
@@ -74,6 +75,7 @@ class MethodMatcher():
 		SELECT
 			m.[MethodID],
 			m.[DisplayText],
+			m.[Description],
 			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', m.[Description]), 2) AS [Description_sha],
 			m.[MethodURI],
 			m.[OnlyHierarchy],
