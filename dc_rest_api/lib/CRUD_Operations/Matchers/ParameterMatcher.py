@@ -66,8 +66,10 @@ class ParameterMatcher():
 			[ParameterID],
 			[MethodID],
 			[DisplayText],
+			[Description],
 			[Description_sha],
 			[ParameterURI],
+			[DefaultValue],
 			[DefaultValue_sha],
 			[RowGUID]
 		)
@@ -75,9 +77,11 @@ class ParameterMatcher():
 			p.[ParameterID],
 			p.[MethodID],
 			p.[DisplayText],
+			p.[Description],
 			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', p.[Description]), 2) AS [Description_sha],
 			p.[ParameterURI],
-			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', p.[DefaultValue]), 2) AS [DefaultValue_sha],
+			IIF(p.[DefaultValue] = '', NULL, p.[DefaultValue]) AS [DefaultValue],
+			CONVERT(VARCHAR(64), HASHBYTES('sha2_256', IIF(p.[DefaultValue] = '', NULL, p.[DefaultValue])), 2) AS [DefaultValue_sha],
 			p.[RowGUID]
 		FROM [Parameter] p
 		INNER JOIN [{1}] p_temp

@@ -65,6 +65,13 @@ class JSON2TempTable():
 					# just let the json_dict entry as it is
 					pass
 				
+				# in some cases (see ParameterMatcher) an empty string is compared to NULL
+				# this must be handled on both sites, in the Matcher, where an IIF clause replaces '' with NULL
+				# and here, where a '' is replaced with None
+				if 'empty_to_NULL' in entry and entry['empty_to_NULL'] is True:
+					if entry['colname'] == '':
+						json_dict[entry['colname']] = None
+				
 				if entry['colname'] != 'entry_num' and entry['colname'] != '@id' and json_dict[entry['colname']] is not None:
 					values_not_none += 1
 			

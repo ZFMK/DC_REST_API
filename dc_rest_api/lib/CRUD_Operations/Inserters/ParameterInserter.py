@@ -27,7 +27,10 @@ class ParameterInserter():
 			{'colname': 'Description'},
 			{'colname': 'Description_sha', 'compute sha of': 'Description'},
 			{'colname': 'ParameterURI'},
-			{'colname': 'DefaultValue'},
+			# in some cases (see ParameterMatcher) an empty string is compared to NULL
+			# this must be handled on both sites, in the Matcher, where an IIF clause replaces '' with NULL
+			# and in JSON2TempTable, where a '' is replaced with None
+			{'colname': 'DefaultValue', 'empty_to_NULL': True},
 			{'colname': 'DefaultValue_sha', 'compute sha of': 'DefaultValue'},
 			{'colname': 'Notes'},
 		]
@@ -36,7 +39,6 @@ class ParameterInserter():
 
 
 	def insertParameterData(self, json_dicts = []):
-		
 		self.p_dicts = json_dicts
 		self.__createParameterTempTable()
 		
