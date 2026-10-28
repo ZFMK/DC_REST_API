@@ -32,7 +32,6 @@ class LoginViews(object):
 	#@forbidden_view_config(accept='text/html')
 	# not yet implemented
 	def login_view(self):
-		# pudb.set_trace()
 		login_url = self.request.route_url('login')
 		referrer = self.request.url
 		if referrer == login_url:
@@ -81,7 +80,6 @@ class LoginViews(object):
 
 	@view_config(route_name='login', accept='application/json', renderer='json')
 	def login_view_json(self):
-		
 		self.userlogin = UserLogin(self.request)
 		self.messages = []
 		

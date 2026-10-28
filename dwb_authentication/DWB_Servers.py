@@ -5,14 +5,13 @@ from dwb_authentication.mysql_connect import mysql_connect
 
 class DWB_Servers():
 	def __init__(self):
-		
-		self.con, self.cur = mysql_connect()
 		self.set_available_servers()
 
 
 	def set_available_servers(self):
 		self.servers = []
 		
+		self.con, self.cur = mysql_connect()
 		query = """
 		SELECT `db_connector_id`, `accronym`, `server`, `port`, `database`, `driver`, `trust_certificate`, `trusted_connection`, `encrypt`, `collation`
 		FROM `mssql_connectors`
@@ -34,6 +33,7 @@ class DWB_Servers():
 			server['encrypt'] = row[8]
 			server['collation'] = row[9]
 			self.servers.append(server)
+		self.con.close()
 		return
 
 

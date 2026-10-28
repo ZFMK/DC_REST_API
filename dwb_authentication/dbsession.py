@@ -40,13 +40,12 @@ class DBSession():
 		self.encryptor = Encryptor()
 		self.expiration_interval = config.get('session_db', 'expiration_time', fallback = 20)
 		
-		self.con, self.cur = mysql_connect()
-		
 		# delete all expired sessions, regardless to whom they belong
 		self.delete_old_sessions()
 
 
 	def __check_hashed_token_exists(self, hashed_token):
+		self.con, self.cur = mysql_connect()
 		query = """
 		SELECT s.`hashed_token`
 		FROM sessions s
@@ -54,6 +53,8 @@ class DBSession():
 		"""
 		self.cur.execute(query, [hashed_token])
 		row = self.cur.fetchone()
+		self.con.close()
+		
 		if row is not None:
 			return True
 		else:
@@ -63,6 +64,7 @@ class DBSession():
 	def get_mssql_connectionparams_by_token(self, token):
 		hashed_token = self.encryptor.hash_token(token)
 		
+		self.con, self.cur = mysql_connect()
 		conparams = {}
 		query = """
 		SELECT mc.`db_connector_id`, mc.`accronym`, mc.`server`, mc.`port`, mc.`database`,mc. `driver`, 
@@ -77,6 +79,7 @@ class DBSession():
                 
 		self.cur.execute(query, [hashed_token])
 		row = self.cur.fetchone()
+		self.con.close()
 		
 		if row is not None:
 			dwb_conparams = {
@@ -124,6 +127,7 @@ class DBSession():
 			hashed_token = self.encryptor.hash_token(token)
 			hashed_token_exists = self.__check_hashed_token_exists(hashed_token)
 		
+		self.con, self.cur = mysql_connect()
 		query = """
 		INSERT INTO `sessions`
 		(hashed_token, encrypted_passwd, `username`, db_connector_id, expiration_time)
@@ -132,6 +136,8 @@ class DBSession():
 		
 		self.cur.execute(query, [hashed_token, encrypted_pw, username, dwb_con['db_connector_id']])
 		self.con.commit()
+		self.con.close()
+		
 		self.__set_session_id(hashed_token)
 		
 		roles = dwb_account.server_roles
@@ -144,6 +150,7 @@ class DBSession():
 
 
 	def __set_session_id(self, hashed_token):
+		self.con, self.cur = mysql_connect()
 		query = """
 		SELECT session_id
 		FROM `sessions`
@@ -151,6 +158,8 @@ class DBSession():
 		;"""
 		self.cur.execute(query, [hashed_token])
 		row = self.cur.fetchone()
+		self.con.close()
+		
 		if row is not None:
 			self.session_id = row[0]
 		else:
@@ -159,6 +168,7 @@ class DBSession():
 
 	def insert_dwb_roles(self, roles = []):
 		if len(roles)> 0:
+			self.con, self.cur = mysql_connect()
 			values = []
 			placeholders = []
 			for role in roles:
@@ -173,11 +183,13 @@ class DBSession():
 			
 			self.cur.execute(query, values)
 			self.con.commit()
+			self.con.close()
 		return
 
 
 	def insert_projects(self, projects = []):
 		if len(projects)> 0:
+			self.con, self.cur = mysql_connect()
 			values = []
 			placeholders = []
 			for project in projects:
@@ -192,6 +204,7 @@ class DBSession():
 			
 			self.cur.execute(query, values)
 			self.con.commit()
+			self.con.close()
 		return
 
 
@@ -200,6 +213,7 @@ class DBSession():
 		roles = []
 		projects = []
 		
+		self.con, self.cur = mysql_connect()
 		query = """
 		SELECT s.`username`, r.`users_dwb_role`, p.`users_dwb_project_id`, p.`project_name`
 		FROM `sessions` s
@@ -211,6 +225,7 @@ class DBSession():
 		"""
 		self.cur.execute(query, hashed_token)
 		rows = self.cur.fetchall()
+		self.con.close()
 		
 		projectsdict = {}
 		
@@ -228,6 +243,7 @@ class DBSession():
 
 
 	def update_expiration_time(self, hashed_token):
+		self.con, self.cur = mysql_connect()
 		query = """
 		UPDATE sessions
 		SET expiration_time = NOW() + INTERVAL {0} MINUTE
@@ -235,6 +251,7 @@ class DBSession():
 		;""".format(self.expiration_interval)
 		self.cur.execute(query, [hashed_token])
 		self.con.commit()
+		self.con.close()
 
 
 	def get_session_id_by_token(self, token):
@@ -242,6 +259,7 @@ class DBSession():
 			return
 		hashed_token = self.encryptor.hash_token(token)
 		
+		self.con, self.cur = mysql_connect()
 		query = """
 		SELECT s.`session_id`
 		FROM `sessions` s
@@ -249,6 +267,8 @@ class DBSession():
 		;"""
 		self.cur.execute(query, hashed_token)
 		row = self.cur.fetchone()
+		self.con.close()
+		
 		if row is not None:
 			return row[0]
 		else:
@@ -256,7 +276,7 @@ class DBSession():
 
 
 	def __delete_sessions(self):
-		
+		self.con, self.cur = mysql_connect()
 		query = """
 		DELETE r 
 		FROM `dwb_roles` r
@@ -289,27 +309,23 @@ class DBSession():
 		;"""
 		self.cur.execute(query)
 		self.con.commit()
-		
+		self.con.close()
 		return
 
 
 	def delete_old_sessions(self):
+		self.con, self.cur = mysql_connect()
 		query = """
-		DROP TEMPORARY 
-		TABLE IF EXISTS sessions_to_delete
-		;"""
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		CREATE TEMPORARY 
-		TABLE sessions_to_delete
-		SELECT `hashed_token`
+		INSERT INTO sessions_to_delete
+		SELECT s.`hashed_token`
 		FROM `sessions` s 
-		WHERE s.expiration_time < NOW()
+		LEFT JOIN sessions_to_delete sd
+		ON sd.hashed_token = s.hashed_token
+		WHERE s.expiration_time < NOW() AND sd.hashed_token IS NULL
 		;"""
 		self.cur.execute(query)
 		self.con.commit()
+		self.con.close()
 		
 		self.__delete_sessions()
 		return
@@ -320,23 +336,18 @@ class DBSession():
 			return
 		hashed_token = self.encryptor.hash_token(token)
 		
+		self.con, self.cur = mysql_connect()
 		query = """
-		DROP TEMPORARY 
-		TABLE IF EXISTS sessions_to_delete
-		;"""
-		
-		self.cur.execute(query)
-		self.con.commit()
-		
-		query = """
-		CREATE TEMPORARY 
-		TABLE sessions_to_delete
-		SELECT `hashed_token`
-		FROM `sessions` s 
-		WHERE s.hashed_token = %s
+		INSERT INTO sessions_to_delete
+		SELECT s.`hashed_token`
+		FROM `sessions` s
+		LEFT JOIN sessions_to_delete sd
+		ON sd.hashed_token = s.hashed_token
+		WHERE s.hashed_token = %s AND sd.hashed_token IS NULL
 		;"""
 		self.cur.execute(query, [hashed_token])
 		self.con.commit()
+		self.con.close()
 		
 		self.__delete_sessions()
 		return
@@ -347,6 +358,7 @@ class DBSession():
 			return [None, None]
 		hashed_token = self.encryptor.hash_token(token)
 		
+		self.con, self.cur = mysql_connect()
 		query = """
 		SELECT s.username, s.encrypted_passwd
 		FROM sessions s
@@ -354,6 +366,8 @@ class DBSession():
 		"""
 		self.cur.execute(query, [hashed_token])
 		row = self.cur.fetchone()
+		self.con.close()
+		
 		if row is None:
 			return [None, None]
 		

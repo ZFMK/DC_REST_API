@@ -52,6 +52,13 @@ class SessionDBSetup():
 		
 		self.cur.execute(query)
 		self.con.commit()
+		
+		query = """
+		DROP TABLE IF EXISTS sessions_to_delete
+		;"""
+		
+		self.cur.execute(query)
+		self.con.commit()
 
 
 	def create_tables(self):
@@ -119,6 +126,16 @@ class SessionDBSetup():
 			`session_id` INT NOT NULL,
 			PRIMARY KEY(`session_id`, `users_dwb_project_id`),
 			FOREIGN KEY(`session_id`) REFERENCES `sessions` (`session_id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		;
+		"""
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		CREATE TABLE `sessions_to_delete` (
+			`hashed_token` varchar(255) NOT NULL,
+			PRIMARY KEY(`hashed_token`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 		;
 		"""
