@@ -1,7 +1,7 @@
 import pudb
 import json
 
-from DBConnectors.MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import db_connect
 
 import logging
 
@@ -18,16 +18,14 @@ config.read('./config.ini')
 class ProgressTracker:
 	def __init__(self):
 		
-		host = config.get('session_db', 'host')
-		port = int(config.get('session_db', 'port'))
-		user = config.get('session_db', 'username')
-		passwd = config.get('session_db', 'password')
-		db = config.get('session_db', 'database')
-		charset = config.get('session_db', 'charset')
-		
-		mysql_db = MySQLConnector(host = host, user = user, passwd = passwd, db = db, port = port, charset = charset)
-		self.cur = mysql_db.getCursor()
-		self.con = mysql_db.getConnection()
+		self.db_config = {
+			'host': config.get('session_db', 'host'),
+			'port': int(config.get('session_db', 'port')),
+			'user': config.get('session_db', 'username'),
+			'passwd': config.get('session_db', 'password'),
+			'db': config.get('session_db', 'database'),
+			'charset': config.get('session_db', 'charset'),
+		}
 		
 		self.create_tables()
 		self.delete_old_tasks()
@@ -38,6 +36,7 @@ class ProgressTracker:
 		# should be put into an extra file?!
 		
 		# Delete was only used to change the table during development
+		self.con, self.cur = db_connect(config = self.db_config)
 		
 		'''
 		query = """
@@ -67,12 +66,13 @@ class ProgressTracker:
 		log_query.info(query)
 		self.cur.execute(query)
 		self.con.commit()
+		self.con.close()
 		return
 
 
 	def delete_old_tasks(self):
 		# delete all tasks that are older than one month
-		
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		DELETE FROM task_progress
 		WHERE date_submitted < DATE_ADD(NOW(), INTERVAL -1 MONTH) 
@@ -80,10 +80,12 @@ class ProgressTracker:
 		log_query.info(query)
 		self.cur.execute(query)
 		self.con.commit()
+		self.con.close()
 		return
 
 
 	def get_progress(self, task_id):
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		SELECT progress_in_percent,
 		`status`,
@@ -95,6 +97,8 @@ class ProgressTracker:
 		log_query.info(query)
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
+		self.con.close()
+		
 		if row is not None:
 			return {
 				'progress': row[0],
@@ -106,6 +110,7 @@ class ProgressTracker:
 
 
 	def get_progress_with_results(self, task_id):
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		SELECT progress_in_percent,
 		`status`,
@@ -116,9 +121,11 @@ class ProgressTracker:
 		FROM task_progress 
 		WHERE task_id = %s
 		;"""
+		log_query.info(query)
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
-		log_query.info(query)
+		self.con.close()
+		
 		if row is not None:
 			task_result = None
 			step_result = None
@@ -147,6 +154,7 @@ class ProgressTracker:
 		if step_result is not None:
 			step_result_string = self.convert_to_json_string(step_result)
 		
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		UPDATE task_progress tp
 		SET tp.progress_in_percent = %s,
@@ -159,10 +167,12 @@ class ProgressTracker:
 		log_query.info(query)
 		self.cur.execute(query, [progress_in_percent, status, step_result_string, task_result_string, message, task_id])
 		self.con.commit()
+		self.con.close()
 		return
 
 
 	def insert_new_task(self, task_id, task_name, progress_in_percent, status, notification_url = None):
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		INSERT INTO task_progress (
 			task_id, task_name, progress_in_percent, `status`, `notification_url`, date_submitted, date_completed, message, step_result, task_result
@@ -174,6 +184,7 @@ class ProgressTracker:
 		log_query.info(query)
 		self.cur.execute(query, [task_id, task_name, progress_in_percent, status, notification_url])
 		self.con.commit()
+		self.con.close()
 		return
 
 
@@ -181,7 +192,7 @@ class ProgressTracker:
 		task_result_string = None
 		if task_result is not None:
 			task_result_string = self.convert_to_json_string(task_result)
-		
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		UPDATE task_progress
 		SET 
@@ -193,12 +204,14 @@ class ProgressTracker:
 		;"""
 		log_query.info(query)
 		self.cur.execute(query, [task_result_string, task_id])
-		row = self.cur.fetchone()
+		self.con.commit()
+		self.con.close()
 		
 		return
 
 
 	def get_task_result(self, task_id):
+		self.con, self.cur = db_connect(config = self.db_config)
 		query = """
 		SELECT
 		task_result ->> '$',
@@ -215,6 +228,8 @@ class ProgressTracker:
 		log_query.info(query)
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
+		self.con.close()
+		
 		if row is not None:
 			if row[0] is not None:
 				result = json.loads(row[0])

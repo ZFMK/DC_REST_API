@@ -9,6 +9,14 @@ log_error = logging.getLogger('error')
 log_query = logging.getLogger('sql_queries')
 
 
+def db_connect(config = None, host = None, user = None, passwd = None, db = None, charset = None, port = None):
+	dbcon = MySQLConnector(config, host, user, passwd, db, charset, port)
+	con = dbcon.getConnection()
+	cur = dbcon.getCursor()
+	return (con, cur)
+
+
+
 class MySQLConnector():
 	def __init__(self, config = None, host = None, user = None, passwd = None, db = None, charset = None, port = None):
 		'''

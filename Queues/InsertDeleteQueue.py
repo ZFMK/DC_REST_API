@@ -51,7 +51,6 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	def __init__(self):
 		queue_path = QUEUE_PATH
 		persistqueue.SQLiteQueue.__init__(self, queue_path, auto_commit = True)
-		self.progress_tracker = ProgressTracker()
 		self.messages = []
 		self.daemon_is_running = False
 		pass
@@ -77,6 +76,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		logger.info('submit_to_delete_queue')
 		task_id = str(uuid4().hex)
 		self.put([dc_params, request_params, task_id, 'delete'])
+		self.progress_tracker = ProgressTracker()
 		self.progress_tracker.insert_new_task(task_id, 'Delete CollectionSpecimens', 0, 'waiting for start') 
 		return task_id
 
@@ -85,6 +85,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		logger.info('submit_to_insert_queue')
 		task_id = str(uuid4().hex)
 		self.put([dc_params, request_params, task_id, 'insert'])
+		self.progress_tracker = ProgressTracker()
 		self.progress_tracker.insert_new_task(task_id, 'Insert CollectionSpecimens', 0, 'waiting for start') 
 		return task_id
 
@@ -92,6 +93,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
 		logger.info('starting delete_DC_data')
+		self.progress_tracker = ProgressTracker()
 		try:
 			dc_db = MSSQLConnector(config = dc_params)
 			
@@ -164,6 +166,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
 		logger.info('starting insert_DC_data')
+		self.progress_tracker = ProgressTracker()
 		try:
 			# DC connection must be set here, to prevent that it is ouddated when the task starts
 			dc_db = MSSQLConnector(config = dc_params)
