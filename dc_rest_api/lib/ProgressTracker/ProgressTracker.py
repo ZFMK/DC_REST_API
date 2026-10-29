@@ -1,14 +1,14 @@
 import pudb
 import json
 
-import logging
-import logging.config
-
 from DBConnectors.MySQLConnector import MySQLConnector
+
+import logging
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('dc_api')
-logger_query = logging.getLogger('query')
+log_query = logging.getLogger('query')
+log_error = logging.getLogger('error')
 
 from configparser import ConfigParser
 config = ConfigParser(allow_no_value=True)
@@ -64,6 +64,7 @@ class ProgressTracker:
 			KEY (`status`)
 		)
 		;"""
+		log_query.info(query)
 		self.cur.execute(query)
 		self.con.commit()
 		return
@@ -76,6 +77,7 @@ class ProgressTracker:
 		DELETE FROM task_progress
 		WHERE date_submitted < DATE_ADD(NOW(), INTERVAL -1 MONTH) 
 		;"""
+		log_query.info(query)
 		self.cur.execute(query)
 		self.con.commit()
 		return
@@ -90,6 +92,7 @@ class ProgressTracker:
 		FROM task_progress 
 		WHERE task_id = %s
 		;"""
+		log_query.info(query)
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
 		if row is not None:
@@ -115,6 +118,7 @@ class ProgressTracker:
 		;"""
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
+		log_query.info(query)
 		if row is not None:
 			task_result = None
 			step_result = None
@@ -152,6 +156,7 @@ class ProgressTracker:
 		tp.message = %s
 		WHERE task_id = %s
 		;"""
+		log_query.info(query)
 		self.cur.execute(query, [progress_in_percent, status, step_result_string, task_result_string, message, task_id])
 		self.con.commit()
 		return
@@ -166,6 +171,7 @@ class ProgressTracker:
 			%s, %s, %s, %s, %s, NOW(), NULL, NULL, NULL, NULL
 		)
 		;"""
+		log_query.info(query)
 		self.cur.execute(query, [task_id, task_name, progress_in_percent, status, notification_url])
 		self.con.commit()
 		return
@@ -185,6 +191,7 @@ class ProgressTracker:
 			status = 'complete'
 		WHERE Task_id = %s
 		;"""
+		log_query.info(query)
 		self.cur.execute(query, [task_result_string, task_id])
 		row = self.cur.fetchone()
 		
@@ -205,6 +212,7 @@ class ProgressTracker:
 		FROM task_progress
 		WHERE Task_id = %s
 		;"""
+		log_query.info(query)
 		self.cur.execute(query, [task_id])
 		row = self.cur.fetchone()
 		if row is not None:
@@ -237,4 +245,5 @@ class ProgressTracker:
 		except Exception as e:
 			self.messages.append(e)
 			task_result_string = '{}'
+			log_error.info(e)
 		return task_result_string

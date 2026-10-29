@@ -14,7 +14,7 @@ QUEUE_PATH='dc_ins_del_queue' # path to the persistent storage of the queue, rel
 import logging, logging.config
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('dc_api')
-errorlog = logging.getLogger('error')
+log_error = logging.getLogger('error')
 
 from DBConnectors.MSSQLConnector import MSSQLConnector
 
@@ -74,6 +74,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	######### Implementation of wrappers to put items into the queue
 	# TODO: is this wrapper needed when there is no other task than to put it onto the queue?
 	def submit_to_delete_queue(self, dc_params, request_params, application_url):
+		logger.info('submit_to_delete_queue')
 		task_id = str(uuid4().hex)
 		self.put([dc_params, request_params, task_id, 'delete'])
 		self.progress_tracker.insert_new_task(task_id, 'Delete CollectionSpecimens', 0, 'waiting for start') 
@@ -81,6 +82,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 
 	def submit_to_insert_queue(self, dc_params, request_params, application_url):
+		logger.info('submit_to_insert_queue')
 		task_id = str(uuid4().hex)
 		self.put([dc_params, request_params, task_id, 'insert'])
 		self.progress_tracker.insert_new_task(task_id, 'Insert CollectionSpecimens', 0, 'waiting for start') 
@@ -89,6 +91,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 
 	######### Implementation of tasks to start by the queue
 	def delete_DC_data(self, dc_params, request_params, task_id):
+		logger.info('starting delete_DC_data')
 		try:
 			dc_db = MSSQLConnector(config = dc_params)
 			
@@ -115,7 +118,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			task_result = {"CS_IDs": []}
 			step_result = {"CS_IDs": []}
 		except Exception as e:
-			errorlog.error('Exception in InsertDeleteQueue.delete_DC_data(), data preparation', exc_info = True)
+			log_error.error('Exception in InsertDeleteQueue.delete_DC_data(), data preparation', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(), data preparation: \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
@@ -151,7 +154,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			logger.info('The following entries have been deleted from database {0}: \n{1}'.format(dc_params['accronym'], '"' + '", "'.join([str(ids['CollectionSpecimenID']) for ids in task_result['CS_IDs']]) + '"'))
 		
 		except Exception as e:
-			errorlog.error('Exception in InsertDeleteQueue.delete_DC_data()', exc_info = True)
+			log_error.error('Exception in InsertDeleteQueue.delete_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
@@ -160,6 +163,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 	
 	
 	def insert_DC_data(self, dc_params, request_params, task_id):
+		logger.info('starting insert_DC_data')
 		try:
 			# DC connection must be set here, to prevent that it is ouddated when the task starts
 			dc_db = MSSQLConnector(config = dc_params)
@@ -188,7 +192,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 			task_result = {"CS_IDs": []}
 			step_result = {"CS_IDs": []}
 		except Exception as e:
-			errorlog.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
+			log_error.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.insert_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))
@@ -221,7 +225,7 @@ class InsertDeleteQueue(persistqueue.SQLiteQueue):
 		
 		except Exception as e:
 			# TODO
-			errorlog.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
+			log_error.error('Exception in InsertDeleteQueue.insert_DC_data()', exc_info = True)
 			status = 'failed'
 			self.progress_tracker.update_progress(task_id, 0, status, ', '.join(self.messages))
 			notify_developers('Exception in InsertDeleteQueue.delete_DC_data(): \n{0}'.format(''.join(traceback.format_tb(e.__traceback__))))

@@ -13,6 +13,13 @@ from dc_rest_api.views.RequestParams import RequestParams
 import pudb
 import re
 
+import logging
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('dc_api')
+log_auth = logging.getLogger('dwb_authentication')
+log_error = logging.getLogger('error')
+
 
 class LoginViews(object):
 	'''
@@ -80,6 +87,7 @@ class LoginViews(object):
 
 	@view_config(route_name='login', accept='application/json', renderer='json')
 	def login_view_json(self):
+		log_auth.info('login via json requested')
 		self.userlogin = UserLogin(self.request)
 		self.messages = []
 		
